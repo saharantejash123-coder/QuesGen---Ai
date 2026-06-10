@@ -32,7 +32,8 @@
     "helmet": "^7.2.0",
     "jsonwebtoken": "^9.0.3",
     "@supabase/supabase-js": "^2.27.0",
-    "bcryptjs": "^2.4.3"
+    "bcryptjs": "^2.4.3",
+    "sqlite3": "^5.1.7"
   },
   "devDependencies": {
     "eslint": "^8.0.0"
