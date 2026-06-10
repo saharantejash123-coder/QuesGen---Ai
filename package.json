@@ -1,0 +1,12 @@
+{
+  "name": "questra-ai",
+  "version": "1.0.0",
+  "description": "QuesGen AI - monorepo root",
+  "scripts": {
+    "build": "cd backend && npm install",
+    "start": "cd backend && node index.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
