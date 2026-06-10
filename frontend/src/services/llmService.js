@@ -108,7 +108,7 @@ Return the response STRICTLY as a valid JSON object. No markdown fences, no comm
         {
           "text": "Question text here?",
           "type": "MCQ",
-          "options": ["Option A", "Option B", "Option C", "Option D"],
+          "options": ["Plain text only — no A/B/C/D prefix", "Second option", "Third option", "Fourth option"],
           "conf": 89
         }
       ]

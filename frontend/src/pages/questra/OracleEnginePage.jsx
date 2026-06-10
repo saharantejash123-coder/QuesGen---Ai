@@ -281,7 +281,7 @@ export default function OracleEnginePage({ setPage }) {
                           {q.options && (
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginLeft: '10px' }}>
                               {q.options.map((opt, i) => (
-                                <div key={i}>({String.fromCharCode(97 + i)}) {opt}</div>
+                                <div key={i}>({String.fromCharCode(97 + i)}) {typeof opt === 'string' ? opt.replace(/^\s*[\(\[]?[a-dA-D][\)\].]\s*/i, '') : opt}</div>
                               ))}
                             </div>
                           )}

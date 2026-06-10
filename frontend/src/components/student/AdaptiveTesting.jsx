@@ -546,7 +546,7 @@ const AdaptiveTesting = () => {
                       background:sel?'var(--accent)':'var(--border)',
                       color:sel?'#fff':'var(--text3)',transition:'all .2s' }}>{letter}</span>
                     <span style={{ fontSize:'.88rem',fontWeight:sel?600:400,color:sel?'var(--text)':'var(--text2)' }}>
-                      {opt}
+                      {typeof opt === 'string' ? opt.replace(/^\s*[\(\[]?[a-dA-D][\)\].]\s*/i, '') : opt}
                     </span>
                   </button>
                 );
@@ -681,7 +681,7 @@ const AdaptiveTesting = () => {
                                 border:isAns?'2px solid #10B981':isWrong?'2px solid #F87171':'1px solid var(--border)',
                                 background:isAns?'rgba(16,185,129,.06)':isWrong?'rgba(248,113,113,.06)':'var(--bg3)',
                                 color:isAns?'#10B981':isWrong?'#F87171':'var(--text2)' }}>
-                                {isAns&&'✓ '}{isWrong&&'✗ '}{opt}
+                                {isAns&&'✓ '}{isWrong&&'✗ '}{typeof opt === 'string' ? opt.replace(/^\s*[\(\[]?[a-dA-D][\)\].]\s*/i, '') : opt}
                               </div>
                             );
                           })}
