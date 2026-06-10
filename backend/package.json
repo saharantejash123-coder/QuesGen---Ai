@@ -1,0 +1,40 @@
+{
+  "name": "quesgen-backend",
+  "version": "1.0.0",
+  "description": "QuesGen AI - AI-Powered Examination Operating System Backend",
+  "main": "index.js",
+  "scripts": {
+    "dev": "node index.js",
+    "build": "tsc",
+    "start": "node index.js",
+    "test": "jest --coverage",
+    "test:watch": "jest --watch",
+    "lint": "eslint src --ext .ts",
+    "migrate": "prisma migrate dev",
+    "migrate:prod": "prisma migrate deploy",
+    "seed": "node --loader ts-node/esm prisma/seed.ts",
+    "prisma:generate": "prisma generate",
+    "prisma:studio": "prisma studio"
+  },
+  "keywords": [
+    "edtech",
+    "ai",
+    "saas",
+    "examinations"
+  ],
+  "author": "QuesGen AI",
+  "license": "Proprietary",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^16.6.1",
+    "express": "^4.22.2",
+    "express-rate-limit": "^7.1.5",
+    "helmet": "^7.2.0",
+    "jsonwebtoken": "^9.0.3",
+    "@supabase/supabase-js": "^2.27.0",
+    "bcryptjs": "^2.4.3"
+  },
+  "devDependencies": {
+    "eslint": "^8.0.0"
+  }
+}
