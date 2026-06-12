@@ -48,7 +48,7 @@ function FeaturesPage({setPage}){
         </ScrollReveal>
       </section>
       <section style={{padding:"1rem 5% 5rem",maxWidth:1200,margin:"0 auto"}}>
-        <div className="g2" style={{gridTemplateColumns:"220px 1fr",alignItems:"start"}}>
+        <div className="feat-sidebar-grid">
           <div style={{display:"flex",flexDirection:"column",gap:".4rem"}}>
             {features.map((f,i)=>(
               <button key={i} onClick={()=>setSel(i)} style={{background:sel===i?`${f.color}14`:"transparent",border:sel===i?`1px solid ${f.color}28`:"1px solid transparent",borderRadius:9,padding:".7rem .9rem",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:".6rem",transition:"all .2s",fontFamily:"'DM Sans',sans-serif"}}>

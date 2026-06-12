@@ -498,6 +498,7 @@ select option { background: var(--bg2); color: var(--text); }
 .g3 { display: grid; grid-template-columns: repeat(3,1fr);   gap: 1.2rem; }
 .g4 { display: grid; grid-template-columns: repeat(4,1fr);   gap: 1rem;   }
 .fr { display: flex;  gap: 1rem; flex-wrap: wrap; }
+.feat-sidebar-grid { display: grid; grid-template-columns: 220px 1fr; gap: 3rem; align-items: start; }
 
 @media (max-width: 900px) {
   .g2 { grid-template-columns: 1fr; gap: 2rem; }

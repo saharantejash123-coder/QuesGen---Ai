@@ -157,19 +157,19 @@ export default function OracleEnginePage({ setPage }) {
             <h3 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '1rem' }}>{t('oracle.engineReady')}</h3>
             <p style={{ fontSize: '0.9rem', color: 'var(--text2)', marginBottom: '1.5rem' }}>
               {t('oracle.engineReadyDesc')} <strong>{board} {cls} {subject}{language !== 'English' ? ` (${language})` : ''}</strong>.
-              The AI will construct a paper matching the exact blueprint weightage and prioritize topics with high confidence scores.
+              {' '}{t('oracle.analysisIntro')}
             </p>
-            
+
             <div style={{ background: 'var(--bg3)', borderRadius: 12, padding: '1.5rem', border: '1px solid var(--border)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
                 <TrendingUp style={{ color: '#10B981' }} />
-                <span style={{ fontWeight: 600 }}>Active Prediction Vectors</span>
+                <span style={{ fontWeight: 600 }}>{t('oracle.activePredVectors')}</span>
               </div>
               <ul style={{ fontSize: '0.85rem', color: 'var(--text2)', display: 'flex', flexDirection: 'column', gap: '0.5rem', paddingLeft: '1.5rem' }}>
-                <li>15-Year Frequency Analysis applied.</li>
-                <li>Latest Blueprint compliance enforced.</li>
-                <li>Difficulty balance: 30% Easy, 50% Medium, 20% Hard.</li>
-                <li>AI Confidence tagging enabled per question.</li>
+                <li>{t('oracle.freqAnalysis')}</li>
+                <li>{t('oracle.blueprintCompliance')}</li>
+                <li>{t('oracle.difficultyBalance')}</li>
+                <li>{t('oracle.aiConfidenceTag')}</li>
               </ul>
             </div>
           </div>
@@ -185,19 +185,19 @@ export default function OracleEnginePage({ setPage }) {
               <Sparkles style={{ width: 32, height: 32, color: '#2354F4', animation: 'pulse 2s infinite' }} />
             </div>
           </div>
-          <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '1rem' }}>Generating Oracle Paper...</h2>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '1rem' }}>{t('oracle.generatingTitle')}</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', width: '100%', maxWidth: 300 }}>
              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--text3)' }}>
-               <span>Scanning PYQ database</span>
-               <span style={{ color: '#10B981', fontWeight: 700 }}>Done</span>
+               <span>{t('oracle.scanningPYQ')}</span>
+               <span style={{ color: '#10B981', fontWeight: 700 }}>{t('oracle.done')}</span>
              </div>
              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--text3)' }}>
-               <span>Applying board blueprint</span>
-               <span style={{ color: '#10B981', fontWeight: 700 }}>Done</span>
+               <span>{t('oracle.applyingBlueprint')}</span>
+               <span style={{ color: '#10B981', fontWeight: 700 }}>{t('oracle.done')}</span>
              </div>
              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'var(--text3)' }}>
-               <span>Calculating AI Confidence</span>
-               <span style={{ color: '#2354F4', fontWeight: 700 }}>Processing...</span>
+               <span>{t('oracle.calculatingConfidence')}</span>
+               <span style={{ color: '#2354F4', fontWeight: 700 }}>{t('oracle.processing')}</span>
              </div>
           </div>
         </div>
@@ -206,7 +206,7 @@ export default function OracleEnginePage({ setPage }) {
       {step === 3 && paper && (
         <div className="fade-in">
           {/* Action Bar */}
-          <div className="hide-on-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', padding: '1rem', background: 'var(--card-bg)', borderRadius: 12, border: '1px solid var(--border)' }}>
+          <div className="hide-on-print oracle-action-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', padding: '1rem', background: 'var(--card-bg)', borderRadius: 12, border: '1px solid var(--border)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
               <div style={{ padding: '0.5rem', borderRadius: 8, background: 'rgba(35,84,244,0.1)' }}>
                 <CheckCircle style={{ width: 24, height: 24, color: '#2354F4' }} />
@@ -222,7 +222,7 @@ export default function OracleEnginePage({ setPage }) {
                 </p>
               </div>
             </div>
-            <div style={{ display: 'flex', gap: '1rem' }}>
+            <div className="oracle-action-btns" style={{ display: 'flex', gap: '1rem' }}>
               <button onClick={() => setStep(1)} className="btn-secondary">
                 <RefreshCw style={{ width: 16, height: 16 }} />
                 {t('oracle.regenerate')}
@@ -288,7 +288,7 @@ export default function OracleEnginePage({ setPage }) {
 
                           {/* AI Confidence Badge (hidden on print) */}
                           <div className="hide-on-print" style={{ marginTop: '10px', display: 'inline-block', fontSize: '11px', fontWeight: 600, padding: '4px 8px', borderRadius: '4px', background: 'rgba(35,84,244,0.1)', color: '#2354F4' }}>
-                            AI Confidence: {q.conf}%
+                            {t('oracle.aiConfidenceBadge').replace('{conf}', q.conf)}
                           </div>
                         </div>
                       </div>
