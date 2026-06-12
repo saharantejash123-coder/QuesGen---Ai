@@ -208,7 +208,7 @@ export default function ScriptLabPage() {
       {/* ── HERO ── */}
       <section style={{ padding: '3.5rem 5% 2rem', maxWidth: 1100, margin: '0 auto' }}>
         <div className="tag tag-a">✍️ Script-Lab — AI Handwriting Coach</div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '3rem', alignItems: 'flex-start' }}>
+        <div className="scriptlab-hero-grid">
           <div>
             <h1 className="st" style={{ marginBottom: '.8rem' }}>
               One tiny fix.<br /><em>Every session.</em>
@@ -288,7 +288,7 @@ export default function ScriptLabPage() {
                   </div>
                 )}
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                <div className="scriptlab-upload-grid">
                   {/* Drop zone */}
                   <div
                     onDragOver={e => { e.preventDefault(); setDragOver(true); }}
@@ -380,7 +380,7 @@ export default function ScriptLabPage() {
             {/* ══ RESULT ══ */}
             {phase === 'result' && result && (
               <div className="fade-in">
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', alignItems: 'start' }}>
+                <div className="scriptlab-result-grid">
 
                   {/* Left: image + scores */}
                   <div>
@@ -524,7 +524,7 @@ export default function ScriptLabPage() {
                     </button>
                   </div>
                 ) : (
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '2rem', alignItems: 'start' }}>
+                  <div className="scriptlab-hist-grid">
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '.7rem' }}>
                       {history.map((h, i) => (
                         <div key={i} style={{ display: 'flex', gap: '.9rem', alignItems: 'center',

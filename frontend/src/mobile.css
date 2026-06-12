@@ -263,10 +263,20 @@
     font-size: 0.88rem !important;
   }
 
-  /* ── Features page sidebar → single column on mobile ── */
-  .feat-sidebar-grid {
+  /* ── Features / LogicGen sidebar → single column on mobile ── */
+  .feat-sidebar-grid,
+  .logic-gen-grid {
     grid-template-columns: 1fr !important;
     gap: 1.2rem !important;
+  }
+
+  /* ── ScriptLab grids → single column on mobile ── */
+  .scriptlab-hero-grid,
+  .scriptlab-upload-grid,
+  .scriptlab-result-grid,
+  .scriptlab-hist-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
   }
 
   /* ── Oracle action bar → stacks vertically on mobile ── */
@@ -513,6 +523,83 @@
 
   .card:active {
     transform: scale(0.985) !important;
+  }
+
+  /* ── Auth pages: hide brand panel, show mobile logo ── */
+  .auth-brand-panel {
+    display: none !important;
+  }
+  .auth-mobile-logo {
+    display: flex !important;
+    justify-content: center !important;
+  }
+
+  /* ── Pricing: single column on small screens ── */
+  .g3 {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+
+  /* ── Dashboard stat grid: 2×2 on mobile ── */
+  .g4 {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 0.75rem !important;
+  }
+
+  /* ── Dashboard g2 analytics: stack ── */
+  .g2.dash-analytics {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+
+  /* ── Recharts overflow fix ── */
+  .recharts-responsive-container {
+    min-width: 0 !important;
+  }
+
+  /* ── Inner page padding ── */
+  .page-enter {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  /* ── Section horizontal padding ── */
+  section {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+
+  /* ── Tables overflow ── */
+  table {
+    display: block !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  /* ── Oracle action bar text wrap ── */
+  .oracle-action-bar h3,
+  .oracle-action-bar p {
+    font-size: 0.82rem !important;
+  }
+}
+
+/* ── Tablet: auth brand panel shows at 768px+ ── */
+@media (min-width: 768px) {
+  .auth-brand-panel {
+    display: flex !important;
+  }
+  .auth-mobile-logo {
+    display: none !important;
+  }
+}
+
+/* ── Very small screens: single column everywhere ── */
+@media (max-width: 400px) {
+  .g4 {
+    grid-template-columns: 1fr !important;
+  }
+  .g2 {
+    gap: 1rem !important;
   }
 }
 

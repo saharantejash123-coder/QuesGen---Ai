@@ -74,7 +74,7 @@ export default function DashboardOverview({ setActiveTab, user }) {
         ))}
       </div>
 
-      <div className="g2" style={{ alignItems: 'start' }}>
+      <div className="g2 dash-analytics" style={{ alignItems: 'start' }}>
         {/* Performance Chart */}
         <div className="card" style={{ padding: '1.3rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>

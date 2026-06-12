@@ -1,9 +1,16 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowRight, Loader2 } from 'lucide-react';
+import { ArrowRight, Loader2, BookOpen, Brain, Target, TrendingUp } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
 import { useLanguage } from '../context/LanguageContext';
 import { login, loginWithGoogleToken, saveSession } from '../services/authService';
+
+const highlights = [
+  { icon: <Brain size={18} />, text: 'AI-generated exam papers in seconds' },
+  { icon: <Target size={18} />, text: '4,28,500+ PYQs across 7+ boards' },
+  { icon: <TrendingUp size={18} />, text: 'Adaptive tests that target your weak areas' },
+  { icon: <BookOpen size={18} />, text: 'Full Hindi & English support' },
+];
 
 export default function LoginPage() {
   const { t } = useLanguage();
@@ -13,20 +20,22 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
+  const redirect = (role) => {
+    const r = (role || '').toLowerCase();
+    if (r === 'admin') navigate('/admin');
+    else if (r === 'school') navigate('/school');
+    else if (r === 'teacher') navigate('/teacher');
+    else navigate('/student');
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
-
     try {
       const user = await login(email, password);
       saveSession(user);
-
-      const role = (user.role || '').toLowerCase();
-      if (role === 'admin') navigate('/admin');
-      else if (role === 'school') navigate('/school');
-      else if (role === 'teacher') navigate('/teacher');
-      else navigate('/student');
+      redirect(user.role);
     } catch (err) {
       setError(err.message || 'Login failed. Please try again.');
     } finally {
@@ -37,148 +46,164 @@ export default function LoginPage() {
   const handleGoogleSuccess = async (credentialResponse) => {
     setError('');
     setIsLoading(true);
-
     try {
       const user = await loginWithGoogleToken(credentialResponse.credential);
       saveSession(user);
-
-      const role = (user.role || '').toLowerCase();
-      if (role === 'admin') navigate('/admin');
-      else if (role === 'school') navigate('/school');
-      else if (role === 'teacher') navigate('/teacher');
-      else navigate('/student');
+      redirect(user.role);
     } catch (err) {
-      setError(err.message || 'Google login failed. Please try again.');
+      setError(err.message || 'Google login failed.');
       setIsLoading(false);
     }
   };
 
-  const handleGoogleError = () => {
-    setError('Google login failed. Please check your credentials and try again.');
-    setIsLoading(false);
-  };
-
-  // Demo Google removed; use real Google OAuth or backend redirect flow
-
   return (
-    <div className="min-h-screen bg-[#000000] text-zinc-100 flex flex-col justify-center py-6 sm:py-12 px-4 sm:px-6 lg:px-8 font-sans selection:bg-blue-500/30">
-      <div className="mx-auto w-full max-w-md">
-        <Link to="/" className="flex flex-col justify-center items-center gap-2 mb-4 sm:mb-6 group">
-          <img
-            src="/logo.png"
-            alt="QuesGen Logo"
-            className="h-14 sm:h-16 w-14 sm:w-16 object-contain group-hover:scale-105 transition-transform drop-shadow-[0_0_12px_rgba(0,180,255,0.5)]"
-          />
-          <span className="text-xl sm:text-2xl font-bold tracking-tight text-white">QuesGen</span>
+    <div style={{ minHeight: '100vh', display: 'flex', background: '#000' }}>
+
+      {/* ── Left brand panel (desktop only) ── */}
+      <div className="auth-brand-panel" style={{
+        flex: '0 0 45%',
+        background: 'linear-gradient(145deg, #0d0d1a 0%, #0a0f2e 40%, #060b20 100%)',
+        borderRight: '1px solid rgba(255,255,255,0.06)',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        padding: '3rem',
+        position: 'relative',
+        overflow: 'hidden',
+      }}>
+        {/* Background glow */}
+        <div style={{ position: 'absolute', top: '-20%', left: '-10%', width: '60%', height: '60%', background: 'radial-gradient(circle, rgba(35,84,244,0.18) 0%, transparent 70%)', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', bottom: '10%', right: '-10%', width: '50%', height: '50%', background: 'radial-gradient(circle, rgba(124,58,237,0.12) 0%, transparent 70%)', pointerEvents: 'none' }} />
+
+        {/* Logo */}
+        <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none', zIndex: 1 }}>
+          <img src="/logo.png" alt="QuesGen" style={{ width: 40, height: 40, objectFit: 'contain', filter: 'drop-shadow(0 0 12px rgba(35,84,244,0.6))' }} />
+          <span style={{ fontSize: '1.25rem', fontWeight: 700, color: '#fff', letterSpacing: '-0.3px', fontFamily: "'DM Sans', sans-serif" }}>QuesGen</span>
         </Link>
-        <h2 className="mt-2 text-center text-2xl sm:text-3xl font-semibold tracking-tight text-white">
-          {t('auth.signInToYourAccount')}
-        </h2>
-        <p className="mt-2 text-center text-xs sm:text-sm text-zinc-400">
-          Or{' '}
-          <Link to="/register" className="font-medium text-blue-400 hover:text-blue-300 transition-colors">
-            {t('auth.createNewAccount')}
-          </Link>
-        </p>
+
+        {/* Main message */}
+        <div style={{ zIndex: 1 }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.3rem 0.75rem', borderRadius: 100, border: '1px solid rgba(35,84,244,0.35)', background: 'rgba(35,84,244,0.08)', marginBottom: '1.5rem' }}>
+            <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#22d3ee', boxShadow: '0 0 8px #22d3ee' }} />
+            <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'rgba(255,255,255,0.7)', letterSpacing: '0.8px', textTransform: 'uppercase' }}>India's #1 AI Exam Prep</span>
+          </div>
+          <h2 style={{ fontFamily: "'Instrument Serif', serif", fontSize: 'clamp(1.8rem, 3vw, 2.6rem)', color: '#fff', lineHeight: 1.15, marginBottom: '0.75rem' }}>
+            The smarter way<br />
+            <em style={{ color: '#818cf8' }}>to crack any exam.</em>
+          </h2>
+          <p style={{ fontSize: '0.88rem', color: 'rgba(255,255,255,0.45)', lineHeight: 1.7, marginBottom: '2rem', maxWidth: 340 }}>
+            AI-powered paper generation, adaptive testing, and 15 years of PYQ data — all in one platform.
+          </p>
+
+          {/* Feature highlights */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+            {highlights.map((h, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(35,84,244,0.12)', border: '1px solid rgba(35,84,244,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#818cf8', flexShrink: 0 }}>
+                  {h.icon}
+                </div>
+                <span style={{ fontSize: '0.83rem', color: 'rgba(255,255,255,0.6)', fontFamily: "'DM Sans', sans-serif" }}>{h.text}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div style={{ zIndex: 1, borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '1.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+            {[['50K+', 'Students'], ['7+', 'Boards'], ['4.28L+', 'PYQs']].map(([val, label]) => (
+              <div key={label}>
+                <div style={{ fontSize: '1rem', fontWeight: 700, color: '#fff', fontFamily: "'Instrument Serif', serif" }}>{val}</div>
+                <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
-      <div className="mt-6 sm:mt-10 mx-auto w-full max-w-md">
-        <div className="bg-[#0a0a0a] py-6 sm:py-8 px-4 sm:px-10 shadow-2xl sm:rounded-2xl border border-white/8 relative overflow-hidden">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-px bg-linear-to-r from-transparent via-white/20 to-transparent" />
+      {/* ── Right form panel ── */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem 1.5rem', overflowY: 'auto' }}>
+        {/* Mobile logo */}
+        <div className="auth-mobile-logo" style={{ marginBottom: '2rem', textAlign: 'center' }}>
+          <Link to="/" style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', textDecoration: 'none' }}>
+            <img src="/logo.png" alt="QuesGen" style={{ width: 48, height: 48, objectFit: 'contain', filter: 'drop-shadow(0 0 10px rgba(35,84,244,0.5))' }} />
+            <span style={{ fontSize: '1.1rem', fontWeight: 700, color: '#fff', fontFamily: "'DM Sans', sans-serif" }}>QuesGen</span>
+          </Link>
+        </div>
 
-          <form className="space-y-6" onSubmit={handleLogin}>
-            {error && (
-              <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm text-center font-medium">
-                {error}
-              </div>
-            )}
-
-            <div>
-              <label htmlFor="email" className="block text-xs sm:text-sm font-medium leading-6 text-zinc-300">
-                Email address
-              </label>
-              <div className="mt-2">
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="block w-full rounded-xl border-0 bg-white/5 py-3 sm:py-2.5 px-3.5 text-white shadow-sm ring-1 ring-inset ring-white/10 placeholder:text-zinc-500 focus:ring-2 focus:ring-inset focus:ring-blue-500 text-sm sm:leading-6 transition-all"
-                  placeholder="you@example.com"
-                />
-              </div>
-            </div>
-
-            <div>
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-                <label htmlFor="password" className="block text-xs sm:text-sm font-medium leading-6 text-zinc-300">
-                  Password
-                </label>
-                <a href="#" className="text-xs sm:text-sm font-medium text-blue-400 hover:text-blue-300 transition-colors">
-                  Forgot password?
-                </a>
-              </div>
-              <div className="mt-2">
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full rounded-xl border-0 bg-white/5 py-3 sm:py-2.5 px-3.5 text-white shadow-sm ring-1 ring-inset ring-white/10 placeholder:text-zinc-500 focus:ring-2 focus:ring-inset focus:ring-blue-500 text-sm sm:leading-6 transition-all"
-                  placeholder="••••••••"
-                />
-              </div>
-            </div>
-
-            <div>
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="flex w-full justify-center items-center gap-2 rounded-xl bg-white px-3 py-3 sm:py-2.5 text-sm font-semibold text-black shadow-sm hover:bg-zinc-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white transition-all disabled:opacity-70 disabled:cursor-not-allowed min-h-12 sm:min-h-11"
-              >
-                {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Sign in'}
-                {!isLoading && <ArrowRight className="w-4 h-4" />}
-              </button>
-            </div>
-          </form>
-
-          {/* Google sign-in */}
-          <div className="mt-6 sm:mt-8">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-white/10" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-[#0a0a0a] text-zinc-500">Or continue with</span>
-              </div>
-            </div>
-
-            <div className="mt-6 flex justify-center">
-              <GoogleLogin
-                onSuccess={handleGoogleSuccess}
-                onError={handleGoogleError}
-                theme="dark"
-                width="200"
-              />
-            </div>
+        <div style={{ width: '100%', maxWidth: 400 }}>
+          <div style={{ marginBottom: '2rem' }}>
+            <h1 style={{ fontSize: 'clamp(1.5rem, 4vw, 1.9rem)', fontWeight: 700, color: '#fff', marginBottom: '0.4rem', fontFamily: "'DM Sans', sans-serif", letterSpacing: '-0.3px' }}>
+              Welcome back
+            </h1>
+            <p style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.4)' }}>
+              {t('auth.dontHaveAccount')}{' '}
+              <Link to="/register" style={{ color: '#818cf8', fontWeight: 600, textDecoration: 'none' }}>
+                Create account →
+              </Link>
+            </p>
           </div>
 
-          <p className="mt-6 sm:mt-8 text-center text-xs text-zinc-500">
+          {/* Error */}
+          {error && (
+            <div style={{ marginBottom: '1.25rem', padding: '0.75rem 1rem', borderRadius: 12, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171', fontSize: '0.83rem', textAlign: 'center' }}>
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
+            {/* Email */}
+            <div>
+              <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: 'rgba(255,255,255,0.5)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Email</label>
+              <input
+                type="email" required value={email} onChange={e => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                style={{ width: '100%', padding: '0.85rem 1rem', borderRadius: 12, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)', color: '#fff', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box', fontFamily: "'DM Sans', sans-serif", transition: 'border-color 0.2s' }}
+                onFocus={e => e.target.style.borderColor = 'rgba(129,140,248,0.5)'}
+                onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
+              />
+            </div>
+
+            {/* Password */}
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                <label style={{ fontSize: '0.78rem', fontWeight: 600, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Password</label>
+                <a href="#" style={{ fontSize: '0.75rem', color: '#818cf8', textDecoration: 'none' }}>Forgot?</a>
+              </div>
+              <input
+                type="password" required value={password} onChange={e => setPassword(e.target.value)}
+                placeholder="••••••••"
+                style={{ width: '100%', padding: '0.85rem 1rem', borderRadius: 12, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.04)', color: '#fff', fontSize: '0.9rem', outline: 'none', boxSizing: 'border-box', fontFamily: "'DM Sans', sans-serif", transition: 'border-color 0.2s' }}
+                onFocus={e => e.target.style.borderColor = 'rgba(129,140,248,0.5)'}
+                onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
+              />
+            </div>
+
+            {/* Submit */}
+            <button
+              type="submit" disabled={isLoading}
+              style={{ width: '100%', padding: '0.9rem', borderRadius: 12, border: 'none', background: isLoading ? 'rgba(255,255,255,0.08)' : 'linear-gradient(135deg, #2354F4, #7C3AED)', color: '#fff', fontWeight: 700, fontSize: '0.9rem', cursor: isLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', fontFamily: "'DM Sans', sans-serif", transition: 'opacity 0.2s', marginTop: '0.25rem' }}
+            >
+              {isLoading ? <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} /> : <>Sign in <ArrowRight size={16} /></>}
+            </button>
+          </form>
+
+          {/* Divider */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', margin: '1.5rem 0' }}>
+            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
+            <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.3)' }}>or continue with</span>
+            <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
+          </div>
+
+          {/* Google */}
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <GoogleLogin onSuccess={handleGoogleSuccess} onError={() => setError('Google login failed.')} theme="filled_black" shape="rectangular" size="large" width="100%" />
+          </div>
+
+          <p style={{ marginTop: '1.75rem', textAlign: 'center', fontSize: '0.72rem', color: 'rgba(255,255,255,0.25)', lineHeight: 1.6 }}>
             By signing in, you agree to our{' '}
-            <Link to="/terms" className="text-blue-400 hover:text-blue-300 transition-colors">
-              Terms of Service
-            </Link>{' '}
-            and{' '}
-            <Link to="/privacy" className="text-blue-400 hover:text-blue-300 transition-colors">
-              Privacy Policy
-            </Link>
-            .
+            <Link to="/terms" style={{ color: 'rgba(129,140,248,0.7)', textDecoration: 'none' }}>Terms</Link>{' '}and{' '}
+            <Link to="/privacy" style={{ color: 'rgba(129,140,248,0.7)', textDecoration: 'none' }}>Privacy Policy</Link>.
           </p>
         </div>
       </div>

@@ -68,7 +68,7 @@ function LogicGenPage(){
         </ScrollReveal>
       </section>
       <section style={{padding:"0 5% 5rem",maxWidth:1200,margin:"0 auto"}}>
-        <div style={{display:"grid",gridTemplateColumns:"250px 1fr",gap:"1.5rem",alignItems:"start"}}>
+        <div className="logic-gen-grid">
           <motion.div
             style={{background:"var(--bg2)",border:"1px solid var(--border)",borderRadius:18,padding:"1.4rem",position:"sticky",top:70}}
             initial={{ opacity: 0, x: -20 }}
