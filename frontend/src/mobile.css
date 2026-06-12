@@ -5,26 +5,31 @@
 ═══════════════════════════════════════════════════════════════ */
 
 /* ──────────────────────────────────────────
-   BOTTOM NAVIGATION BAR
+   BOTTOM NAVIGATION BAR  — FLOATING ISLAND
 ────────────────────────────────────────── */
 .mob-bottom-nav {
   position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  left: 10px;
+  right: 10px;
   z-index: 200;
   display: flex;
-  align-items: stretch;
+  align-items: center;
   justify-content: space-around;
-  background: var(--mob-menu-bg);
-  backdrop-filter: blur(28px) saturate(180%);
-  -webkit-backdrop-filter: blur(28px) saturate(180%);
-  border-top: 1px solid var(--border);
-  padding: 0.35rem 0.25rem;
-  padding-bottom: calc(0.35rem + env(safe-area-inset-bottom, 0px));
-  box-shadow: 0 -2px 20px rgba(0, 0, 0, 0.06);
+  background: var(--mob-nav-bg);
+  backdrop-filter: blur(36px) saturate(200%);
+  -webkit-backdrop-filter: blur(36px) saturate(200%);
+  border: 1px solid var(--mob-nav-border);
+  border-radius: 28px;
+  padding: 0.38rem 0.2rem;
+  box-shadow:
+    0 14px 50px rgba(0, 0, 0, 0.14),
+    0 4px 16px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.04);
 }
 
+/* ── Individual nav button ── */
 .mob-nav-item {
   flex: 1;
   display: flex;
@@ -32,17 +37,16 @@
   align-items: center;
   justify-content: center;
   gap: 3px;
-  min-height: 52px;
+  padding: 0.28rem 0.1rem 0.22rem;
   border: none;
   background: none;
   cursor: pointer;
   font-family: 'DM Sans', sans-serif;
   color: var(--text3);
-  transition: color 0.18s ease;
-  position: relative;
-  border-radius: 12px;
-  padding: 0.3rem 0.15rem;
+  transition: color 0.22s ease;
+  border-radius: 20px;
   -webkit-tap-highlight-color: transparent;
+  outline: none;
 }
 
 .mob-nav-item.mob-active {
@@ -50,48 +54,66 @@
 }
 
 [data-theme="dark"] .mob-nav-item.mob-active {
-  color: #60A5FA;
+  color: #818cf8;
 }
 
-.mob-nav-pip {
-  position: absolute;
-  top: 5px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 34px;
-  height: 34px;
-  border-radius: 11px;
-  background: rgba(35, 84, 244, 0.1);
-  opacity: 0;
-  transition: opacity 0.18s ease;
-  pointer-events: none;
-}
-
-[data-theme="dark"] .mob-nav-pip {
-  background: rgba(96, 165, 250, 0.12);
-}
-
-.mob-nav-item.mob-active .mob-nav-pip {
-  opacity: 1;
-}
-
+/* ── Icon wrapper: holds the pill bg + icon ── */
 .mob-nav-icon {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
-  z-index: 1;
-  width: 22px;
-  height: 22px;
+  width: 50px;
+  height: 30px;
+  border-radius: 16px;
+  overflow: visible;
 }
 
-.mob-nav-label {
-  font-size: 0.58rem;
-  font-weight: 700;
-  letter-spacing: 0.15px;
+/* ── Animated pill behind icon ── */
+.mob-nav-pill {
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(35, 84, 244, 0.16), rgba(124, 58, 237, 0.09));
+  opacity: 0;
+  transform: scale(0.5);
+  transition:
+    opacity 0.22s ease,
+    transform 0.34s cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: none;
+}
+
+[data-theme="dark"] .mob-nav-pill {
+  background: linear-gradient(135deg, rgba(129, 140, 248, 0.2), rgba(167, 139, 250, 0.12));
+}
+
+.mob-nav-item.mob-active .mob-nav-pill {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* ── Icon SVG animates slightly upward when active ── */
+.mob-nav-icon > svg {
   position: relative;
   z-index: 1;
+  transition:
+    transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1),
+    stroke 0.2s ease;
+}
+
+.mob-nav-item.mob-active .mob-nav-icon > svg {
+  transform: translateY(-1.5px) scale(1.08);
+}
+
+/* ── Label ── */
+.mob-nav-label {
+  font-size: 0.56rem;
+  font-weight: 700;
+  letter-spacing: 0.1px;
   line-height: 1;
+  color: inherit;
+  white-space: nowrap;
+  transition: color 0.2s ease;
 }
 
 /* ──────────────────────────────────────────
@@ -224,11 +246,12 @@
 ────────────────────────────────────────── */
 @media (max-width: 900px) {
   main {
-    padding-bottom: 76px;
+    /* floating island is ~58px tall + 12px from bottom + 10px buffer */
+    padding-bottom: 88px;
   }
 
   footer {
-    margin-bottom: 76px;
+    margin-bottom: 88px;
   }
 
   /* Touch-friendly buttons */

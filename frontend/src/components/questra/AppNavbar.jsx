@@ -1,16 +1,30 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import {
   Brain, LogOut, Sun, Moon, Globe,
   Home, Sparkles, Archive, Tag, MoreHorizontal,
   LayoutDashboard, Shuffle, PenTool, Layers, Eye, BarChart2,
-  TrendingUp, Settings, Users, ChevronRight,
+  TrendingUp, Settings, Users, ChevronRight, ChevronDown,
   GraduationCap, Building2, Calendar,
 } from 'lucide-react';
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useIsMobile } from '../../hooks/useIsMobile';
+
+const roleGradients = {
+  student: 'linear-gradient(135deg, #7c3aed, #a855f7)',
+  teacher: 'linear-gradient(135deg, #2354F4, #60a5fa)',
+  admin:   'linear-gradient(135deg, #DC2626, #f97316)',
+  school:  'linear-gradient(135deg, #059669, #34d399)',
+};
+
+const roleColors = {
+  student: { bg: 'rgba(124,58,237,0.12)', text: '#7c3aed' },
+  teacher: { bg: 'rgba(35,84,244,0.10)',  text: '#2354F4' },
+  admin:   { bg: 'rgba(220,38,38,0.10)',  text: '#DC2626' },
+  school:  { bg: 'rgba(5,150,105,0.10)',  text: '#059669' },
+};
 
 const roleConfigs = {
   landing: {
@@ -139,13 +153,14 @@ const mobileNavMap = {
 /* ── Pages shown in the More sheet ── */
 const moreSheetMap = {
   landing: [
-    { id: 'features',  label: 'Features',         desc: 'Platform features',      emoji: '✨' },
-    { id: 'pricing',   label: 'Pricing',          desc: 'Plans & subscriptions',  emoji: '🏷️' },
-    { id: 'scriptlab', label: 'Script-Lab',       desc: 'AI handwriting coach',   emoji: '✍️' },
-    { id: 'logicgen',  label: 'LogicGen',         desc: 'PYQ variable rebuilder', emoji: '🔄' },
+    { id: 'logicgen',  label: 'LogicGen',   desc: 'PYQ variable rebuilder',  emoji: '🔄' },
+    { id: 'scriptlab', label: 'Script-Lab', desc: 'AI handwriting coach',    emoji: '✍️' },
+    { id: 'vault15',   label: 'Vault-15',   desc: 'Previous year papers',    emoji: '📚' },
+    { id: 'adaptive',  label: 'Adaptive',   desc: 'AI-powered adaptive test', emoji: '🧠' },
   ],
   student: [
     { id: 'scriptlab', label: 'Script-Lab', desc: 'AI handwriting coach', emoji: '✍️' },
+    { id: 'logicgen',  label: 'LogicGen',   desc: 'PYQ variable rebuilder', emoji: '🔄' },
   ],
   teacher: [],
   admin:   [],
@@ -164,6 +179,17 @@ export default function AppNavbar({ role = 'landing', activeTab, setActiveTab, u
   const [mobileOpen, setMobileOpen]     = useState(false);
   const [langOpen, setLangOpen]         = useState(false);
   const [hoveredLink, setHoveredLink]   = useState(null);
+  const [profileOpen, setProfileOpen]   = useState(false);
+  const profileRef                      = useRef(null);
+
+  useEffect(() => {
+    if (!profileOpen) return;
+    const handle = (e) => {
+      if (profileRef.current && !profileRef.current.contains(e.target)) setProfileOpen(false);
+    };
+    document.addEventListener('mousedown', handle);
+    return () => document.removeEventListener('mousedown', handle);
+  }, [profileOpen]);
   const navigate  = useNavigate();
   const location  = useLocation();
   const config    = roleConfigs[role] || roleConfigs.landing;
@@ -405,44 +431,142 @@ export default function AppNavbar({ role = 'landing', activeTab, setActiveTab, u
                 )}
 
                 {config.showTabs && user && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                    <div style={{
-                      display: 'flex', alignItems: 'center', gap: '0.5rem',
-                      padding: '0.35rem 0.8rem', borderRadius: 10,
-                      background: 'var(--bg3)', border: '1px solid var(--border)',
-                    }}>
+                  <div ref={profileRef} style={{ position: 'relative' }}>
+                    {/* ── Profile trigger button ── */}
+                    <button
+                      onClick={() => setProfileOpen(v => !v)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: '0.45rem',
+                        padding: '0.28rem 0.6rem 0.28rem 0.28rem', borderRadius: 12,
+                        background: profileOpen ? 'var(--bg3)' : 'transparent',
+                        border: `1px solid ${profileOpen ? 'var(--border)' : 'transparent'}`,
+                        cursor: 'pointer', transition: 'all 0.2s',
+                      }}
+                      onMouseEnter={e => {
+                        e.currentTarget.style.background = 'var(--bg3)';
+                        e.currentTarget.style.borderColor = 'var(--border)';
+                      }}
+                      onMouseLeave={e => {
+                        if (!profileOpen) {
+                          e.currentTarget.style.background = 'transparent';
+                          e.currentTarget.style.borderColor = 'transparent';
+                        }
+                      }}
+                    >
                       <div style={{
-                        width: 28, height: 28, borderRadius: 8,
-                        background: 'linear-gradient(135deg, #3b82f6, #7c3aed)',
+                        width: 30, height: 30, borderRadius: 9, flexShrink: 0,
+                        background: roleGradients[role] || 'linear-gradient(135deg,#3b82f6,#7c3aed)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: '0.6rem', fontWeight: 700, color: '#fff',
+                        fontSize: '0.62rem', fontWeight: 800, color: '#fff',
                       }}>
                         {user.initials}
                       </div>
-                      <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text)' }}>{user.name}</span>
-                    </div>
-                    <button
-                      onClick={onLogout}
-                      title="Logout"
-                      style={{
-                        width: 36, height: 36, borderRadius: 10,
-                        background: 'none', border: '1px solid var(--border)',
-                        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        color: 'var(--text3)', transition: 'all 0.2s',
-                      }}
-                      onMouseEnter={e => {
-                        e.currentTarget.style.background = 'rgba(239,68,68,0.08)';
-                        e.currentTarget.style.color = '#ef4444';
-                        e.currentTarget.style.borderColor = 'rgba(239,68,68,0.3)';
-                      }}
-                      onMouseLeave={e => {
-                        e.currentTarget.style.background = 'none';
-                        e.currentTarget.style.color = 'var(--text3)';
-                        e.currentTarget.style.borderColor = 'var(--border)';
-                      }}
-                    >
-                      <LogOut style={{ width: 16, height: 16 }} />
+                      <span style={{
+                        fontSize: '0.78rem', fontWeight: 700, color: 'var(--text)',
+                        maxWidth: 90, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      }}>
+                        {user.name}
+                      </span>
+                      <motion.span
+                        animate={{ rotate: profileOpen ? 180 : 0 }}
+                        transition={{ duration: 0.2 }}
+                        style={{ display: 'flex', alignItems: 'center' }}
+                      >
+                        <ChevronDown style={{ width: 13, height: 13, color: 'var(--text3)' }} />
+                      </motion.span>
                     </button>
+
+                    {/* ── Profile dropdown ── */}
+                    <AnimatePresence>
+                      {profileOpen && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10, scale: 0.96 }}
+                          animate={{ opacity: 1, y: 0,   scale: 1    }}
+                          exit={{    opacity: 0, y: -8,  scale: 0.96 }}
+                          transition={{ duration: 0.15, type: 'spring', stiffness: 400, damping: 30 }}
+                          style={{
+                            position: 'absolute', top: 48, right: 0, zIndex: 300,
+                            background: 'var(--card-bg)', border: '1px solid var(--border)',
+                            borderRadius: 18, overflow: 'hidden',
+                            boxShadow: '0 20px 50px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.04)',
+                            minWidth: 252,
+                          }}
+                        >
+                          {/* User header */}
+                          <div style={{ padding: '1.1rem 1.1rem 0.9rem' }}>
+                            <div style={{ display: 'flex', gap: '0.85rem', alignItems: 'center' }}>
+                              <div style={{
+                                width: 50, height: 50, borderRadius: 15, flexShrink: 0,
+                                background: roleGradients[role] || 'linear-gradient(135deg,#3b82f6,#7c3aed)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                fontWeight: 800, color: '#fff', fontSize: '1.1rem',
+                                boxShadow: `0 6px 20px ${(roleColors[role]?.text || '#7c3aed')}45`,
+                              }}>
+                                {user.initials}
+                              </div>
+                              <div style={{ minWidth: 0, flex: 1 }}>
+                                <div style={{
+                                  fontSize: '0.9rem', fontWeight: 700, color: 'var(--text)',
+                                  lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                                }}>
+                                  {user.name}
+                                </div>
+                                <div style={{
+                                  fontSize: '0.72rem', color: 'var(--text3)', marginTop: '0.18rem',
+                                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                                }}>
+                                  {user.email}
+                                </div>
+                              </div>
+                            </div>
+                            {/* Role badge */}
+                            <div style={{ marginTop: '0.75rem' }}>
+                              <span style={{
+                                display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+                                padding: '0.22rem 0.7rem', borderRadius: 7,
+                                fontSize: '0.63rem', fontWeight: 800,
+                                letterSpacing: '0.6px', textTransform: 'uppercase',
+                                background: roleColors[role]?.bg || 'rgba(99,102,241,0.1)',
+                                color: roleColors[role]?.text || '#6366f1',
+                                border: `1px solid ${(roleColors[role]?.text || '#6366f1')}28`,
+                              }}>
+                                <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'currentColor', flexShrink: 0 }} />
+                                {role?.charAt(0).toUpperCase() + role?.slice(1)}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Divider */}
+                          <div style={{ height: 1, background: 'var(--border)', margin: '0 0.6rem' }} />
+
+                          {/* Actions */}
+                          <div style={{ padding: '0.5rem' }}>
+                            <button
+                              onClick={() => { setProfileOpen(false); onLogout?.(); }}
+                              style={{
+                                width: '100%', display: 'flex', alignItems: 'center', gap: '0.65rem',
+                                padding: '0.65rem 0.8rem', borderRadius: 11,
+                                background: 'transparent', border: 'none', cursor: 'pointer',
+                                color: '#ef4444', fontSize: '0.83rem', fontWeight: 600,
+                                fontFamily: "'DM Sans', sans-serif", transition: 'background 0.15s',
+                                textAlign: 'left',
+                              }}
+                              onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.08)'}
+                              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                            >
+                              <div style={{
+                                width: 30, height: 30, borderRadius: 9, flexShrink: 0,
+                                background: 'rgba(239,68,68,0.1)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              }}>
+                                <LogOut style={{ width: 14, height: 14 }} />
+                              </div>
+                              Sign Out
+                            </button>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 )}
 
@@ -602,21 +726,23 @@ export default function AppNavbar({ role = 'landing', activeTab, setActiveTab, u
           {mobileNavItems.map(item => {
             const active = isMobItemActive(item);
             return (
-              <button
+              <motion.button
                 key={item.id}
                 className={`mob-nav-item${active ? ' mob-active' : ''}`}
                 onClick={() => handleMobNavClick(item)}
                 aria-label={item.label}
+                whileTap={{ scale: 0.84 }}
+                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
               >
-                <div className="mob-nav-pip" />
                 <div className="mob-nav-icon">
+                  <div className="mob-nav-pill" />
                   <item.Icon
-                    size={active ? 21 : 20}
-                    strokeWidth={active ? 2.2 : 1.8}
+                    size={active ? 20 : 18}
+                    strokeWidth={active ? 2.3 : 1.7}
                   />
                 </div>
                 <span className="mob-nav-label">{item.label}</span>
-              </button>
+              </motion.button>
             );
           })}
         </div>
@@ -651,19 +777,33 @@ export default function AppNavbar({ role = 'landing', activeTab, setActiveTab, u
 
                 {/* Dashboard user info */}
                 {config.showTabs && user && (
-                  <div className="mob-sheet-user" style={{ marginBottom: '0.5rem' }}>
-                    <div style={{
-                      width: 42, height: 42, borderRadius: 12,
-                      background: 'linear-gradient(135deg, #3b82f6, #7c3aed)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontWeight: 700, color: '#fff', fontSize: '0.85rem', flexShrink: 0,
+                  <div className="mob-sheet-user" style={{ marginBottom: '0.5rem', flexDirection: 'column', alignItems: 'flex-start', gap: '0.6rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', width: '100%' }}>
+                      <div style={{
+                        width: 46, height: 46, borderRadius: 13, flexShrink: 0,
+                        background: roleGradients[role] || 'linear-gradient(135deg, #3b82f6, #7c3aed)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontWeight: 800, color: '#fff', fontSize: '0.9rem',
+                        boxShadow: `0 4px 14px ${(roleColors[role]?.text || '#7c3aed')}40`,
+                      }}>
+                        {user?.initials}
+                      </div>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.name}</div>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text3)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.email}</div>
+                      </div>
+                    </div>
+                    <span style={{
+                      display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
+                      padding: '0.2rem 0.65rem', borderRadius: 7,
+                      fontSize: '0.63rem', fontWeight: 800, letterSpacing: '0.6px', textTransform: 'uppercase',
+                      background: roleColors[role]?.bg || 'rgba(99,102,241,0.1)',
+                      color: roleColors[role]?.text || '#6366f1',
+                      border: `1px solid ${(roleColors[role]?.text || '#6366f1')}28`,
                     }}>
-                      {user?.initials}
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text)' }}>{user?.name}</div>
-                      <div style={{ fontSize: '0.72rem', color: 'var(--text3)', marginTop: 2 }}>{user?.email}</div>
-                    </div>
+                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'currentColor', flexShrink: 0 }} />
+                      {role?.charAt(0).toUpperCase() + role?.slice(1)}
+                    </span>
                   </div>
                 )}
 

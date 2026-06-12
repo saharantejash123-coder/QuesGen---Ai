@@ -27,7 +27,14 @@ export default function StudentDashboard() {
   useEffect(() => {
     const data = localStorage.getItem('questra_user')
     if (data) {
-      setUser(JSON.parse(data))
+      const parsed = JSON.parse(data)
+      const name = parsed.name
+        || [parsed.firstName, parsed.lastName].filter(Boolean).join(' ')
+        || parsed.email?.split('@')[0]
+        || 'Student'
+      const initials = parsed.initials
+        || name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+      setUser({ ...parsed, name, initials })
     } else {
       navigate('/login')
     }
