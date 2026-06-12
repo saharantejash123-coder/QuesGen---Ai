@@ -7,9 +7,8 @@ export const generateAdaptiveQuestionsWithLLM = async (
   apiKey,
   { board, cls, subject, chapter, count = 10, weakAreas = {}, sessionSeed = '' }
 ) => {
-  if (!apiKey) throw new Error('No API key provided');
+  if (!apiKey) return null;
 
-  // Build context about weak areas so AI can emphasise those concepts
   const weakChapterList = Object.entries(weakAreas)
     .filter(([, s]) => s < 60)
     .map(([ch]) => ch)
@@ -45,31 +44,49 @@ Return STRICTLY as a raw JSON array — NO markdown, NO \`\`\`json fences:
 Difficulty: 1=Easy, 2=Medium, 3=Hard. Generate all ${count} questions now.
 `;
 
-  const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+  const MODELS = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
 
-  const response = await fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: {
-        temperature: 0.92, // High temp → different questions every run
-        responseMimeType: 'application/json',
-      },
-    }),
-  });
+  for (const model of MODELS) {
+    try {
+      const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 45000);
 
-  const data = await response.json();
-  if (data.error) throw new Error(data.error.message || 'Gemini API error');
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.92 },
+        }),
+      });
 
-  let jsonString = data.candidates[0].content.parts[0].text;
-  // Strip markdown fences if model added them
-  if (jsonString.startsWith('```json')) jsonString = jsonString.slice(7, -3);
-  else if (jsonString.startsWith('```')) jsonString = jsonString.slice(3, -3);
+      clearTimeout(timeout);
+      const data = await response.json();
+      if (data.error) continue; // try next model
 
-  const questions = JSON.parse(jsonString.trim());
-  // Ensure unique IDs per session
-  return questions.map((q, i) => ({ ...q, id: `ai_${Date.now()}_${i}` }));
+      let jsonString = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!jsonString) continue;
+
+      if (jsonString.startsWith('```json')) jsonString = jsonString.slice(7).replace(/```\s*$/, '').trim();
+      else if (jsonString.startsWith('```')) jsonString = jsonString.slice(3).replace(/```\s*$/, '').trim();
+
+      const start = jsonString.indexOf('[');
+      const end = jsonString.lastIndexOf(']');
+      if (start !== -1 && end !== -1) jsonString = jsonString.slice(start, end + 1);
+
+      const questions = JSON.parse(jsonString.trim());
+      if (!Array.isArray(questions) || questions.length === 0) continue;
+
+      return questions.map((q, i) => ({ ...q, id: `ai_${Date.now()}_${i}` }));
+    } catch {
+      // try next model
+    }
+  }
+
+  console.warn('All Gemini models unavailable for adaptive questions');
+  return null; // caller will use fallback bank
 };
 
 // ─────────────────────────────────────────────────────
@@ -200,8 +217,8 @@ Return the response STRICTLY as a valid JSON object. No markdown fences, no comm
     }
   }
 
-  console.error('LLM Generation Error:', lastError?.message);
-  throw lastError || new Error('All Gemini models failed');
+  console.warn('All Gemini models unavailable:', lastError?.message);
+  return null; // caller falls back to static question bank
 };
 
 // ─────────────────────────────────────────────────────

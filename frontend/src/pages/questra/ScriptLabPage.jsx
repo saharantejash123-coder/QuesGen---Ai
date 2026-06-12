@@ -42,30 +42,46 @@ Return as raw JSON (NO markdown):
   }
 }`;
 
-  const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+  const MODELS = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
 
-  const response = await fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{
-        parts: [
-          { text: prompt },
-          { inline_data: { mime_type: mimeType, data: base64Image } }
-        ]
-      }],
-      generationConfig: { temperature: 0.4, responseMimeType: 'application/json' },
-    }),
-  });
+  for (const model of MODELS) {
+    try {
+      const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 45000);
 
-  const data = await response.json();
-  if (data.error) throw new Error(data.error.message || 'Gemini API error');
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { text: prompt },
+              { inline_data: { mime_type: mimeType, data: base64Image } }
+            ]
+          }],
+          generationConfig: { temperature: 0.4 },
+        }),
+      });
 
-  let jsonString = data.candidates[0].content.parts[0].text;
-  if (jsonString.startsWith('```json')) jsonString = jsonString.slice(7, -3);
-  else if (jsonString.startsWith('```')) jsonString = jsonString.slice(3, -3);
+      clearTimeout(timeout);
+      const data = await response.json();
+      if (data.error) continue; // try next model
 
-  return JSON.parse(jsonString.trim());
+      let jsonString = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!jsonString) continue;
+
+      if (jsonString.startsWith('```json')) jsonString = jsonString.slice(7).replace(/```\s*$/, '').trim();
+      else if (jsonString.startsWith('```')) jsonString = jsonString.slice(3).replace(/```\s*$/, '').trim();
+
+      return JSON.parse(jsonString.trim());
+    } catch {
+      // try next model
+    }
+  }
+
+  throw new Error('AI is temporarily overloaded. Please wait a moment and try again.');
 };
 
 /* ── localStorage helpers ── */

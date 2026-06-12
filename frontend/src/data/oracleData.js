@@ -149,6 +149,18 @@ function getFallbackQuestionsForType(type, count) {
 }
 
 export const generatePaperAsync = async (board, cls, subject) => {
+  try {
+    return await _generatePaperCore(board, cls, subject);
+  } catch (e) {
+    console.error('generatePaperAsync unexpected error, using fallback:', e.message);
+    return {
+      metadata: { board, class: cls, subject, totalMarks: DEFAULT_BLUEPRINT.totalMarks, timeMinutes: DEFAULT_BLUEPRINT.timeMinutes, date: new Date().toISOString(), source: 'Fallback-Bank' },
+      sections: DEFAULT_BLUEPRINT.sections.map(sec => ({ ...sec, questions: getFallbackQuestionsForType(sec.type, sec.count) }))
+    };
+  }
+};
+
+const _generatePaperCore = async (board, cls, subject) => {
   // Try to fetch blueprints from backend
   const blueprints = await fetchBlueprints();
   
