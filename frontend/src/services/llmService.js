@@ -1,9 +1,8 @@
 // LLM API Integration using Gemini
 
-// 2 models only — 2.5-flash first (best quality), 1.5-flash as fallback.
-// Always wait 1.5s before fallback to give the server breathing room.
-// Never retry more than once to conserve API quota.
-const MODELS = ['gemini-2.5-flash', 'gemini-1.5-flash'];
+// 2 models — 2.0-flash first (stable GA), 1.5-flash as fallback.
+// 2.5-flash returns 404 on v1beta in some regions; 2.0-flash is universally available.
+const MODELS = ['gemini-2.0-flash', 'gemini-1.5-flash'];
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 async function geminiPost(apiKey, model, body, timeoutMs = 50000) {

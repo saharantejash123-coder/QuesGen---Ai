@@ -149,7 +149,7 @@ export default function RegisterPage() {
 
           {/* Google sign-up */}
           <div style={{ marginBottom: '1.25rem', display: 'flex', justifyContent: 'center' }}>
-            <GoogleLogin onSuccess={handleGoogleSuccess} onError={() => setError('Google auth failed.')} theme="filled_black" shape="rectangular" size="large" width="100%" />
+            <GoogleLogin onSuccess={handleGoogleSuccess} onError={() => setError('Google auth failed.')} theme="filled_black" shape="rectangular" size="large" />
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>

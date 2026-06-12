@@ -197,7 +197,7 @@ export default function LoginPage() {
 
           {/* Google */}
           <div style={{ display: 'flex', justifyContent: 'center' }}>
-            <GoogleLogin onSuccess={handleGoogleSuccess} onError={() => setError('Google login failed.')} theme="filled_black" shape="rectangular" size="large" width="100%" />
+            <GoogleLogin onSuccess={handleGoogleSuccess} onError={() => setError('Google login failed.')} theme="filled_black" shape="rectangular" size="large" />
           </div>
 
           <p style={{ marginTop: '1.75rem', textAlign: 'center', fontSize: '0.72rem', color: 'rgba(255,255,255,0.25)', lineHeight: 1.6 }}>
