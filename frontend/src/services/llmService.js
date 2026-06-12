@@ -1,5 +1,43 @@
 // LLM API Integration using Gemini
 
+// 2 models only — 2.5-flash first (best quality), 1.5-flash as fallback.
+// Always wait 1.5s before fallback to give the server breathing room.
+// Never retry more than once to conserve API quota.
+const MODELS = ['gemini-2.5-flash', 'gemini-1.5-flash'];
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+async function geminiPost(apiKey, model, body, timeoutMs = 50000) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: ctrl.signal,
+      body: JSON.stringify(body),
+    });
+    clearTimeout(t);
+    const data = await res.json();
+    if (data.error) return null; // overloaded / rate-limited → try next model
+    return data;
+  } catch {
+    clearTimeout(t);
+    return null;
+  }
+}
+
+function extractText(data) {
+  return data?.candidates?.[0]?.content?.parts?.[0]?.text ?? null;
+}
+
+function stripFences(s) {
+  if (!s) return s;
+  if (s.startsWith('```json')) s = s.slice(7).replace(/```\s*$/, '').trim();
+  else if (s.startsWith('```')) s = s.slice(3).replace(/```\s*$/, '').trim();
+  return s.trim();
+}
+
 // ─────────────────────────────────────────────────────
 // ADAPTIVE TESTING: Generate fresh MCQ questions via AI
 // ─────────────────────────────────────────────────────
@@ -14,215 +52,86 @@ export const generateAdaptiveQuestionsWithLLM = async (
     .map(([ch]) => ch)
     .join(', ');
 
-  const prompt = `
-You are an expert MCQ question setter for ${board} Board, ${cls}, Subject: ${subject}.
+  const prompt = `You are an expert MCQ question setter for ${board} Board, ${cls}, Subject: ${subject}.
 Generate exactly ${count} unique, high-quality Multiple Choice Questions for the topic: "${chapter}".
 
 STRICT RULES:
 1. Every question must have exactly 4 options (A, B, C, D).
 2. Only ONE option is correct — write it exactly as it appears in the options array.
 3. Questions must NOT be standard textbook copy-pastes — make them conceptually challenging.
-4. Vary difficulty naturally: ~30% easy, ~50% medium, ~20% hard.
-5. Distractors (wrong options) must be plausible — not obviously wrong.
-6. ${weakChapterList ? `These sub-topics had weak performance, give them more coverage: ${weakChapterList}.` : 'Cover diverse sub-concepts across the topic.'}
-7. Session variation seed: "${sessionSeed}" — use this to ensure questions differ between runs.
+4. Vary difficulty: ~30% easy, ~50% medium, ~20% hard.
+5. Distractors must be plausible — not obviously wrong.
+6. ${weakChapterList ? `Emphasise weak sub-topics: ${weakChapterList}.` : 'Cover diverse sub-concepts.'}
+7. Session seed: "${sessionSeed}" — ensures unique questions each run.
 8. Include a short explanation (1-2 sentences) for the correct answer.
 
-Return STRICTLY as a raw JSON array — NO markdown, NO \`\`\`json fences:
-[
-  {
-    "id": "aq_0",
-    "text": "The full question text?",
-    "options": ["Option A", "Option B", "Option C", "Option D"],
-    "answer": "Option A",
-    "difficulty": 2,
-    "chapter": "${chapter}",
-    "explanation": "Brief reason why the answer is correct."
-  }
-]
+Return ONLY a raw JSON array — NO markdown, NO fences:
+[{"id":"aq_0","text":"Question?","options":["A","B","C","D"],"answer":"A","difficulty":2,"chapter":"${chapter}","explanation":"Why A is correct."}]
 
-Difficulty: 1=Easy, 2=Medium, 3=Hard. Generate all ${count} questions now.
-`;
+Generate all ${count} questions now.`;
 
-  const MODELS = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
-
-  for (const model of MODELS) {
+  for (let i = 0; i < MODELS.length; i++) {
+    if (i > 0) await sleep(1500);
+    const data = await geminiPost(apiKey, MODELS[i], {
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0.92, maxOutputTokens: 4096 },
+    });
+    const text = extractText(data);
+    if (!text) continue;
     try {
-      const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 45000);
-
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        signal: controller.signal,
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.92 },
-        }),
-      });
-
-      clearTimeout(timeout);
-      const data = await response.json();
-      if (data.error) continue; // try next model
-
-      let jsonString = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!jsonString) continue;
-
-      if (jsonString.startsWith('```json')) jsonString = jsonString.slice(7).replace(/```\s*$/, '').trim();
-      else if (jsonString.startsWith('```')) jsonString = jsonString.slice(3).replace(/```\s*$/, '').trim();
-
-      const start = jsonString.indexOf('[');
-      const end = jsonString.lastIndexOf(']');
-      if (start !== -1 && end !== -1) jsonString = jsonString.slice(start, end + 1);
-
-      const questions = JSON.parse(jsonString.trim());
-      if (!Array.isArray(questions) || questions.length === 0) continue;
-
-      return questions.map((q, i) => ({ ...q, id: `ai_${Date.now()}_${i}` }));
-    } catch {
-      // try next model
-    }
+      const start = text.indexOf('['), end = text.lastIndexOf(']');
+      const qs = JSON.parse(start !== -1 ? text.slice(start, end + 1) : text.trim());
+      if (Array.isArray(qs) && qs.length > 0)
+        return qs.map((q, idx) => ({ ...q, id: `ai_${Date.now()}_${idx}` }));
+    } catch { continue; }
   }
 
   console.warn('All Gemini models unavailable for adaptive questions');
-  return null; // caller will use fallback bank
+  return null;
 };
 
 // ─────────────────────────────────────────────────────
 // ORACLE ENGINE: Generate full exam paper via AI
 // ─────────────────────────────────────────────────────
 export const generatePaperWithLLM = async (apiKey, board, cls, subject, blueprint) => {
-  if (!apiKey) {
-    throw new Error("No API key provided");
-  }
+  if (!apiKey) return null;
 
-  // Construct the prompt based on the blueprint
-  let sectionInstructions = blueprint.sections.map(sec => 
+  const sectionInstructions = blueprint.sections.map(sec =>
     `- ${sec.name}: Generate ${sec.count} questions of type '${sec.type}' worth ${sec.marksPerQuestion} marks each.`
   ).join('\n');
 
-  const prompt = `
-You are an expert exam paper setter for ${board} board, ${cls}, Subject: ${subject}.
-Generate a completely new, unique set of questions for a mock examination paper.
-Do not use generic or overly simple questions. Make them high quality and challenging, mimicking real board exams.
-
-The paper must strictly follow this blueprint:
+  const prompt = `You are an expert exam paper setter for ${board} board, ${cls}, Subject: ${subject}.
+Generate a complete, high-quality mock examination paper following this blueprint exactly:
 ${sectionInstructions}
 
-Also, assign an "AI Confidence" score (between 70 and 99) for each question to indicate its probability of appearing in the exam, based on historical patterns.
+Assign an "AI Confidence" score (70-99) per question indicating exam probability.
 
-Return the response STRICTLY as a valid JSON object. No markdown fences, no comments, no extra text — only the JSON:
-{
-  "sections": [
-    {
-      "id": "A",
-      "name": "Section A",
-      "marksPerQuestion": 1,
-      "count": 5,
-      "type": "MCQ",
-      "questions": [
-        {
-          "text": "Question text here?",
-          "type": "MCQ",
-          "options": ["Plain text only — no A/B/C/D prefix", "Second option", "Third option", "Fourth option"],
-          "conf": 89
-        }
-      ]
-    },
-    {
-      "id": "B",
-      "name": "Section B",
-      "marksPerQuestion": 3,
-      "count": 3,
-      "type": "SA",
-      "questions": [
-        {
-          "text": "Short answer question here.",
-          "type": "SA",
-          "conf": 82
-        }
-      ]
-    }
-  ]
-}
-`;
+Return ONLY valid JSON — no markdown, no fences, no extra text:
+{"sections":[{"id":"A","name":"Section A","marksPerQuestion":1,"count":5,"type":"MCQ","questions":[{"text":"Question?","type":"MCQ","options":["Opt1","Opt2","Opt3","Opt4"],"conf":89}]}]}`;
 
-  // Try models in order of preference
-  const MODELS = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
-
-  let lastError = null;
-  for (const model of MODELS) {
+  for (let i = 0; i < MODELS.length; i++) {
+    if (i > 0) await sleep(1500);
+    const data = await geminiPost(apiKey, MODELS[i], {
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0.7, maxOutputTokens: 8192 },
+    }, 60000);
+    const text = extractText(data);
+    if (!text) continue;
     try {
-      const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 60000);
-
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        signal: controller.signal,
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 8192,
-          },
-        }),
-      });
-
-      clearTimeout(timeout);
-
-      const data = await response.json();
-
-      if (data.error) {
-        lastError = new Error(data.error.message || 'Gemini API error');
-        continue;
-      }
-
-      if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
-        lastError = new Error('Empty response from Gemini');
-        continue;
-      }
-
-      let jsonString = data.candidates[0].content.parts[0].text.trim();
-
-      // Strip markdown fences if model included them
-      if (jsonString.startsWith('```json')) {
-        jsonString = jsonString.slice(7).replace(/```\s*$/, '').trim();
-      } else if (jsonString.startsWith('```')) {
-        jsonString = jsonString.slice(3).replace(/```\s*$/, '').trim();
-      }
-
-      // Extract JSON object if model added preamble text
-      const jsonStart = jsonString.indexOf('{');
-      const jsonEnd = jsonString.lastIndexOf('}');
-      if (jsonStart !== -1 && jsonEnd !== -1 && jsonStart < jsonEnd) {
-        jsonString = jsonString.slice(jsonStart, jsonEnd + 1);
-      }
-
-      const paperContent = JSON.parse(jsonString);
-      if (!paperContent.sections) {
-        lastError = new Error('Invalid paper structure from Gemini');
-        continue;
-      }
-      return paperContent;
-    } catch (error) {
-      lastError = error;
-      if (error.name === 'AbortError') {
-        lastError = new Error('Gemini request timed out after 60 seconds');
-        break;
-      }
-    }
+      let s = stripFences(text);
+      const start = s.indexOf('{'), end = s.lastIndexOf('}');
+      if (start !== -1 && end !== -1) s = s.slice(start, end + 1);
+      const paper = JSON.parse(s);
+      if (paper.sections?.length > 0) return paper;
+    } catch { continue; }
   }
 
-  console.warn('All Gemini models unavailable:', lastError?.message);
-  return null; // caller falls back to static question bank
+  console.warn('All Gemini models unavailable for paper generation');
+  return null;
 };
 
 // ─────────────────────────────────────────────────────
-// VAULT-15: Generate a complete past-paper style exam via AI
+// VAULT-15: Generate a past-paper style exam via AI
 // ─────────────────────────────────────────────────────
 export const generateVaultPaperWithLLM = async (apiKey, { board, cls, subject, year, set = 'Set 1' }) => {
   if (!apiKey) throw new Error('No API key provided');
@@ -243,72 +152,32 @@ export const generateVaultPaperWithLLM = async (apiKey, { board, cls, subject, y
     `- Section ${s.id} "${s.name}" (${s.type}): ${s.count} question(s), ${s.marks} mark(s) each`
   ).join('\n');
 
-  const prompt = `
-You are an expert exam paper setter replicating real ${board} Board ${cls} ${subject} papers.
-Simulate the ${year} Annual Examination — ${set}. Match the authentic topic coverage, style and difficulty of actual ${year} board papers.
+  const prompt = `You are an expert exam paper setter replicating real ${board} Board ${cls} ${subject} papers.
+Simulate the ${year} Annual Examination — ${set}. Match authentic topic coverage and difficulty.
 
 Blueprint:
 ${sectionDesc}
 Total Marks: ${bp.totalMarks} | Time: ${bp.time}
 
-Rules per question type:
-- MCQ: 4 options (A/B/C/D), state correct answer letter
-- VSA/SA: question text + concise model answer
-- LA: question text + detailed model answer (bullet points)
-- Case/Reading: realistic passage + 3-4 sub-questions with answers
-- Writing: realistic prompt + model response
-- Grammar: sentence-based exercises with answers
-- Literature: text-based questions with answers
-- Map: location-based questions with answers
+Return ONLY raw JSON (NO markdown, NO fences):
+{"metadata":{"board":"${board}","class":"${cls}","subject":"${subject}","year":${year},"set":"${set}","totalMarks":${bp.totalMarks},"time":"${bp.time}","generatedBy":"QuesGen AI"},"generalInstructions":["instruction 1","instruction 2"],"sections":[{"id":"A","name":"Section A","type":"MCQ","marksPerQuestion":1,"questions":[{"no":1,"text":"Question?","options":{"A":"opt1","B":"opt2","C":"opt3","D":"opt4"},"answer":"B","topic":"Topic"}]}],"answerKey":[{"qNo":1,"answer":"B","marks":1}]}
+Generate the complete paper now.`;
 
-Return STRICTLY as raw JSON (NO markdown, NO \`\`\`json):
-{
-  "metadata": {"board":"${board}","class":"${cls}","subject":"${subject}","year":${year},"set":"${set}","totalMarks":${bp.totalMarks},"time":"${bp.time}","generatedBy":"QuesGen AI"},
-  "generalInstructions": ["instruction 1","instruction 2","instruction 3","instruction 4","instruction 5"],
-  "sections": [
-    {
-      "id": "A",
-      "name": "Section A",
-      "type": "MCQ",
-      "marksPerQuestion": 1,
-      "questions": [
-        {"no":1,"text":"Question text?","options":{"A":"opt1","B":"opt2","C":"opt3","D":"opt4"},"answer":"B","topic":"Topic name"}
-      ]
-    },
-    {
-      "id": "B",
-      "name": "Section B",
-      "type": "SA",
-      "marksPerQuestion": 3,
-      "questions": [
-        {"no":21,"text":"Question text.","modelAnswer":"Model answer here.","topic":"Topic name","marks":3}
-      ]
-    }
-  ],
-  "answerKey": [
-    {"qNo":1,"answer":"B","marks":1},
-    {"qNo":21,"keyPoints":["key point 1","key point 2"],"marks":3}
-  ]
-}
-Generate the complete paper now with ALL questions as per blueprint.`;
-
-  const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-
-  const response = await fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
+  for (let i = 0; i < MODELS.length; i++) {
+    if (i > 0) await sleep(1500);
+    const data = await geminiPost(apiKey, MODELS[i], {
       contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0.65, responseMimeType: 'application/json' },
-    }),
-  });
+      generationConfig: { temperature: 0.65, maxOutputTokens: 8192 },
+    }, 60000);
+    const text = extractText(data);
+    if (!text) continue;
+    try {
+      let s = stripFences(text);
+      const start = s.indexOf('{'), end = s.lastIndexOf('}');
+      if (start !== -1 && end !== -1) s = s.slice(start, end + 1);
+      return JSON.parse(s);
+    } catch { continue; }
+  }
 
-  const data = await response.json();
-  if (data.error) throw new Error(data.error.message || 'Gemini API error');
-
-  let jsonString = data.candidates[0].content.parts[0].text;
-  if (jsonString.startsWith('```json')) jsonString = jsonString.slice(7, -3);
-  else if (jsonString.startsWith('```')) jsonString = jsonString.slice(3, -3);
-
-  return JSON.parse(jsonString.trim());
+  throw new Error('AI is temporarily overloaded. Please try again in a moment.');
 };

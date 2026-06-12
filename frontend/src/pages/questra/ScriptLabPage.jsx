@@ -42,11 +42,13 @@ Return as raw JSON (NO markdown):
   }
 }`;
 
-  const MODELS = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+  const MODELS = ['gemini-2.5-flash', 'gemini-1.5-flash'];
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-  for (const model of MODELS) {
+  for (let i = 0; i < MODELS.length; i++) {
+    if (i > 0) await sleep(1500);
     try {
-      const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODELS[i]}:generateContent?key=${apiKey}`;
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 45000);
 
@@ -55,27 +57,20 @@ Return as raw JSON (NO markdown):
         headers: { 'Content-Type': 'application/json' },
         signal: controller.signal,
         body: JSON.stringify({
-          contents: [{
-            parts: [
-              { text: prompt },
-              { inline_data: { mime_type: mimeType, data: base64Image } }
-            ]
-          }],
+          contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: mimeType, data: base64Image } }] }],
           generationConfig: { temperature: 0.4 },
         }),
       });
 
       clearTimeout(timeout);
       const data = await response.json();
-      if (data.error) continue; // try next model
+      if (data.error) continue;
 
-      let jsonString = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!jsonString) continue;
-
-      if (jsonString.startsWith('```json')) jsonString = jsonString.slice(7).replace(/```\s*$/, '').trim();
-      else if (jsonString.startsWith('```')) jsonString = jsonString.slice(3).replace(/```\s*$/, '').trim();
-
-      return JSON.parse(jsonString.trim());
+      let s = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!s) continue;
+      if (s.startsWith('```json')) s = s.slice(7).replace(/```\s*$/, '').trim();
+      else if (s.startsWith('```')) s = s.slice(3).replace(/```\s*$/, '').trim();
+      return JSON.parse(s.trim());
     } catch {
       // try next model
     }
