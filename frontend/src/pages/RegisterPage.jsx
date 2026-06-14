@@ -286,7 +286,7 @@ export default function RegisterPage() {
     setError('');
     setIsLoading(true);
     try {
-      verifyOTP(formData.email, enteredOtp);
+      await verifyOTP(formData.email, enteredOtp);
 
       const nameParts = (formData.name || '').trim().split(/\s+/).filter(Boolean);
       const user = await register({

@@ -6,7 +6,6 @@ import {
 } from 'lucide-react';
 import { generateAdaptiveQuestionsWithLLM } from '../../services/llmService';
 import { GEMINI_API_KEY } from '../../data/oracleData';
-import { getFallbackAdaptiveQuestions } from '../../data/adaptiveFallback';
 
 
 /* ── CONFIG ── */
@@ -139,8 +138,6 @@ const AdaptiveTesting = () => {
   const [weakAreas, setWeakAreas] = useState({});
   const [history, setHistory]   = useState([]);
   const [error, setError]       = useState('');
-  const [aiUnavailable, setAiUnavailable] = useState(false);
-  const [qSource, setQSource]   = useState('ai'); // 'ai' | 'curated'
   const [showReview, setShowReview] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
 
@@ -189,13 +186,10 @@ const AdaptiveTesting = () => {
       setLoadStage(3);
       await new Promise(r => setTimeout(r, 400));  setLoadStage(4);
 
-      // If all AI models failed — use curated fallback silently
       if (!qs || qs.length === 0) {
-        console.log('[Adaptive] AI unavailable, switching to curated question bank');
-        qs = getFallbackAdaptiveQuestions(subj, targetChapter, numQuestions, weakAreas);
-        setQSource('curated');
-      } else {
-        setQSource('ai');
+        setError('QuesGen AI could not generate questions. Please check your internet connection or API key and try again.');
+        setPhase('setup');
+        return;
       }
 
       setQuestions(qs);
@@ -228,7 +222,9 @@ const AdaptiveTesting = () => {
         sessionSeed: uid(),
       });
       if (!extra || extra.length === 0) {
-        extra = getFallbackAdaptiveQuestions(subj, currentChapter, 5, weakAreas);
+        console.warn('[Adaptive] AI unavailable for load-more — skipping');
+        setLoadingMore(false);
+        return;
       }
       setQuestions(prev => [...prev, ...extra]);
     } catch (e) {
@@ -531,9 +527,8 @@ const AdaptiveTesting = () => {
               <div style={{ display:'flex',alignItems:'center',gap:'.6rem' }}>
                 <span style={{ fontSize:'.65rem',fontWeight:600,
                   padding:'.2rem .5rem',borderRadius:6,
-                  background:qSource==='ai'?'rgba(124,58,237,.08)':'rgba(8,145,178,.08)',
-                  color:qSource==='ai'?'#7C3AED':'#0891B2' }}>
-                  {qSource==='ai'?'✦ AI Generated':'✦ Curated'}
+                  background:'rgba(124,58,237,.08)',color:'#7C3AED' }}>
+                  ✦ AI Generated
                 </span>
                 <button onClick={() => toggleFlag(q.id)} style={{ background:'none',border:'none',cursor:'pointer',padding:'.3rem' }}>
                   <Flag style={{ width:18,height:18,color:flagged.has(q.id)?'#F59E0B':'var(--text3)',
@@ -628,8 +623,8 @@ const AdaptiveTesting = () => {
               <span style={{...pill,background:'rgba(124,58,237,.08)',color:'#7C3AED'}}>⏱ {fmt(results.timeSpent)} spent</span>
               <span style={{...pill,background:'rgba(35,84,244,.08)',color:'#2354F4'}}>{subj}</span>
               <span style={{...pill,background:'rgba(8,145,178,.08)',color:'#0891B2'}}>{results.total} Questions</span>
-              <span style={{...pill,background:qSource==='ai'?'rgba(124,58,237,.08)':'rgba(8,145,178,.08)',color:qSource==='ai'?'#7C3AED':'#0891B2'}}>
-                {qSource==='ai'?'✦ AI Generated':'✦ Curated Bank'}
+              <span style={{...pill,background:'rgba(124,58,237,.08)',color:'#7C3AED'}}>
+                ✦ AI Generated
               </span>
             </div>
 

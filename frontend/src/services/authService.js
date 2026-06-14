@@ -1,4 +1,4 @@
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://quesgen-ai-2.onrender.com';
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? '';
 
 // ─── Demo accounts — always available, no server needed ───────────────────────
 const DEMO_USERS = [
