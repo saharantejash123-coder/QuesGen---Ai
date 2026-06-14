@@ -6,11 +6,18 @@ import { login, saveSession } from '../services/authService';
 
 const GOOGLE_CLIENT_ID = '462752093792-7qe3v01bs6a25v8ldsttt9cenvg1mtg1.apps.googleusercontent.com';
 
+function getRedirectUri() {
+  const origin = window.location.origin;
+  // Use the URI already registered in Google Cloud Console
+  if (origin.includes('localhost')) return `${origin}/auth/google/callback`;
+  return `${origin}/api/auth/callback/google`;
+}
+
 function handleGoogleRedirect() {
   const nonce = Math.random().toString(36).substring(2);
   const params = new URLSearchParams({
     client_id: GOOGLE_CLIENT_ID,
-    redirect_uri: `${window.location.origin}/auth/google/callback`,
+    redirect_uri: getRedirectUri(),
     response_type: 'id_token',
     scope: 'openid email profile',
     nonce,
