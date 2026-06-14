@@ -1,3 +1,5 @@
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://quesgen-ai-2.onrender.com';
+
 // ─── Demo accounts — always available, no server needed ───────────────────────
 const DEMO_USERS = [
   { id: 'student_demo', email: 'student@questra.com', password: 'demo_password_123', role: 'student', firstName: 'Demo', lastName: 'Student' },
@@ -20,7 +22,7 @@ function saveRegistered(users) {
 // sent=true  → real email was dispatched, demoOtp is null
 // sent=false → SMTP not configured, demoOtp holds the code to display
 export async function sendOTP(email) {
-  const backend = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+  const backend = BACKEND_URL;
   try {
     const res = await fetch(`${backend}/api/auth/send-otp`, {
       method: 'POST',
@@ -46,7 +48,7 @@ export async function sendOTP(email) {
 }
 
 export async function verifyOTP(email, enteredOtp) {
-  const backend = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+  const backend = BACKEND_URL;
 
   // Try backend verification first
   try {
@@ -103,7 +105,7 @@ export async function login(email, password) {
 
   // 3. Try the real backend (may not be running)
   try {
-    const backend = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+    const backend = BACKEND_URL;
     const res = await fetch(`${backend}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -131,7 +133,7 @@ export async function loginWithGoogleToken(googleToken) {
   if (!googleToken) throw new Error('Google token is required');
 
   try {
-    const backend = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+    const backend = BACKEND_URL;
     const res = await fetch(`${backend}/api/auth/google-verify`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -219,7 +221,7 @@ export async function register({ email, password, firstName, lastName, role = 's
 
   // Also try the backend (non-blocking)
   try {
-    const backend = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+    const backend = BACKEND_URL;
     await fetch(`${backend}/api/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
