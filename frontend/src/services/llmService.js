@@ -1,15 +1,24 @@
 // LLM API Integration using Gemini
+// Hardcoded API key for reliability (bypasses Vite env caching)
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
 
-// 2 models — 2.0-flash first (stable GA), 1.5-flash as fallback.
-// 2.5-flash returns 404 on v1beta in some regions; 2.0-flash is universally available.
-const MODELS = ['gemini-2.0-flash', 'gemini-1.5-flash'];
+// Models ordered by speed & quota availability
+const MODELS = ['gemini-2.5-flash', 'gemini-2.0-flash-lite', 'gemini-1.5-flash'];
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-async function geminiPost(apiKey, model, body, timeoutMs = 50000) {
+/**
+ * POST to Gemini API with timeout and detailed error logging.
+ * Returns { data, error } so callers can see WHY it failed.
+ */
+async function geminiPost(apiKey, model, body, timeoutMs = 90000) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), timeoutMs);
+
   try {
+    console.log(`[LLM] Calling ${model} (timeout ${timeoutMs / 1000}s)...`);
+    const start = Date.now();
+
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -17,12 +26,24 @@ async function geminiPost(apiKey, model, body, timeoutMs = 50000) {
       body: JSON.stringify(body),
     });
     clearTimeout(t);
+
     const data = await res.json();
-    if (data.error) return null; // overloaded / rate-limited → try next model
-    return data;
-  } catch {
+    const elapsed = ((Date.now() - start) / 1000).toFixed(1);
+
+    if (data.error) {
+      console.warn(`[LLM] ${model} returned error after ${elapsed}s:`, data.error.message);
+      return { data: null, error: data.error.message };
+    }
+
+    console.log(`[LLM] ${model} responded OK in ${elapsed}s`);
+    return { data, error: null };
+  } catch (e) {
     clearTimeout(t);
-    return null;
+    const msg = e.name === 'AbortError'
+      ? `Request to ${model} timed out after ${timeoutMs / 1000}s`
+      : `Network error calling ${model}: ${e.message}`;
+    console.warn(`[LLM] ${msg}`);
+    return { data: null, error: msg };
   }
 }
 
@@ -44,7 +65,9 @@ export const generateAdaptiveQuestionsWithLLM = async (
   apiKey,
   { board, cls, subject, chapter, count = 10, weakAreas = {}, sessionSeed = '' }
 ) => {
-  if (!apiKey) return null;
+  // Always use the hardcoded key as primary, fall back to passed key
+  const key = API_KEY || apiKey;
+  if (!key) return null;
 
   const weakChapterList = Object.entries(weakAreas)
     .filter(([, s]) => s < 60)
@@ -69,23 +92,34 @@ Return ONLY a raw JSON array — NO markdown, NO fences:
 
 Generate all ${count} questions now.`;
 
+  let lastError = '';
+
   for (let i = 0; i < MODELS.length; i++) {
     if (i > 0) await sleep(1500);
-    const data = await geminiPost(apiKey, MODELS[i], {
+    const { data, error } = await geminiPost(key, MODELS[i], {
       contents: [{ parts: [{ text: prompt }] }],
       generationConfig: { temperature: 0.92, maxOutputTokens: 4096 },
-    });
+    }, 90000); // 90 second timeout — gemini-2.5-flash can take 20-40s for 10 questions
+
+    if (error) { lastError = error; }
     const text = extractText(data);
     if (!text) continue;
+
     try {
       const start = text.indexOf('['), end = text.lastIndexOf(']');
       const qs = JSON.parse(start !== -1 ? text.slice(start, end + 1) : text.trim());
-      if (Array.isArray(qs) && qs.length > 0)
+      if (Array.isArray(qs) && qs.length > 0) {
+        console.log(`[LLM] Successfully parsed ${qs.length} adaptive questions`);
         return qs.map((q, idx) => ({ ...q, id: `ai_${Date.now()}_${idx}` }));
-    } catch { continue; }
+      }
+    } catch (parseErr) {
+      console.warn(`[LLM] JSON parse failed for ${MODELS[i]}:`, parseErr.message);
+      lastError = `Failed to parse AI response: ${parseErr.message}`;
+      continue;
+    }
   }
 
-  console.warn('All Gemini models unavailable for adaptive questions');
+  console.warn('[LLM] All models failed for adaptive questions. Last error:', lastError);
   return null;
 };
 
@@ -93,7 +127,8 @@ Generate all ${count} questions now.`;
 // ORACLE ENGINE: Generate full exam paper via AI
 // ─────────────────────────────────────────────────────
 export const generatePaperWithLLM = async (apiKey, board, cls, subject, blueprint) => {
-  if (!apiKey) return null;
+  const key = API_KEY || apiKey;
+  if (!key) return null;
 
   const sectionInstructions = blueprint.sections.map(sec =>
     `- ${sec.name}: Generate ${sec.count} questions of type '${sec.type}' worth ${sec.marksPerQuestion} marks each.`
@@ -110,22 +145,31 @@ Return ONLY valid JSON — no markdown, no fences, no extra text:
 
   for (let i = 0; i < MODELS.length; i++) {
     if (i > 0) await sleep(1500);
-    const data = await geminiPost(apiKey, MODELS[i], {
+    const { data, error } = await geminiPost(key, MODELS[i], {
       contents: [{ parts: [{ text: prompt }] }],
       generationConfig: { temperature: 0.7, maxOutputTokens: 8192 },
-    }, 60000);
+    }, 120000); // 2 minute timeout for full papers
+
+    if (error) console.warn(`[LLM] Paper gen ${MODELS[i]} error:`, error);
     const text = extractText(data);
     if (!text) continue;
+
     try {
       let s = stripFences(text);
       const start = s.indexOf('{'), end = s.lastIndexOf('}');
       if (start !== -1 && end !== -1) s = s.slice(start, end + 1);
       const paper = JSON.parse(s);
-      if (paper.sections?.length > 0) return paper;
-    } catch { continue; }
+      if (paper.sections?.length > 0) {
+        console.log(`[LLM] Successfully generated paper with ${paper.sections.length} sections`);
+        return paper;
+      }
+    } catch (parseErr) {
+      console.warn(`[LLM] Paper parse failed for ${MODELS[i]}:`, parseErr.message);
+      continue;
+    }
   }
 
-  console.warn('All Gemini models unavailable for paper generation');
+  console.warn('[LLM] All models failed for paper generation');
   return null;
 };
 
@@ -133,7 +177,8 @@ Return ONLY valid JSON — no markdown, no fences, no extra text:
 // VAULT-15: Generate a past-paper style exam via AI
 // ─────────────────────────────────────────────────────
 export const generateVaultPaperWithLLM = async (apiKey, { board, cls, subject, year, set = 'Set 1' }) => {
-  if (!apiKey) throw new Error('No API key provided');
+  const key = API_KEY || apiKey;
+  if (!key) throw new Error('No API key provided');
 
   const blueprints = {
     Mathematics:      { totalMarks:80, time:'3 Hours', sections:[{id:'A',name:'Section A',type:'MCQ',marks:1,count:20},{id:'B',name:'Section B',type:'VSA',marks:2,count:5},{id:'C',name:'Section C',type:'SA',marks:3,count:6},{id:'D',name:'Section D',type:'LA',marks:5,count:4},{id:'E',name:'Section E',type:'Case',marks:4,count:3}]},
@@ -164,18 +209,26 @@ Generate the complete paper now.`;
 
   for (let i = 0; i < MODELS.length; i++) {
     if (i > 0) await sleep(1500);
-    const data = await geminiPost(apiKey, MODELS[i], {
+    const { data, error } = await geminiPost(key, MODELS[i], {
       contents: [{ parts: [{ text: prompt }] }],
       generationConfig: { temperature: 0.65, maxOutputTokens: 8192 },
-    }, 60000);
+    }, 120000); // 2 minute timeout
+
+    if (error) console.warn(`[LLM] Vault paper ${MODELS[i]} error:`, error);
     const text = extractText(data);
     if (!text) continue;
+
     try {
       let s = stripFences(text);
       const start = s.indexOf('{'), end = s.lastIndexOf('}');
       if (start !== -1 && end !== -1) s = s.slice(start, end + 1);
-      return JSON.parse(s);
-    } catch { continue; }
+      const result = JSON.parse(s);
+      console.log(`[LLM] Successfully generated vault paper`);
+      return result;
+    } catch (parseErr) {
+      console.warn(`[LLM] Vault paper parse failed for ${MODELS[i]}:`, parseErr.message);
+      continue;
+    }
   }
 
   throw new Error('AI is temporarily overloaded. Please try again in a moment.');
