@@ -173,6 +173,12 @@
   overflow: hidden;
 }
 
+@media (min-width: 1400px) {
+  .card {
+    border-radius: 24px;
+  }
+}
+
 .card::before {
   content: '';
   position: absolute;
@@ -207,6 +213,12 @@
   border: 1px solid var(--border);
   border-radius: 20px;
   transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@media (min-width: 1400px) {
+  .glass-card {
+    border-radius: 24px;
+  }
 }
 
 :root .glass-card {
@@ -272,6 +284,13 @@
 .btn-p:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 30px rgba(35,84,244,0.4), 0 2px 8px rgba(0,0,0,0.15);
+}
+
+@media (min-width: 1400px) {
+  .btn-primary,
+  .btn-p {
+    border-radius: 16px;
+  }
 }
 
 .btn-primary:active,
@@ -407,6 +426,19 @@
   color: var(--text);
 }
 
+@media (min-width: 1400px) {
+  .st {
+    font-size: clamp(2rem, 4vw, 3.8rem);
+    letter-spacing: -0.8px;
+  }
+}
+
+@media (min-width: 1800px) {
+  .st {
+    font-size: clamp(2rem, 3.5vw, 4.2rem);
+  }
+}
+
 /* Section Subtitle */
 .ss {
   color: var(--text3);
@@ -414,6 +446,13 @@
   line-height: 1.8;
   max-width: 520px;
   margin-top: 0.7rem;
+}
+
+@media (min-width: 1400px) {
+  .ss {
+    font-size: 1.15rem;
+    max-width: 600px;
+  }
 }
 
 /* ═══════════════════════════════════════════════
@@ -492,6 +531,29 @@ select:focus { border-color: #2354F4; box-shadow: 0 0 0 3px rgba(35,84,244,0.08)
 select option { background: var(--bg2); color: var(--text); }
 
 /* ═══════════════════════════════════════════════
+   MODULES GRID — responsive column count
+═══════════════════════════════════════════════ */
+.modules-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+@media (min-width: 1400px) {
+  .modules-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.2rem;
+  }
+}
+
+@media (min-width: 1800px) {
+  .modules-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+  }
+}
+
+/* ═══════════════════════════════════════════════
    GRID UTILITIES
 ═══════════════════════════════════════════════ */
 .g2 { display: grid; grid-template-columns: 1fr 1fr;         gap: 3rem;   align-items: center; }
@@ -519,6 +581,14 @@ select option { background: var(--bg2); color: var(--text); }
   .hide-desk { display: none !important; }
 }
 
+@media (min-width: 1400px) {
+  .g2 { gap: 4rem; }
+}
+
+@media (min-width: 1800px) {
+  .g2 { gap: 5rem; }
+}
+
 @media (max-width: 600px) {
   .g3 { grid-template-columns: 1fr; }
   .g4 { grid-template-columns: 1fr 1fr; }
@@ -536,4 +606,40 @@ select option { background: var(--bg2); color: var(--text); }
   }
   body, html { background: #fff !important; color: #000 !important; }
   nav, footer { display: none !important; }
+}
+
+/* ═══════════════════════════════════════════════
+   GOOGLE TRANSLATE OVERRIDES
+═══════════════════════════════════════════════ */
+.goog-te-banner-frame.skiptranslate,
+.skiptranslate > iframe,
+.goog-te-balloon-frame,
+#goog-gt-tt,
+.VIpgJd-ZVi9od-ORHb-OEVmcd,
+.VIpgJd-ZVi9od-aZ2wEe-wOHMyf {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+body {
+  top: 0px !important;
+  position: static !important;
+}
+
+.goog-logo-link {
+  display: none !important;
+}
+
+.goog-te-gadget {
+  color: transparent !important;
+  font-size: 0px !important;
+}
+
+.goog-te-gadget span {
+  display: none !important;
+}
+
+.goog-text-highlight {
+  background-color: transparent !important;
+  box-shadow: none !important;
 }

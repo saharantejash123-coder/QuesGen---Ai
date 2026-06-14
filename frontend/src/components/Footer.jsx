@@ -7,8 +7,8 @@ export default function Footer() {
 
   return (
     <footer style={{ background: 'var(--footer-bg)', borderTop: '1px solid var(--footer-border)' }}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 2xl:px-16 py-8 sm:py-12 lg:py-16">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 lg:gap-12">
           <div className="col-span-1 sm:col-span-2 md:col-span-2">
             <Link to="/" className="flex items-center gap-2 mb-4">
               <div className="w-9 h-9 rounded-lg from-purple-500 to-blue-500 flex items-center justify-center">

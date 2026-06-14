@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { GEMINI_API_KEY } from '../../data/oracleData';
 
 /* ── Gemini Vision API call ── */
@@ -42,7 +42,7 @@ Return as raw JSON (NO markdown):
   }
 }`;
 
-  const MODELS = ['gemini-2.5-flash', 'gemini-1.5-flash'];
+  const MODELS = ['gemini-2.5-flash', 'gemini-flash-lite-latest'];
   const sleep = ms => new Promise(r => setTimeout(r, ms));
 
   for (let i = 0; i < MODELS.length; i++) {
@@ -82,10 +82,10 @@ Return as raw JSON (NO markdown):
 /* ── localStorage helpers ── */
 const STORE_KEY = 'scriptlab_history';
 const loadHistory = () => {
-  try { const v = localStorage.getItem(STORE_KEY); return v ? JSON.parse(v) : []; } catch { return []; }
+  try { const v = localStorage.getItem(STORE_KEY); return v ? JSON.parse(v) : []; } catch (e) { console.error('History load failed', e); return []; }
 };
 const saveHistory = (h) => {
-  try { localStorage.setItem(STORE_KEY, JSON.stringify(h)); } catch {}
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(h)); } catch (e) { console.error('Failed to save history', e); }
 };
 
 /* ── Score bar ── */
@@ -117,15 +117,11 @@ export default function ScriptLabPage() {
   const [imagePreview, setImagePreview] = useState(null);
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
-  const [history, setHistory] = useState([]);
-  const [sessionNum, setSessionNum] = useState(1);
+  const [history, setHistory] = useState(loadHistory);
+  const [sessionNum, setSessionNum] = useState(() => loadHistory().length + 1);
   const fileRef = useRef();
 
-  useEffect(() => {
-    const h = loadHistory();
-    setHistory(h);
-    setSessionNum(h.length + 1);
-  }, []);
+  // state is initialized lazily in useState, no need for effect
 
   /* ── Convert file to base64 ── */
   const fileToBase64 = (file) => new Promise((resolve, reject) => {
@@ -218,8 +214,10 @@ export default function ScriptLabPage() {
               <strong style={{ color: '#FCD34D' }}> the single smallest change</strong> that makes the biggest difference.
               No overwhelming lists. Just one easy habit at a time.
             </p>
-            <div style={{ marginTop: '1.2rem', padding: '.9rem 1.1rem', background: 'rgba(217,119,6,.06)',
-              border: '1px solid rgba(217,119,6,.15)', borderRadius: 12 }}>
+            <div style={{
+              marginTop: '1.2rem', padding: '.9rem 1.1rem', background: 'rgba(217,119,6,.06)',
+              border: '1px solid rgba(217,119,6,.15)', borderRadius: 12
+            }}>
               <div style={{ fontSize: '.7rem', fontWeight: 700, color: '#FCD34D', letterSpacing: '1px', marginBottom: '.3rem' }}>
                 💡 WHY ONE FIX AT A TIME?
               </div>
@@ -230,14 +228,20 @@ export default function ScriptLabPage() {
           </div>
 
           {/* Session counter */}
-          <div style={{ textAlign: 'center', background: 'var(--card-bg)', border: '1px solid var(--border)',
-            borderRadius: 18, padding: '1.5rem 2rem', minWidth: 140 }}>
-            <div style={{ fontSize: '3rem', fontWeight: 800, fontFamily: "'Instrument Serif',serif",
-              color: '#FCD34D', lineHeight: 1 }}>
+          <div style={{
+            textAlign: 'center', background: 'var(--card-bg)', border: '1px solid var(--border)',
+            borderRadius: 18, padding: '1.5rem 2rem', minWidth: 140
+          }}>
+            <div style={{
+              fontSize: '3rem', fontWeight: 800, fontFamily: "'Instrument Serif',serif",
+              color: '#FCD34D', lineHeight: 1
+            }}>
               {sessionNum}
             </div>
-            <div style={{ fontSize: '.7rem', color: 'var(--text3)', fontWeight: 700, textTransform: 'uppercase',
-              letterSpacing: '.5px', marginTop: '.3rem' }}>
+            <div style={{
+              fontSize: '.7rem', color: 'var(--text3)', fontWeight: 700, textTransform: 'uppercase',
+              letterSpacing: '.5px', marginTop: '.3rem'
+            }}>
               Session
             </div>
             {history.length > 0 && (
@@ -257,11 +261,13 @@ export default function ScriptLabPage() {
           <div style={{ borderBottom: '1px solid var(--border)', padding: '0 1.5rem', display: 'flex', gap: '1.5rem' }}>
             {['upload', 'progress'].map(t => (
               <button key={t} onClick={() => setPhase(t)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '.9rem 0',
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer', padding: '.9rem 0',
                   fontSize: '.82rem', fontWeight: 600,
                   color: (phase === t || (phase === 'result' && t === 'upload') || (phase === 'analyzing' && t === 'upload') || (phase === 'not-writing' && t === 'upload')) ? 'var(--text)' : 'var(--text3)',
                   borderBottom: (phase === t || (phase === 'result' && t === 'upload') || (phase === 'analyzing' && t === 'upload') || (phase === 'not-writing' && t === 'upload')) ? '2px solid #D97706' : '2px solid transparent',
-                  transition: 'color .2s', fontFamily: "'DM Sans',sans-serif" }}>
+                  transition: 'color .2s', fontFamily: "'DM Sans',sans-serif"
+                }}>
                 {t === 'upload' ? '📷 Upload & Analyse' : '📈 My Progress'}
               </button>
             ))}
@@ -274,9 +280,11 @@ export default function ScriptLabPage() {
               <div className="fade-in">
                 {/* NOT a writing image warning */}
                 {phase === 'not-writing' && (
-                  <div style={{ marginBottom: '1.5rem', padding: '1.2rem 1.5rem', borderRadius: 14,
+                  <div style={{
+                    marginBottom: '1.5rem', padding: '1.2rem 1.5rem', borderRadius: 14,
                     background: 'rgba(245,158,11,.08)', border: '2px dashed rgba(245,158,11,.4)',
-                    textAlign: 'center' }}>
+                    textAlign: 'center'
+                  }}>
                     <div style={{ fontSize: '2.5rem', marginBottom: '.5rem' }}>📝</div>
                     <div style={{ fontWeight: 700, color: '#F59E0B', fontSize: '1rem', marginBottom: '.4rem' }}>
                       Please upload a handwriting page
@@ -295,11 +303,13 @@ export default function ScriptLabPage() {
                     onDragLeave={() => setDragOver(false)}
                     onDrop={e => { e.preventDefault(); setDragOver(false); handleFile(e.dataTransfer.files[0]); }}
                     onClick={() => fileRef.current?.click()}
-                    style={{ border: `2px dashed ${dragOver ? '#D97706' : 'rgba(255,255,255,.12)'}`,
+                    style={{
+                      border: `2px dashed ${dragOver ? '#D97706' : 'rgba(255,255,255,.12)'}`,
                       borderRadius: 16, padding: '2.5rem 1.5rem', textAlign: 'center', cursor: 'pointer',
                       transition: 'all .2s', background: dragOver ? 'rgba(217,119,6,.05)' : 'transparent',
                       minHeight: 220, display: 'flex', flexDirection: 'column', alignItems: 'center',
-                      justifyContent: 'center', gap: '.8rem' }}>
+                      justifyContent: 'center', gap: '.8rem'
+                    }}>
                     <div style={{ fontSize: '3rem' }}>📷</div>
                     <div style={{ fontWeight: 600, color: 'var(--text2)', fontSize: '.95rem' }}>
                       Drop your handwriting photo here
@@ -307,8 +317,10 @@ export default function ScriptLabPage() {
                     <div style={{ fontSize: '.78rem', color: 'var(--text3)' }}>
                       JPG · PNG · HEIC · phone camera is perfectly fine
                     </div>
-                    <div style={{ background: 'rgba(217,119,6,.12)', border: '1px solid rgba(217,119,6,.3)',
-                      borderRadius: 8, padding: '.5rem 1.2rem', fontSize: '.8rem', color: '#FCD34D', fontWeight: 600 }}>
+                    <div style={{
+                      background: 'rgba(217,119,6,.12)', border: '1px solid rgba(217,119,6,.3)',
+                      borderRadius: 8, padding: '.5rem 1.2rem', fontSize: '.8rem', color: '#FCD34D', fontWeight: 600
+                    }}>
                       Choose File
                     </div>
                     <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }}
@@ -317,8 +329,10 @@ export default function ScriptLabPage() {
 
                   {/* Tips panel */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '.9rem' }}>
-                    <div style={{ fontSize: '.7rem', fontWeight: 700, color: 'var(--text3)',
-                      textTransform: 'uppercase', letterSpacing: '.5px' }}>
+                    <div style={{
+                      fontSize: '.7rem', fontWeight: 700, color: 'var(--text3)',
+                      textTransform: 'uppercase', letterSpacing: '.5px'
+                    }}>
                       Tips for best results
                     </div>
                     {[
@@ -327,17 +341,21 @@ export default function ScriptLabPage() {
                       { emoji: '✍️', tip: 'A full line or two of writing is enough' },
                       { emoji: '🔍', tip: 'Make sure the text is clearly visible' },
                     ].map((t, i) => (
-                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '.8rem',
+                      <div key={i} style={{
+                        display: 'flex', alignItems: 'center', gap: '.8rem',
                         padding: '.75rem', background: 'var(--bg3)', border: '1px solid var(--border)',
-                        borderRadius: 12 }}>
+                        borderRadius: 12
+                      }}>
                         <span style={{ fontSize: '1.3rem' }}>{t.emoji}</span>
                         <span style={{ fontSize: '.83rem', color: 'var(--text2)' }}>{t.tip}</span>
                       </div>
                     ))}
 
                     {error && (
-                      <div style={{ padding: '.8rem', borderRadius: 10, background: 'rgba(239,68,68,.08)',
-                        border: '1px solid rgba(239,68,68,.2)', color: '#F87171', fontSize: '.82rem' }}>
+                      <div style={{
+                        padding: '.8rem', borderRadius: 10, background: 'rgba(239,68,68,.08)',
+                        border: '1px solid rgba(239,68,68,.2)', color: '#F87171', fontSize: '.82rem'
+                      }}>
                         {error}
                       </div>
                     )}
@@ -351,12 +369,18 @@ export default function ScriptLabPage() {
               <div className="fade-in" style={{ textAlign: 'center', padding: '3rem 1rem' }}>
                 <div style={{ position: 'relative', width: 90, height: 90, margin: '0 auto 2rem' }}>
                   <div style={{ position: 'absolute', inset: 0, border: '3px solid rgba(217,119,6,.2)', borderRadius: '50%' }} />
-                  <div style={{ position: 'absolute', inset: 0, border: '3px solid transparent',
-                    borderTopColor: '#D97706', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
-                  <div style={{ position: 'absolute', inset: '10px', border: '2px solid transparent',
-                    borderTopColor: '#7C3AED', borderRadius: '50%', animation: 'spin 1.5s linear infinite reverse' }} />
-                  <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center',
-                    justifyContent: 'center', fontSize: '2rem' }}>✍️</div>
+                  <div style={{
+                    position: 'absolute', inset: 0, border: '3px solid transparent',
+                    borderTopColor: '#D97706', borderRadius: '50%', animation: 'spin 1s linear infinite'
+                  }} />
+                  <div style={{
+                    position: 'absolute', inset: '10px', border: '2px solid transparent',
+                    borderTopColor: '#7C3AED', borderRadius: '50%', animation: 'spin 1.5s linear infinite reverse'
+                  }} />
+                  <div style={{
+                    position: 'absolute', inset: 0, display: 'flex', alignItems: 'center',
+                    justifyContent: 'center', fontSize: '2rem'
+                  }}>✍️</div>
                 </div>
                 <h3 style={{ fontFamily: "'Instrument Serif',serif", fontSize: '1.4rem', color: 'var(--text)', marginBottom: '.5rem' }}>
                   QuesGen is reading your handwriting…
@@ -366,10 +390,14 @@ export default function ScriptLabPage() {
                 </p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '.5rem', maxWidth: 280, margin: '0 auto' }}>
                   {['Detecting handwriting…', 'Measuring consistency…', 'Finding your one fix…'].map((s, i) => (
-                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '.6rem',
-                      fontSize: '.78rem', color: 'var(--text3)' }}>
-                      <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#D97706',
-                        animation: `pulse ${1 + i * 0.3}s infinite` }} />
+                    <div key={i} style={{
+                      display: 'flex', alignItems: 'center', gap: '.6rem',
+                      fontSize: '.78rem', color: 'var(--text3)'
+                    }}>
+                      <div style={{
+                        width: 8, height: 8, borderRadius: '50%', background: '#D97706',
+                        animation: `pulse ${1 + i * 0.3}s infinite`
+                      }} />
                       {s}
                     </div>
                   ))}
@@ -384,30 +412,42 @@ export default function ScriptLabPage() {
 
                   {/* Left: image + scores */}
                   <div>
-                    <div style={{ fontSize: '.7rem', fontWeight: 700, color: 'var(--text3)',
-                      textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '.7rem' }}>
+                    <div style={{
+                      fontSize: '.7rem', fontWeight: 700, color: 'var(--text3)',
+                      textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '.7rem'
+                    }}>
                       Your Writing · Session {sessionNum}
                     </div>
 
                     {/* Image preview */}
                     {imagePreview && (
-                      <div style={{ borderRadius: 14, overflow: 'hidden', border: '2px solid rgba(217,119,6,.3)',
+                      <div style={{
+                        borderRadius: 14, overflow: 'hidden', border: '2px solid rgba(217,119,6,.3)',
                         marginBottom: '1rem', maxHeight: 220, display: 'flex', alignItems: 'center',
-                        justifyContent: 'center', background: 'var(--bg3)' }}>
-                        <img src={imagePreview} alt="Your handwriting" style={{ width: '100%', maxHeight: 220,
-                          objectFit: 'contain' }} />
+                        justifyContent: 'center', background: 'var(--bg3)'
+                      }}>
+                        <img src={imagePreview} alt="Your handwriting" style={{
+                          width: '100%', maxHeight: 220,
+                          objectFit: 'contain'
+                        }} />
                       </div>
                     )}
 
                     {/* Overall score pill */}
-                    <div style={{ textAlign: 'center', padding: '1rem', marginBottom: '1rem',
-                      background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 14 }}>
-                      <div style={{ fontSize: '2.2rem', fontWeight: 800, fontFamily: "'Instrument Serif',serif",
-                        color: scoreColor(avgScore) }}>
+                    <div style={{
+                      textAlign: 'center', padding: '1rem', marginBottom: '1rem',
+                      background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 14
+                    }}>
+                      <div style={{
+                        fontSize: '2.2rem', fontWeight: 800, fontFamily: "'Instrument Serif',serif",
+                        color: scoreColor(avgScore)
+                      }}>
                         {avgScore}%
                       </div>
-                      <div style={{ fontSize: '.7rem', color: 'var(--text3)', fontWeight: 600,
-                        textTransform: 'uppercase', letterSpacing: '.5px' }}>
+                      <div style={{
+                        fontSize: '.7rem', color: 'var(--text3)', fontWeight: 600,
+                        textTransform: 'uppercase', letterSpacing: '.5px'
+                      }}>
                         Overall Score
                       </div>
                       <p style={{ fontSize: '.8rem', color: 'var(--text2)', marginTop: '.5rem', lineHeight: 1.5 }}>
@@ -425,24 +465,32 @@ export default function ScriptLabPage() {
 
                   {/* Right: the ONE fix */}
                   <div>
-                    <div style={{ fontSize: '.7rem', fontWeight: 700, color: 'var(--text3)',
-                      textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '.7rem' }}>
+                    <div style={{
+                      fontSize: '.7rem', fontWeight: 700, color: 'var(--text3)',
+                      textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '.7rem'
+                    }}>
                       Your One Fix — Session {sessionNum}
                     </div>
 
-                    <div style={{ background: 'rgba(217,119,6,.05)', border: '1px solid rgba(217,119,6,.25)',
-                      borderRadius: 16, padding: '1.5rem', marginBottom: '1rem' }}>
+                    <div style={{
+                      background: 'rgba(217,119,6,.05)', border: '1px solid rgba(217,119,6,.25)',
+                      borderRadius: 16, padding: '1.5rem', marginBottom: '1rem'
+                    }}>
 
                       {/* Area header */}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
-                        marginBottom: '1.2rem' }}>
+                      <div style={{
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
+                        marginBottom: '1.2rem'
+                      }}>
                         <div>
                           <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#FCD34D' }}>
                             {result.fix.area}
                           </div>
                           <div style={{ marginTop: '.4rem' }}>
-                            <span style={{ fontSize: '.65rem', fontWeight: 700, padding: '.2rem .6rem',
-                              borderRadius: 100, ...priorityColor(result.fix.priority) }}>
+                            <span style={{
+                              fontSize: '.65rem', fontWeight: 700, padding: '.2rem .6rem',
+                              borderRadius: 100, ...priorityColor(result.fix.priority)
+                            }}>
                               {result.fix.priority}
                             </span>
                           </div>
@@ -451,10 +499,14 @@ export default function ScriptLabPage() {
                       </div>
 
                       {/* What was noticed */}
-                      <div style={{ background: 'var(--bg3)', borderRadius: 10, padding: '.9rem',
-                        marginBottom: '.9rem' }}>
-                        <div style={{ fontSize: '.65rem', fontWeight: 700, color: 'var(--text3)',
-                          textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '.35rem' }}>
+                      <div style={{
+                        background: 'var(--bg3)', borderRadius: 10, padding: '.9rem',
+                        marginBottom: '.9rem'
+                      }}>
+                        <div style={{
+                          fontSize: '.65rem', fontWeight: 700, color: 'var(--text3)',
+                          textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '.35rem'
+                        }}>
                           📍 What I noticed
                         </div>
                         <p style={{ fontSize: '.85rem', color: 'var(--text2)', margin: 0, lineHeight: 1.6 }}>
@@ -463,21 +515,29 @@ export default function ScriptLabPage() {
                       </div>
 
                       {/* The action */}
-                      <div style={{ background: 'rgba(217,119,6,.1)', border: '1px solid rgba(217,119,6,.25)',
-                        borderRadius: 10, padding: '.9rem', marginBottom: '.9rem' }}>
-                        <div style={{ fontSize: '.65rem', fontWeight: 700, color: '#FCD34D',
-                          textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '.35rem' }}>
+                      <div style={{
+                        background: 'rgba(217,119,6,.1)', border: '1px solid rgba(217,119,6,.25)',
+                        borderRadius: 10, padding: '.9rem', marginBottom: '.9rem'
+                      }}>
+                        <div style={{
+                          fontSize: '.65rem', fontWeight: 700, color: '#FCD34D',
+                          textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: '.35rem'
+                        }}>
                           ✅ Your action today
                         </div>
-                        <p style={{ fontSize: '.88rem', color: 'var(--text)', margin: 0, lineHeight: 1.65,
-                          fontWeight: 500 }}>
+                        <p style={{
+                          fontSize: '.88rem', color: 'var(--text)', margin: 0, lineHeight: 1.65,
+                          fontWeight: 500
+                        }}>
                           {result.fix.action}
                         </p>
                       </div>
 
                       {/* Encouragement */}
-                      <p style={{ fontSize: '.82rem', color: 'var(--text3)', margin: 0, lineHeight: 1.6,
-                        fontStyle: 'italic' }}>
+                      <p style={{
+                        fontSize: '.82rem', color: 'var(--text3)', margin: 0, lineHeight: 1.6,
+                        fontStyle: 'italic'
+                      }}>
                         💬 {result.fix.encouragement}
                       </p>
                     </div>
@@ -485,16 +545,20 @@ export default function ScriptLabPage() {
                     {/* Buttons */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '.7rem' }}>
                       <button onClick={markDone}
-                        style={{ padding: '1rem', borderRadius: 12, border: 'none', cursor: 'pointer',
+                        style={{
+                          padding: '1rem', borderRadius: 12, border: 'none', cursor: 'pointer',
                           background: 'linear-gradient(135deg,#D97706,#FCD34D)', color: '#1a0a00',
                           fontWeight: 700, fontSize: '.92rem', fontFamily: "'DM Sans',sans-serif",
-                          boxShadow: '0 4px 16px rgba(217,119,6,.3)', transition: 'all .2s' }}>
+                          boxShadow: '0 4px 16px rgba(217,119,6,.3)', transition: 'all .2s'
+                        }}>
                         ✓ Got it — Mark Done & Next Session →
                       </button>
                       <button onClick={() => { setImagePreview(null); setPhase('upload'); }}
-                        style={{ padding: '.75rem', borderRadius: 12, border: '1px solid var(--border)',
+                        style={{
+                          padding: '.75rem', borderRadius: 12, border: '1px solid var(--border)',
                           background: 'var(--bg3)', cursor: 'pointer', color: 'var(--text3)',
-                          fontWeight: 600, fontSize: '.85rem', fontFamily: "'DM Sans',sans-serif" }}>
+                          fontWeight: 600, fontSize: '.85rem', fontFamily: "'DM Sans',sans-serif"
+                        }}>
                         Upload a different photo
                       </button>
                     </div>
@@ -507,8 +571,10 @@ export default function ScriptLabPage() {
             {phase === 'progress' && (
               <div className="fade-in">
                 {history.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '4rem 2rem',
-                    border: '1px dashed var(--border)', borderRadius: 14 }}>
+                  <div style={{
+                    textAlign: 'center', padding: '4rem 2rem',
+                    border: '1px dashed var(--border)', borderRadius: 14
+                  }}>
                     <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📈</div>
                     <h3 style={{ color: 'var(--text)', fontWeight: 700, marginBottom: '.5rem' }}>
                       No sessions yet
@@ -517,9 +583,11 @@ export default function ScriptLabPage() {
                       Upload your first handwriting photo to start your improvement journey.
                     </p>
                     <button onClick={() => setPhase('upload')}
-                      style={{ marginTop: '1rem', padding: '.75rem 1.5rem', borderRadius: 10,
+                      style={{
+                        marginTop: '1rem', padding: '.75rem 1.5rem', borderRadius: 10,
                         border: 'none', background: '#D97706', color: '#fff', fontWeight: 700,
-                        cursor: 'pointer', fontSize: '.85rem' }}>
+                        cursor: 'pointer', fontSize: '.85rem'
+                      }}>
                       Upload Now →
                     </button>
                   </div>
@@ -527,18 +595,24 @@ export default function ScriptLabPage() {
                   <div className="scriptlab-hist-grid">
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '.7rem' }}>
                       {history.map((h, i) => (
-                        <div key={i} style={{ display: 'flex', gap: '.9rem', alignItems: 'center',
+                        <div key={i} style={{
+                          display: 'flex', gap: '.9rem', alignItems: 'center',
                           padding: '1rem', background: 'var(--bg3)',
-                          border: '1px solid var(--border)', borderRadius: 12 }}>
-                          <div style={{ width: 34, height: 34, borderRadius: '50%',
+                          border: '1px solid var(--border)', borderRadius: 12
+                        }}>
+                          <div style={{
+                            width: 34, height: 34, borderRadius: '50%',
                             background: 'rgba(16,185,129,.12)', border: '1px solid rgba(16,185,129,.25)',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontSize: '.75rem', fontWeight: 800, color: '#10B981', flexShrink: 0 }}>
+                            fontSize: '.75rem', fontWeight: 800, color: '#10B981', flexShrink: 0
+                          }}>
                             {i + 1}
                           </div>
                           <div style={{ flex: 1 }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between',
-                              alignItems: 'center', marginBottom: '.3rem' }}>
+                            <div style={{
+                              display: 'flex', justifyContent: 'space-between',
+                              alignItems: 'center', marginBottom: '.3rem'
+                            }}>
                               <span style={{ fontSize: '.88rem', fontWeight: 600, color: 'var(--text)' }}>
                                 {h.fix}
                               </span>
@@ -548,14 +622,18 @@ export default function ScriptLabPage() {
                             </div>
                             {h.scores && (
                               <div style={{ height: 4, background: 'var(--border)', borderRadius: 10, overflow: 'hidden' }}>
-                                <div style={{ width: `${Math.round(Object.values(h.scores).reduce((a,b)=>a+b,0)/4)}%`,
+                                <div style={{
+                                  width: `${Math.round(Object.values(h.scores).reduce((a, b) => a + b, 0) / 4)}%`,
                                   height: '100%', background: 'linear-gradient(90deg,#D97706,#FCD34D)',
-                                  borderRadius: 10, transition: 'width 1s' }} />
+                                  borderRadius: 10, transition: 'width 1s'
+                                }} />
                               </div>
                             )}
                           </div>
-                          <span style={{ fontSize: '.75rem', fontWeight: 700, color: '#10B981',
-                            padding: '.2rem .6rem', borderRadius: 100, background: 'rgba(16,185,129,.1)' }}>
+                          <span style={{
+                            fontSize: '.75rem', fontWeight: 700, color: '#10B981',
+                            padding: '.2rem .6rem', borderRadius: 100, background: 'rgba(16,185,129,.1)'
+                          }}>
                             ✓ Done
                           </span>
                         </div>
@@ -563,14 +641,20 @@ export default function ScriptLabPage() {
                     </div>
 
                     {/* Summary card */}
-                    <div style={{ background: 'rgba(217,119,6,.06)', border: '1px solid rgba(217,119,6,.2)',
-                      borderRadius: 18, padding: '1.5rem', textAlign: 'center', minWidth: 160 }}>
-                      <div style={{ fontSize: '3rem', fontWeight: 800, fontFamily: "'Instrument Serif',serif",
-                        color: '#FCD34D', lineHeight: 1 }}>
+                    <div style={{
+                      background: 'rgba(217,119,6,.06)', border: '1px solid rgba(217,119,6,.2)',
+                      borderRadius: 18, padding: '1.5rem', textAlign: 'center', minWidth: 160
+                    }}>
+                      <div style={{
+                        fontSize: '3rem', fontWeight: 800, fontFamily: "'Instrument Serif',serif",
+                        color: '#FCD34D', lineHeight: 1
+                      }}>
                         {history.length}
                       </div>
-                      <div style={{ fontSize: '.72rem', color: 'var(--text3)', fontWeight: 700,
-                        textTransform: 'uppercase', letterSpacing: '.5px', marginTop: '.3rem' }}>
+                      <div style={{
+                        fontSize: '.72rem', color: 'var(--text3)', fontWeight: 700,
+                        textTransform: 'uppercase', letterSpacing: '.5px', marginTop: '.3rem'
+                      }}>
                         Sessions Done
                       </div>
                       <div style={{ margin: '1rem 0', height: 1, background: 'var(--border)' }} />
@@ -580,16 +664,20 @@ export default function ScriptLabPage() {
                           : `Keep going! ${5 - history.length} more sessions to build your first habit.`}
                       </p>
                       <button onClick={() => setPhase('upload')}
-                        style={{ marginTop: '1rem', width: '100%', padding: '.65rem', borderRadius: 10,
+                        style={{
+                          marginTop: '1rem', width: '100%', padding: '.65rem', borderRadius: 10,
                           border: 'none', background: '#D97706', color: '#fff', fontWeight: 700,
-                          cursor: 'pointer', fontSize: '.8rem', fontFamily: "'DM Sans',sans-serif" }}>
+                          cursor: 'pointer', fontSize: '.8rem', fontFamily: "'DM Sans',sans-serif"
+                        }}>
                         Next Session →
                       </button>
                       <button onClick={clearHistory}
-                        style={{ marginTop: '.6rem', width: '100%', padding: '.65rem', borderRadius: 10,
+                        style={{
+                          marginTop: '.6rem', width: '100%', padding: '.65rem', borderRadius: 10,
                           border: '1px solid rgba(239,68,68,.3)', background: 'rgba(239,68,68,.05)',
                           color: '#EF4444', fontWeight: 600, cursor: 'pointer', fontSize: '.75rem',
-                          fontFamily: "'DM Sans',sans-serif", transition: 'all .2s' }}
+                          fontFamily: "'DM Sans',sans-serif", transition: 'all .2s'
+                        }}
                         onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,.1)'}
                         onMouseLeave={e => e.currentTarget.style.background = 'rgba(239,68,68,.05)'}>
                         🗑️ Delete All Sessions

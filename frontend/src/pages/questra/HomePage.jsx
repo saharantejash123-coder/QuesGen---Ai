@@ -221,7 +221,11 @@ function HomePage({ setPage }) {
   );
 
   /* ─── DESKTOP HERO ─── */
-  const DesktopHero = () => (
+  const DesktopHero = () => {
+    const iconSize = "clamp(18px,2vw,28px)";
+    const iconWrapperSize = "clamp(40px,4.5vw,64px)";
+
+    return (
     <section style={{
       minHeight: "100vh",
       display: "flex", alignItems: "center", justifyContent: "center",
@@ -229,25 +233,42 @@ function HomePage({ setPage }) {
       padding: "9rem 5% 5rem",
       position: "relative", overflow: "hidden",
     }}>
-      {/* Background orbs */}
+      {/* Large ambient glow — centered */}
+      <div style={{
+        position: "absolute", top: "50%", left: "50%",
+        transform: "translate(-50%,-50%)",
+        width: "min(900px,80vw)", height: "min(900px,80vw)",
+        background: "radial-gradient(ellipse, rgba(35,84,244,.08) 0%, rgba(124,58,237,.05) 40%, transparent 70%)",
+        borderRadius: "50%", filter: "blur(80px)", pointerEvents: "none",
+      }} />
+
+      {/* Background orbs — wider spread on big screens */}
       <FloatingElement duration={8} distance={30} delay={0} direction="diagonal">
         <div style={{
-          position: "absolute", top: "12%", left: "10%",
-          width: "min(480px,80vw)", height: "min(480px,80vw)",
-          background: "radial-gradient(circle,rgba(35,84,244,.15),transparent 65%)",
-          borderRadius: "50%", filter: "blur(40px)", pointerEvents: "none",
+          position: "absolute", top: "8%", left: "5%",
+          width: "clamp(320px,35vw,600px)", height: "clamp(320px,35vw,600px)",
+          background: "radial-gradient(circle,rgba(35,84,244,.13),transparent 65%)",
+          borderRadius: "50%", filter: "blur(50px)", pointerEvents: "none",
         }} />
       </FloatingElement>
       <FloatingElement duration={10} distance={25} delay={0.5} direction="diagonal">
         <div style={{
-          position: "absolute", bottom: "8%", right: "8%",
-          width: "min(360px,70vw)", height: "min(360px,70vw)",
-          background: "radial-gradient(circle,rgba(124,58,237,.1),transparent 65%)",
-          borderRadius: "50%", filter: "blur(40px)", pointerEvents: "none",
+          position: "absolute", bottom: "5%", right: "3%",
+          width: "clamp(280px,30vw,520px)", height: "clamp(280px,30vw,520px)",
+          background: "radial-gradient(circle,rgba(124,58,237,.09),transparent 65%)",
+          borderRadius: "50%", filter: "blur(50px)", pointerEvents: "none",
+        }} />
+      </FloatingElement>
+      <FloatingElement duration={12} distance={20} delay={1} direction="diagonal">
+        <div style={{
+          position: "absolute", top: "55%", left: "60%",
+          width: "clamp(200px,22vw,400px)", height: "clamp(200px,22vw,400px)",
+          background: "radial-gradient(circle,rgba(8,145,178,.07),transparent 65%)",
+          borderRadius: "50%", filter: "blur(50px)", pointerEvents: "none",
         }} />
       </FloatingElement>
 
-      {/* Floating icon bubbles */}
+      {/* Floating icon bubbles — wider coverage for ultrawide */}
       {[
         { Icon: Brain,      color: BLUE,   top: "14%",   left:  "6%",   size: 22, dur: 7,   delay: 0,    label: "Oracle AI"  },
         { Icon: Trophy,     color: AMBER,  top: "10%",   right: "8%",   size: 20, dur: 9,   delay: 1.2,  label: "Top Ranks"  },
@@ -259,6 +280,10 @@ function HomePage({ setPage }) {
         { Icon: Target,     color: TEAL,   top: "55%",   right: "2%",   size: 17, dur: 8,   delay: 2.5,  label: "Focus"      },
         { Icon: Zap,        color: VIOLET, bottom:"40%", right: "8%",   size: 16, dur: 6.5, delay: 1.8,  label: "Fast"       },
         { Icon: Star,       color: GREEN,  top: "22%",   left:  "14%",  size: 16, dur: 11,  delay: 0.4,  label: "Excellence" },
+
+        // Extra far-edge icons for ultrawide screens
+        { Icon: Shield,     color: VIOLET, top: "45%",   left:  "0.8%", size: 16, dur: 9,   delay: 0.7,  label: "Secure"    },
+        { Icon: Globe,      color: TEAL,   top: "18%",   right: "1.5%", size: 16, dur: 8.5, delay: 1.4,  label: "Global"    },
       ].map(({ Icon, color, size, dur, delay, label, ...pos }, i) => (
         <motion.div
           key={i}
@@ -267,28 +292,30 @@ function HomePage({ setPage }) {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: delay * 0.4 + 0.3, duration: 0.6, type: "spring", stiffness: 180, damping: 20 }}
         >
-          <motion.div
-            animate={{ y: [0, -14, 0], rotate: [0, i % 2 === 0 ? 8 : -8, 0] }}
-            transition={{ duration: dur, repeat: Infinity, ease: "easeInOut", delay }}
-            style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "5px" }}
-          >
-            <div style={{
-              width: size + 22, height: size + 22, borderRadius: "50%",
-              background: `${color}12`, border: `1.5px solid ${color}25`,
-              backdropFilter: "blur(8px)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              boxShadow: `0 4px 20px ${color}18`,
-            }}>
-              <Icon size={size} color={color} strokeWidth={1.8} />
-            </div>
-            <span style={{
-              fontSize: "9px", fontWeight: 700, color: color,
-              opacity: 0.7, letterSpacing: "0.5px", textTransform: "uppercase",
-              textShadow: `0 0 12px ${color}40`,
-            }}>{label}</span>
+            <motion.div
+              animate={{ y: [0, -14, 0], rotate: [0, i % 2 === 0 ? 8 : -8, 0] }}
+              transition={{ duration: dur, repeat: Infinity, ease: "easeInOut", delay }}
+              style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "clamp(4px,0.5vw,8px)" }}
+            >
+              <div style={{
+                width: `clamp(${size + 22}px,${4.5}vw,${size + 42}px)`,
+                height: `clamp(${size + 22}px,${4.5}vw,${size + 42}px)`,
+                borderRadius: "50%",
+                background: `${color}12`, border: `1.5px solid ${color}25`,
+                backdropFilter: "blur(10px)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                boxShadow: `0 4px 24px ${color}18, 0 0 40px ${color}08`,
+              }}>
+                <Icon size={size} color={color} strokeWidth={1.8} />
+              </div>
+              <span style={{
+                fontSize: "clamp(8px,0.7vw,11px)", fontWeight: 700, color: color,
+                opacity: 0.8, letterSpacing: "0.8px", textTransform: "uppercase",
+                textShadow: `0 0 16px ${color}50`,
+              }}>{label}</span>
+            </motion.div>
           </motion.div>
-        </motion.div>
-      ))}
+        ))}
 
       {/* Grid parallax */}
       <ParallaxSection speed={0.2} style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
@@ -299,7 +326,7 @@ function HomePage({ setPage }) {
       </ParallaxSection>
 
       {/* Hero content */}
-      <div style={{ position: "relative", zIndex: 1, maxWidth: 900 }}>
+      <div style={{ position: "relative", zIndex: 1, maxWidth: 1100 }}>
         <motion.div
           initial={{ opacity: 0, scale: 0.85, y: -8 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -310,9 +337,9 @@ function HomePage({ setPage }) {
         <motion.h1
           style={{
             fontFamily: "'Instrument Serif',serif",
-            fontSize: "clamp(3rem,8vw,6rem)",
-            lineHeight: 1.0, letterSpacing: "-2px",
-            color: "var(--text)", marginBottom: "1.4rem",
+            fontSize: "clamp(3rem,7vw,7rem)",
+            lineHeight: 0.98, letterSpacing: "-3px",
+            color: "var(--text)", marginBottom: "1.6rem",
           }}
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
@@ -331,9 +358,9 @@ function HomePage({ setPage }) {
 
         <ScrollReveal delay={0.3}>
           <p style={{
-            fontSize: "clamp(.95rem,2.5vw,1.12rem)",
+            fontSize: "clamp(.95rem,2.2vw,1.25rem)",
             color: "var(--text3)", lineHeight: 1.85,
-            marginBottom: "2.4rem", maxWidth: 560, margin: "0 auto 2.4rem",
+            maxWidth: 640, margin: "0 auto 2.6rem",
           }}>
             QuesGen centralises 15 years of examination intelligence — predicting your next paper, improving your handwriting one step at a time, and saving teachers 15 hours every week.
           </p>
@@ -341,7 +368,7 @@ function HomePage({ setPage }) {
 
         <motion.div
           className="fr"
-          style={{ justifyContent: "center", gap: "0.85rem" }}
+          style={{ justifyContent: "center", gap: "clamp(0.85rem,2vw,1.4rem)" }}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.55, duration: 0.6, ease: easings.smooth }}
@@ -349,14 +376,14 @@ function HomePage({ setPage }) {
           <motion.button className="btn-p"
             onClick={() => { setPage("features"); window.scrollTo(0, 0); }}
             whileHover={{ scale: 1.04, y: -2 }} whileTap={{ scale: 0.97 }}
-            style={{ fontSize: "0.92rem", padding: "0.8rem 1.8rem" }}
+            style={{ fontSize: "clamp(0.92rem,1.2vw,1.05rem)", padding: "clamp(0.8rem,1.2vw,1rem) clamp(1.8rem,2.5vw,2.4rem)" }}
           >
-            Explore Platform <ArrowRight size={15} style={{ marginLeft: 2 }} />
+            Explore Platform <ArrowRight size="clamp(15px,1.2vw,18px)" style={{ marginLeft: 2 }} />
           </motion.button>
           <motion.button className="btn-g"
             onClick={() => { setPage("vault15"); window.scrollTo(0, 0); }}
             whileHover={{ scale: 1.04, y: -2 }} whileTap={{ scale: 0.97 }}
-            style={{ fontSize: "0.92rem", padding: "0.8rem 1.8rem" }}
+            style={{ fontSize: "clamp(0.92rem,1.2vw,1.05rem)", padding: "clamp(0.8rem,1.2vw,1rem) clamp(1.8rem,2.5vw,2.4rem)" }}
           >
             Open Vault-15 🗄️
           </motion.button>
@@ -367,27 +394,27 @@ function HomePage({ setPage }) {
           transition={{ delay: 0.9, duration: 0.6 }}
           style={{
             display: "flex", alignItems: "center", justifyContent: "center",
-            gap: "0.6rem", marginTop: "2.2rem", flexWrap: "wrap",
-            fontSize: "0.75rem", color: "var(--text3)", fontWeight: 600,
-            letterSpacing: "0.3px",
+            gap: "clamp(0.6rem,1.2vw,1rem)", marginTop: "2.6rem", flexWrap: "wrap",
+            fontSize: "clamp(0.75rem,0.9vw,0.9rem)", color: "var(--text3)", fontWeight: 600,
+            letterSpacing: "0.5px",
           }}
         >
           {["12,500+ Papers", "15 Years", "7+ Boards", "AI-Powered"].map((item, i) => (
             <React.Fragment key={i}>
               <span>{item}</span>
-              {i < 3 && <span style={{ width: 3, height: 3, borderRadius: "50%", background: "var(--text3)", opacity: 0.5, display: "inline-block" }} />}
+              {i < 3 && <span style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--text3)", opacity: 0.5, display: "inline-block" }} />}
             </React.Fragment>
           ))}
         </motion.div>
       </div>
 
-      {/* Stats row */}
+      {/* Stats row — bigger on large screens */}
       <StaggerContainer
         className="fr"
         style={{
           position: "relative", zIndex: 1,
-          display: "flex", gap: "clamp(2rem,5vw,4rem)",
-          marginTop: "5rem", flexWrap: "wrap", justifyContent: "center",
+          display: "flex", gap: "clamp(2rem,6vw,6rem)",
+          marginTop: "clamp(4rem,6vw,7rem)", flexWrap: "wrap", justifyContent: "center",
         }}
         containerVariants={staggerContainerVariants}
         childVariants={staggerChildVariants}
@@ -396,12 +423,12 @@ function HomePage({ setPage }) {
           <motion.div key={i} style={{ textAlign: "center" }} whileHover={{ scale: 1.08, y: -5 }} transition={{ duration: 0.3 }}>
             <div style={{
               fontFamily: "'Instrument Serif',serif",
-              fontSize: "clamp(1.6rem,4vw,2.2rem)",
-              color: "var(--text)", letterSpacing: "-1px",
+              fontSize: "clamp(1.6rem,4.5vw,2.8rem)",
+              color: "var(--text)", letterSpacing: "-1.5px",
             }}>
               <NumberCounter value={parseInt(s.n)} suffix={s.n.includes('+') ? '+' : ''} duration={2.5} delay={i * 0.15} />
             </div>
-            <div style={{ fontSize: ".72rem", color: "var(--text2)", marginTop: ".25rem", letterSpacing: ".6px", textTransform: "uppercase", fontWeight: 600 }}>
+            <div style={{ fontSize: "clamp(0.72rem,0.85vw,0.85rem)", color: "var(--text2)", marginTop: ".3rem", letterSpacing: ".8px", textTransform: "uppercase", fontWeight: 600 }}>
               {s.l}
             </div>
           </motion.div>
@@ -409,6 +436,7 @@ function HomePage({ setPage }) {
       </StaggerContainer>
     </section>
   );
+  };
 
   /* ─── MOBILE MODULE CAROUSEL ─── */
   const MobileModuleCarousel = () => (
@@ -500,8 +528,7 @@ function HomePage({ setPage }) {
   /* ─── DESKTOP MODULE GRID ─── */
   const DesktopModuleGrid = () => (
     <motion.div
-      className="g3"
-      style={{ gap: "1rem" }}
+      className="modules-grid"
       initial="hidden"
       whileInView="visible"
       viewport={{ once: true, amount: 0.15 }}
@@ -517,34 +544,35 @@ function HomePage({ setPage }) {
               onClick={() => handleModuleClick(m.name)}
             >
               <div style={{
-                height: 4,
+                height: "clamp(4px,0.4vw,6px)",
                 background: `linear-gradient(90deg, ${m.color}, ${m.color}88)`,
                 borderRadius: "20px 20px 0 0",
               }} />
-              <div style={{ padding: "1.2rem" }}>
+              <div style={{ padding: "clamp(1.2rem,1.8vw,1.8rem)" }}>
                 <motion.div
                   style={{
-                    width: 44, height: 44,
+                    width: "clamp(44px,4vw,56px)",
+                    height: "clamp(44px,4vw,56px)",
                     background: `${m.color}14`, border: `1px solid ${m.color}28`,
-                    borderRadius: 13,
+                    borderRadius: "clamp(13px,1.2vw,16px)",
                     display: "flex", alignItems: "center", justifyContent: "center",
-                    marginBottom: "0.9rem",
+                    marginBottom: "clamp(0.9rem,1.2vw,1.2rem)",
                   }}
                   whileHover={{ scale: 1.18, rotate: 10 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <ModIcon size={20} color={m.color} strokeWidth={1.8} />
+                  <ModIcon size="clamp(20px,1.8vw,26px)" color={m.color} strokeWidth={1.8} />
                 </motion.div>
 
                 <div style={{
-                  fontWeight: 700, fontSize: ".92rem", color: "var(--text)",
+                  fontWeight: 700, fontSize: "clamp(.92rem,1.2vw,1.1rem)", color: "var(--text)",
                   marginBottom: ".3rem", display: "flex", alignItems: "center", gap: ".4rem",
                 }}>
                   {m.name}
                   {(m.name === "Vault-15" || m.name === "Script-Lab") && (
                     <motion.span
                       style={{
-                        fontSize: ".56rem", background: `${VIOLET}22`, color: VIOLET,
+                        fontSize: "clamp(.56rem,0.55vw,.65rem)", background: `${VIOLET}22`, color: VIOLET,
                         padding: ".1rem .45rem", borderRadius: 100, fontWeight: 700,
                         border: `1px solid ${VIOLET}30`,
                       }}
@@ -558,15 +586,15 @@ function HomePage({ setPage }) {
                   )}
                 </div>
 
-                <div style={{ fontSize: ".81rem", color: "var(--text3)", lineHeight: 1.6 }}>{m.desc}</div>
+                <div style={{ fontSize: "clamp(.81rem,1vw,.92rem)", color: "var(--text3)", lineHeight: 1.6 }}>{m.desc}</div>
 
                 {["Vault-15","Exam Generator","LogicGen","Adaptive Testing","Script-Lab"].includes(m.name) && (
                   <div style={{
                     display: "flex", alignItems: "center", gap: "0.25rem",
-                    marginTop: "0.8rem", fontSize: ".75rem", fontWeight: 600,
+                    marginTop: "clamp(0.8rem,1vw,1rem)", fontSize: "clamp(.75rem,0.85vw,.85rem)", fontWeight: 600,
                     color: m.color, opacity: 0.85,
                   }}>
-                    Open <ChevronRight size={13} />
+                    Open <ChevronRight size="clamp(13px,1vw,15px)" />
                   </div>
                 )}
               </div>
@@ -673,24 +701,36 @@ function HomePage({ setPage }) {
   /* ─── DESKTOP CTA SECTION ─── */
   const DesktopCtaSection = () => (
     <section style={{
-      padding: "7rem 5%",
+      padding: "clamp(7rem,10vw,12rem) 5%",
       background: "linear-gradient(135deg, rgba(35,84,244,.07) 0%, rgba(124,58,237,.05) 50%, rgba(8,145,178,.04) 100%)",
       position: "relative", overflow: "hidden",
     }}>
       <div style={{
         position: "absolute", top: "50%", left: "50%",
         transform: "translate(-50%,-50%)",
-        width: "min(600px,90vw)", height: "min(400px,60vw)",
-        background: "radial-gradient(ellipse, rgba(35,84,244,.08), transparent 70%)",
-        pointerEvents: "none",
+        width: "min(800px,80vw)", height: "min(600px,60vw)",
+        background: "radial-gradient(ellipse, rgba(35,84,244,.1), rgba(124,58,237,.05) 40%, transparent 70%)",
+        filter: "blur(60px)", pointerEvents: "none",
+      }} />
+      <div style={{
+        position: "absolute", top: "15%", right: "8%",
+        width: "clamp(200px,18vw,350px)", height: "clamp(200px,18vw,350px)",
+        background: "radial-gradient(circle, rgba(16,185,129,.06), transparent 65%)",
+        borderRadius: "50%", filter: "blur(50px)", pointerEvents: "none",
+      }} />
+      <div style={{
+        position: "absolute", bottom: "20%", left: "5%",
+        width: "clamp(180px,15vw,300px)", height: "clamp(180px,15vw,300px)",
+        background: "radial-gradient(circle, rgba(124,58,237,.06), transparent 65%)",
+        borderRadius: "50%", filter: "blur(50px)", pointerEvents: "none",
       }} />
       <motion.div
         initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, ease: easings.smooth }} viewport={{ once: true }}
-        style={{ maxWidth: 680, margin: "0 auto", textAlign: "center", position: "relative", zIndex: 1 }}
+        style={{ maxWidth: 800, margin: "0 auto", textAlign: "center", position: "relative", zIndex: 1 }}
       >
         <motion.div
-          style={{ display: "flex", justifyContent: "center", gap: "1rem", marginBottom: "2rem" }}
+          style={{ display: "flex", justifyContent: "center", gap: "clamp(1rem,2vw,2rem)", marginBottom: "2.5rem" }}
           initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1, duration: 0.5 }} viewport={{ once: true }}
         >
@@ -700,15 +740,15 @@ function HomePage({ setPage }) {
             { Icon: TrendingUp,color: GREEN,  label: "Results"  },
             { Icon: Globe,     color: TEAL,   label: "Offline"  },
           ].map(({ Icon, color, label }, i) => (
-            <motion.div key={i} style={{ textAlign: "center" }} whileHover={{ y: -4, scale: 1.05 }} transition={{ duration: 0.2 }}>
+            <motion.div key={i} style={{ textAlign: "center" }} whileHover={{ y: -6, scale: 1.08 }} transition={{ duration: 0.25 }}>
               <div style={{
-                width: 48, height: 48, borderRadius: 14,
+                width: "clamp(48px,4vw,64px)", height: "clamp(48px,4vw,64px)", borderRadius: "clamp(14px,1.2vw,18px)",
                 background: `${color}10`, border: `1px solid ${color}22`,
-                display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 0.35rem",
+                display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 0.5rem",
               }}>
-                <Icon size={20} color={color} strokeWidth={1.8} />
+                <Icon size="clamp(20px,1.8vw,26px)" color={color} strokeWidth={1.8} />
               </div>
-              <span style={{ fontSize: "0.65rem", fontWeight: 700, color: "var(--text3)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+              <span style={{ fontSize: "clamp(0.65rem,0.7vw,0.78rem)", fontWeight: 700, color: "var(--text3)", textTransform: "uppercase", letterSpacing: "0.8px" }}>
                 {label}
               </span>
             </motion.div>
@@ -718,8 +758,8 @@ function HomePage({ setPage }) {
         <motion.h2
           style={{
             fontFamily: "'Instrument Serif',serif",
-            fontSize: "clamp(1.9rem,4vw,3rem)",
-            color: "var(--text)", marginBottom: "1rem", lineHeight: 1.1,
+            fontSize: "clamp(1.9rem,5vw,3.8rem)",
+            color: "var(--text)", marginBottom: "1.2rem", lineHeight: 1.08, letterSpacing: "-1.5px",
           }}
           initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}
           transition={{ delay: 0.2, duration: 0.6 }} viewport={{ once: true }}
@@ -735,7 +775,7 @@ function HomePage({ setPage }) {
         </motion.h2>
 
         <motion.p
-          style={{ color: "var(--text3)", fontSize: "1.05rem", lineHeight: 1.8, marginBottom: "2.5rem", maxWidth: 520, margin: "0 auto 2.5rem" }}
+          style={{ color: "var(--text3)", fontSize: "clamp(1.05rem,1.3vw,1.15rem)", lineHeight: 1.8, maxWidth: 600, margin: "0 auto 3rem" }}
           initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}
           transition={{ delay: 0.3, duration: 0.6 }} viewport={{ once: true }}
         >
@@ -743,21 +783,21 @@ function HomePage({ setPage }) {
         </motion.p>
 
         <motion.div
-          className="fr" style={{ justifyContent: "center", gap: "0.9rem" }}
+          className="fr" style={{ justifyContent: "center", gap: "clamp(0.9rem,1.5vw,1.5rem)" }}
           initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4, duration: 0.6 }} viewport={{ once: true }}
         >
           <motion.button className="btn-p"
             onClick={() => { setPage("pricing"); window.scrollTo(0, 0); }}
             whileHover={{ scale: 1.04, y: -2 }} whileTap={{ scale: 0.98 }}
-            style={{ fontSize: "0.92rem", padding: "0.8rem 1.8rem" }}
+            style={{ fontSize: "clamp(0.92rem,1.1vw,1.05rem)", padding: "clamp(0.8rem,1.2vw,1rem) clamp(1.8rem,2.5vw,2.4rem)" }}
           >
-            See Pricing <ArrowRight size={15} style={{ marginLeft: 2 }} />
+            See Pricing <ArrowRight size="clamp(15px,1.2vw,18px)" style={{ marginLeft: 2 }} />
           </motion.button>
           <motion.button className="btn-g"
             onClick={() => { setPage("logicgen"); window.scrollTo(0, 0); }}
             whileHover={{ scale: 1.04, y: -2 }} whileTap={{ scale: 0.98 }}
-            style={{ fontSize: "0.92rem", padding: "0.8rem 1.8rem" }}
+            style={{ fontSize: "clamp(0.92rem,1.1vw,1.05rem)", padding: "clamp(0.8rem,1.2vw,1rem) clamp(1.8rem,2.5vw,2.4rem)" }}
           >
             Try LogicGen Demo
           </motion.button>
@@ -768,9 +808,9 @@ function HomePage({ setPage }) {
 
   /* ─── VAULT SECTION (shared, layout differs per breakpoint via CSS g2) ─── */
   const VaultSection = () => (
-    <section style={{ padding: isMobile ? "3rem 1.3rem" : "6rem 5%", maxWidth: 1200, margin: "0 auto" }}>
+    <section style={{ padding: isMobile ? "3rem 1.3rem" : "clamp(6rem,8vw,10rem) 5%", maxWidth: 1400, margin: "0 auto" }}>
       <ScrollReveal>
-        <div className="g2">
+        <div className="g2" style={!isMobile ? { gap: 'clamp(2rem,5vw,5rem)' } : {}}>
           {/* Left column */}
           <div>
             <motion.div
@@ -911,13 +951,13 @@ function HomePage({ setPage }) {
 
       {/* 8 Modules */}
       <section style={{
-        padding: isMobile ? "3.5rem 1.3rem" : "5rem 5%",
+        padding: isMobile ? "3.5rem 1.3rem" : "clamp(5rem,7vw,8rem) 5%",
         background: "rgba(35,84,244,0.02)",
       }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+        <div style={{ maxWidth: 1400, margin: "0 auto" }}>
           <ScrollReveal>
             <motion.div
-              style={{ textAlign: isMobile ? 'left' : "center", marginBottom: "2.5rem" }}
+              style={{ textAlign: isMobile ? 'left' : "center", marginBottom: "clamp(2.5rem,3vw,4rem)" }}
               initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, ease: easings.smooth }} viewport={{ once: true }}
             >

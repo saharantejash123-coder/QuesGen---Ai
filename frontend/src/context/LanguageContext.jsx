@@ -29,6 +29,20 @@ export function LanguageProvider({ children }) {
   const changeLanguage = (newLanguage) => {
     if (translations[newLanguage]) {
       setLanguage(newLanguage);
+      
+      try {
+        const select = document.querySelector('.goog-te-combo');
+        if (select) {
+          select.value = newLanguage;
+          select.dispatchEvent(new Event('change'));
+        } else {
+          // Fallback if the Google Translate widget hasn't loaded properly
+          document.cookie = `googtrans=/en/${newLanguage}; path=/; domain=${window.location.hostname}`;
+          window.location.reload();
+        }
+      } catch (e) {
+        console.error('Error updating Google Translate', e);
+      }
     }
   };
 

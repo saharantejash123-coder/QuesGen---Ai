@@ -1,5 +1,8 @@
 export const translations = {
   en: {
+    'Exam Generator': 'Exam Generator',
+    'Pricing': 'Pricing',
+    'Exam Gen': 'Exam Gen',
     // Navigation
     nav: {
       home: 'Home',
@@ -172,6 +175,9 @@ export const translations = {
     },
   },
   hi: {
+    'Exam Generator': 'एग्जाम जनरेटर',
+    'Pricing': 'प्राइसिंग',
+    'Exam Gen': 'एग्जाम जनरेटर',
     // Navigation
     nav: {
       home: 'होम',

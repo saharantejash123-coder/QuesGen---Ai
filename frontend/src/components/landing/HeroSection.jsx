@@ -142,7 +142,7 @@ export default function HeroSection() {
 
       {/* ── Main content ─────────────────────────────────────────────────── */}
       <motion.div
-        className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center"
+        className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 2xl:px-16 text-center"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
@@ -150,7 +150,7 @@ export default function HeroSection() {
         {/* Badge */}
         <motion.div
           variants={itemVariants}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-500/10 border border-purple-500/20 mb-8"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-500/10 border border-purple-500/20 mb-8 lg:mb-10"
         >
           <motion.span
             animate={shouldReduceMotion ? {} : { rotate: [0, 14, -14, 0] }}
@@ -158,14 +158,14 @@ export default function HeroSection() {
           >
             <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" />
           </motion.span>
-          <span className="text-sm text-purple-700 dark:text-purple-300 font-medium">
+          <span className="text-sm sm:text-base text-purple-700 dark:text-purple-300 font-medium">
             {t('landing.hero.badge')}
           </span>
         </motion.div>
 
         {/* ── Headline — word-by-word spring reveal ──────────────────────── */}
         <motion.div variants={itemVariants} className="mb-3">
-          <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold leading-tight">
+          <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl 2xl:text-9xl font-bold leading-tight tracking-tight">
             <WordReveal text={t('landing.hero.headlineTop')} delay={0} />
             <br />
             <span className="text-gradient">
@@ -177,7 +177,7 @@ export default function HeroSection() {
         {/* Subheadline */}
         <motion.p
           variants={itemVariants}
-          className="text-lg sm:text-xl text-slate-500 dark:text-slate-400 max-w-2xl mx-auto mb-4 mt-4"
+          className="text-lg sm:text-xl lg:text-2xl text-slate-500 dark:text-slate-400 max-w-3xl mx-auto mb-4 mt-4 lg:mt-6"
         >
           {t('landing.hero.subheadline')}
         </motion.p>
@@ -185,7 +185,7 @@ export default function HeroSection() {
         {/* Stats bar */}
         <motion.div
           variants={itemVariants}
-          className="flex flex-wrap justify-center gap-4 sm:gap-8 mb-10"
+          className="flex flex-wrap justify-center gap-4 sm:gap-8 lg:gap-12 mb-10 lg:mb-12"
         >
           {STATS.map((stat, i) => (
             <motion.div
@@ -193,8 +193,8 @@ export default function HeroSection() {
               className="flex items-center gap-2"
               whileHover={shouldReduceMotion ? {} : { scale: 1.08, transition: SPRING_BOUNCY }}
             >
-              <span className="text-slate-900 dark:text-white font-bold text-lg">{stat.value}</span>
-              <span className="text-slate-500 text-sm">{t(stat.label)}</span>
+              <span className="text-slate-900 dark:text-white font-bold text-lg lg:text-2xl">{stat.value}</span>
+              <span className="text-slate-500 text-sm lg:text-base">{t(stat.label)}</span>
             </motion.div>
           ))}
         </motion.div>
@@ -202,20 +202,20 @@ export default function HeroSection() {
         {/* ── CTAs with magnetic spring pull ─────────────────────────────── */}
         <motion.div
           variants={itemVariants}
-          className="flex flex-col sm:flex-row gap-3 justify-center px-4"
+          className="flex flex-col sm:flex-row gap-3 lg:gap-5 justify-center px-4"
         >
           <MagneticButton strength={0.22}>
             <Link
               to="/student"
-              className="btn-primary flex items-center justify-center gap-2 text-base px-6 sm:px-8 py-3 sm:py-4 min-h-[48px] sm:min-h-[44px] w-full sm:w-auto"
+              className="btn-primary flex items-center justify-center gap-2 text-base lg:text-lg px-6 sm:px-8 lg:px-10 py-3 sm:py-4 min-h-[48px] sm:min-h-[44px] w-full sm:w-auto"
             >
-              <Brain className="w-5 h-5" />
+              <Brain className="w-5 h-5 lg:w-6 lg:h-6" />
               {t('landing.hero.ctaStudent')}
               <motion.span
                 animate={shouldReduceMotion ? {} : { x: [0, 5, 0] }}
                 transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
               >
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="w-4 h-4 lg:w-5 lg:h-5" />
               </motion.span>
             </Link>
           </MagneticButton>
@@ -223,16 +223,16 @@ export default function HeroSection() {
           <MagneticButton strength={0.18}>
             <Link
               to="/teacher"
-              className="btn-secondary flex items-center justify-center gap-2 text-base px-6 sm:px-8 py-3 sm:py-4 min-h-[48px] sm:min-h-[44px] w-full sm:w-auto"
+              className="btn-secondary flex items-center justify-center gap-2 text-base lg:text-lg px-6 sm:px-8 lg:px-10 py-3 sm:py-4 min-h-[48px] sm:min-h-[44px] w-full sm:w-auto"
             >
-              <Shield className="w-5 h-5" />
+              <Shield className="w-5 h-5 lg:w-6 lg:h-6" />
               {t('landing.hero.ctaTeacher')}
             </Link>
           </MagneticButton>
         </motion.div>
 
         {/* ── Staggered feature cards ─────────────────────────────────────── */}
-        <div className="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl mx-auto">
+        <div className="mt-16 lg:mt-20 grid grid-cols-1 sm:grid-cols-3 gap-4 lg:gap-6 max-w-5xl mx-auto">
           {FEATURES.map((card, i) => (
             <motion.div
               key={card.title}
@@ -245,22 +245,22 @@ export default function HeroSection() {
                   ? {}
                   : { y: -8, scale: 1.03, transition: SPRING_SNAPPY }
               }
-              className="glass-card rounded-xl p-5 text-left border border-slate-200 dark:border-white/10 hover:border-purple-500/30 transition-colors duration-300 cursor-default"
+              className="glass-card rounded-xl lg:rounded-2xl p-5 lg:p-7 text-left border border-slate-200 dark:border-white/10 hover:border-purple-500/30 transition-colors duration-300 cursor-default"
             >
               <motion.div
-                className={`w-10 h-10 rounded-lg bg-${card.color}-500/10 flex items-center justify-center mb-3`}
+                className={`w-10 h-10 lg:w-12 lg:h-12 rounded-lg lg:rounded-xl bg-${card.color}-500/10 flex items-center justify-center mb-3 lg:mb-4`}
                 whileHover={
                   shouldReduceMotion
                     ? {}
                     : { rotate: [0, -12, 12, 0], transition: { duration: 0.45 } }
                 }
               >
-                <card.icon className={`w-5 h-5 text-${card.color}-600 dark:text-${card.color}-400`} />
+                <card.icon className={`w-5 h-5 lg:w-6 lg:h-6 text-${card.color}-600 dark:text-${card.color}-400`} />
               </motion.div>
-              <h3 className="text-slate-900 dark:text-white font-semibold text-sm mb-1">
+              <h3 className="text-slate-900 dark:text-white font-semibold text-sm lg:text-base mb-1 lg:mb-2">
                 {card.title}
               </h3>
-              <p className="text-slate-500 dark:text-slate-400 text-xs">{card.desc}</p>
+              <p className="text-slate-500 dark:text-slate-400 text-xs lg:text-sm">{card.desc}</p>
             </motion.div>
           ))}
         </div>

@@ -7,33 +7,6 @@ import {
 import { generateAdaptiveQuestionsWithLLM } from '../../services/llmService';
 import { GEMINI_API_KEY } from '../../data/oracleData';
 
-/* ── Offline fallback MCQ bank (used when Gemini is unavailable) ── */
-const OFFLINE_BANK = [
-  { text:'The SI unit of electric current is:', options:['Volt','Ohm','Ampere','Watt'], answer:'Ampere', chapter:'Electricity', difficulty:1, explanation:'Electric current is measured in Amperes (A), defined by charge per unit time.' },
-  { text:'pH of a neutral solution at 25°C is:', options:['0','7','14','1'], answer:'7', chapter:'Acids, Bases and Salts', difficulty:1, explanation:'A neutral solution has equal concentrations of H⁺ and OH⁻, giving pH = 7.' },
-  { text:'Which gas is released during photosynthesis?', options:['Carbon dioxide','Nitrogen','Oxygen','Hydrogen'], answer:'Oxygen', chapter:'Life Processes', difficulty:1, explanation:'Plants release oxygen as a by-product when splitting water molecules during the light reactions.' },
-  { text:'The image formed by a plane mirror is:', options:['Real and inverted','Virtual and erect','Real and erect','Virtual and inverted'], answer:'Virtual and erect', chapter:'Light', difficulty:1, explanation:'Plane mirrors form virtual, erect, and laterally inverted images at the same distance behind the mirror.' },
-  { text:'Which metal is stored in kerosene?', options:['Iron','Copper','Sodium','Gold'], answer:'Sodium', chapter:'Metals and Non-metals', difficulty:2, explanation:'Sodium reacts violently with air and water, so it is stored in kerosene to prevent oxidation.' },
-  { text:'The focal length of a concave mirror is 15 cm. Its radius of curvature is:', options:['7.5 cm','15 cm','30 cm','45 cm'], answer:'30 cm', chapter:'Light', difficulty:2, explanation:'Radius of curvature = 2 × focal length. So R = 2 × 15 = 30 cm.' },
-  { text:'Which of the following is NOT an allotrope of carbon?', options:['Diamond','Graphite','Buckminsterfullerene','Calcium carbonate'], answer:'Calcium carbonate', chapter:'Carbon and its Compounds', difficulty:2, explanation:'Diamond, graphite and buckminsterfullerene are allotropes of carbon. Calcium carbonate (CaCO₃) is a compound.' },
-  { text:'Resistance of a conductor depends on:', options:['Its length','Its area of cross-section','Nature of material','All of the above'], answer:'All of the above', chapter:'Electricity', difficulty:2, explanation:'Resistance R = ρL/A — it depends on resistivity (material), length L, and area A.' },
-  { text:'Which part of the brain controls involuntary actions?', options:['Cerebrum','Cerebellum','Medulla oblongata','Pons'], answer:'Medulla oblongata', chapter:'Control and Coordination', difficulty:2, explanation:'The medulla oblongata controls autonomic functions like breathing, heart rate, and digestion.' },
-  { text:'Mendel\'s law of independent assortment applies to genes located on:', options:['Same chromosome','Different chromosomes','Sex chromosomes only','Autosomes only'], answer:'Different chromosomes', chapter:'Heredity and Evolution', difficulty:3, explanation:'Independent assortment occurs when genes are on different (non-homologous) chromosomes during meiosis.' },
-  { text:'An electric bulb rated 220V and 100W has resistance:', options:['484 Ω','100 Ω','220 Ω','22 Ω'], answer:'484 Ω', chapter:'Electricity', difficulty:3, explanation:'R = V²/P = (220)²/100 = 48400/100 = 484 Ω.' },
-  { text:'In a food chain, the third trophic level is occupied by:', options:['Producers','Herbivores','Carnivores','Decomposers'], answer:'Carnivores', chapter:'Our Environment', difficulty:2, explanation:'Trophic levels: 1st = producers, 2nd = herbivores, 3rd = carnivores (primary).' },
-  { text:'What is the chemical formula of baking soda?', options:['NaHCO₃','Na₂CO₃','NaCl','NaOH'], answer:'NaHCO₃', chapter:'Chemical Reactions', difficulty:1, explanation:'Baking soda is sodium bicarbonate, NaHCO₃.' },
-  { text:'Which non-renewable energy source is coal?', options:['Solar energy','Wind energy','Coal','Tidal energy'], answer:'Coal', chapter:'Sources of Energy', difficulty:1, explanation:'Coal is a fossil fuel formed over millions of years and cannot be replenished quickly.' },
-  { text:'Power of accommodation of the eye is controlled by:', options:['Pupil','Cornea','Ciliary muscles','Iris'], answer:'Ciliary muscles', chapter:'Human Eye', difficulty:3, explanation:'Ciliary muscles change the curvature of the eye lens, adjusting its focal length for near and far vision.' },
-];
-
-function buildOfflineFallback(chapter, count, seed) {
-  const bank = [...OFFLINE_BANK].sort(() => Math.sin(seed.charCodeAt(0) + Math.random()) - 0.5);
-  return Array.from({ length: count }, (_, i) => ({
-    ...bank[i % bank.length],
-    id: `offline_${seed}_${i}`,
-    chapter: chapter,
-  }));
-}
 
 /* ── CONFIG ── */
 const boards   = ['CBSE','RBSE','ICSE','UP Board','Maharashtra','Bihar','MP Board','Karnataka'];
@@ -214,12 +187,9 @@ const AdaptiveTesting = () => {
       setLoadStage(3);
       await new Promise(r => setTimeout(r, 400));  setLoadStage(4);
 
-      // If all AI models failed, fall back to local question bank
+      // If all AI models failed
       if (!qs || qs.length === 0) {
-        qs = buildOfflineFallback(targetChapter, numQuestions, seed);
-        setAiUnavailable(true);
-      } else {
-        setAiUnavailable(false);
+        throw new Error("AI models are currently unavailable. Please try again later.");
       }
 
       setQuestions(qs);
@@ -232,19 +202,8 @@ const AdaptiveTesting = () => {
       setError('');
       setPhase('test');
     } catch (e) {
-      // Nuclear fallback — should rarely reach here
-      const seed = uid();
-      const qs = buildOfflineFallback(targetChapter, numQuestions, seed);
-      setAiUnavailable(true);
-      setQuestions(qs);
-      setAnswers({});
-      setFlagged(new Set());
-      setQi(0);
-      setTimer(timeLimit * 60);
-      setResults(null);
-      setShowReview(false);
-      setError('');
-      setPhase('test');
+      setError(e.message || 'Failed to generate test. Please try again.');
+      setPhase('setup');
     }
   }, [board, cls, subj, chapter, numQuestions, timeLimit, weakAreas]);
 
@@ -480,15 +439,7 @@ const AdaptiveTesting = () => {
       {/* ══ TEST ══ */}
       {phase === 'test' && q && (
         <div className="fade-in">
-          {/* Offline warning banner */}
-          {aiUnavailable && (
-            <div style={{ marginBottom:'1rem',padding:'.7rem 1rem',borderRadius:10,
-              background:'rgba(245,158,11,.08)',border:'1px solid rgba(245,158,11,.25)',
-              color:'#D97706',fontSize:'.8rem',display:'flex',alignItems:'center',gap:'.6rem' }}>
-              <AlertTriangle style={{width:15,height:15,flexShrink:0}}/>
-              AI models are temporarily overloaded — using offline question bank. Questions will refresh once AI is back.
-            </div>
-          )}
+
           {/* Sticky Top Bar */}
           <div className="card" style={{ padding:'1rem 1.5rem',marginBottom:'1.5rem',display:'flex',
             alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:'1rem',
