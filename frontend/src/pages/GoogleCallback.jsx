@@ -1,30 +1,42 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
+import { loginWithGoogleToken, saveSession } from '../services/authService';
 
 export default function GoogleCallback() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Parse the URL to get auth data (this handles server-side Google OAuth redirects)
+    const go = (role) => {
+      const r = (role || 'student').toLowerCase();
+      if (r === 'admin') navigate('/admin');
+      else if (r === 'school') navigate('/school');
+      else if (r === 'teacher') navigate('/teacher');
+      else navigate('/student');
+    };
+
+    // Handle redirect flow — id_token in URL hash
+    const hash = new URLSearchParams(window.location.hash.replace('#', ''));
+    const idToken = hash.get('id_token');
+
+    if (idToken) {
+      loginWithGoogleToken(idToken)
+        .then(user => { saveSession(user); go(user.role); })
+        .catch(() => navigate('/login?error=auth_failed'));
+      return;
+    }
+
+    // Handle server-side flow — token + user in query params
     const params = new URLSearchParams(window.location.search);
     const token = params.get('token');
     const user = params.get('user');
 
     if (token && user) {
       try {
-        // Save session
         localStorage.setItem('questra_token', token);
         localStorage.setItem('questra_user', JSON.stringify(JSON.parse(user)));
-
-        // Redirect to appropriate dashboard
-        const userData = JSON.parse(user);
-        if (userData.role === 'teacher') navigate('/teacher');
-        else if (userData.role === 'school') navigate('/school');
-        else if (userData.role === 'admin') navigate('/admin');
-        else navigate('/student');
-      } catch (err) {
-        console.error('Error parsing callback:', err);
+        go(JSON.parse(user).role);
+      } catch {
         navigate('/login?error=auth_failed');
       }
     } else {
