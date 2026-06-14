@@ -82,7 +82,8 @@ const roleConfigs = {
     tabs: [
       { id: 'overview',  l: 'Overview'  },
       { id: 'users',     l: 'Users'     },
-      { id: 'analytics', l: 'Analytics' },
+      { id: 'schools',   l: 'Schools'   },
+      { id: 'activity',  l: 'Activity'  },
       { id: 'settings',  l: 'Settings'  },
     ],
     showAuth: false,
@@ -138,8 +139,8 @@ const mobileNavMap = {
   admin: [
     { id: 'overview',  label: 'Overview',  Icon: LayoutDashboard, isMore: false },
     { id: 'users',     label: 'Users',     Icon: Users,           isMore: false },
-    { id: 'analytics', label: 'Analytics', Icon: TrendingUp,      isMore: false },
-    { id: 'settings',  label: 'Settings',  Icon: Settings,        isMore: false },
+    { id: 'schools',   label: 'Schools',   Icon: Building2,       isMore: false },
+    { id: 'activity',  label: 'Activity',  Icon: TrendingUp,      isMore: false },
     { id: '__more',    label: 'More',      Icon: MoreHorizontal,  isMore: true  },
   ],
   school: [
@@ -167,7 +168,10 @@ const moreSheetMap = {
     { id: 'pricing',   label: 'Pricing',    desc: 'Plans & pricing',          emoji: '💳' },
   ],
   teacher: [],
-  admin:   [],
+  admin: [
+    { id: 'analytics', label: 'Analytics', desc: 'Platform usage & charts',  emoji: '📊' },
+    { id: 'settings',  label: 'Settings',  desc: 'System configuration',     emoji: '⚙️' },
+  ],
   login:   [],
   school: [
     { id: 'exams',    label: 'Exams',    desc: 'Schedule & manage tests',  emoji: '📝' },

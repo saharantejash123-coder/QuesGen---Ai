@@ -3,14 +3,18 @@ import { useNavigate } from 'react-router-dom'
 import AppNavbar from '../components/questra/AppNavbar'
 import AdminOverview from '../components/admin/AdminOverview'
 import UserManagement from '../components/admin/UserManagement'
+import SchoolManagement from '../components/admin/SchoolManagement'
+import ActivityLogs from '../components/admin/ActivityLogs'
 import PlatformAnalytics from '../components/admin/PlatformAnalytics'
 import SystemSettings from '../components/admin/SystemSettings'
 
 const tabComponents = {
-  overview: AdminOverview,
-  users: UserManagement,
+  overview:  AdminOverview,
+  users:     UserManagement,
+  schools:   SchoolManagement,
+  activity:  ActivityLogs,
   analytics: PlatformAnalytics,
-  settings: SystemSettings,
+  settings:  SystemSettings,
 }
 
 export default function AdminDashboard() {
