@@ -3,6 +3,7 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const { successResponse, errorResponse, asyncHandler } = require('../errors');
 const { getClient } = require('../services/supabaseClient');
+const { storeOTP, checkOTP, sendOTPEmail } = require('../services/emailService');
 const googleOAuthService = require('../services/googleOAuthService');
 const { isGmailAccount, isValidEmail, validatePassword } = require('../utils/validation');
 
@@ -242,6 +243,32 @@ router.post('/google-verify', asyncHandler(async (req, res) => {
     console.error('Google verification error:', error);
     errorResponse(res, error.message || 'Google verification failed', 401);
   }
+}));
+
+// ── Send OTP ──────────────────────────────────────────────────────────────────
+router.post('/send-otp', asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  if (!email) return errorResponse(res, 'Email is required', 400);
+
+  const otp = storeOTP(email);
+  const result = await sendOTPEmail(email.trim().toLowerCase(), otp);
+
+  if (result.sent) {
+    return successResponse(res, { sent: true, message: 'OTP sent to your email.' });
+  }
+  // SMTP not configured — return OTP so frontend can display it (demo mode)
+  return successResponse(res, { sent: false, demoOtp: result.demoOtp, message: 'SMTP not configured. Use the displayed OTP.' });
+}));
+
+// ── Verify OTP ────────────────────────────────────────────────────────────────
+router.post('/verify-otp', asyncHandler(async (req, res) => {
+  const { email, otp } = req.body;
+  if (!email || !otp) return errorResponse(res, 'Email and OTP are required', 400);
+
+  const result = checkOTP(email, otp);
+  if (!result.ok) return errorResponse(res, result.message, 400);
+
+  return successResponse(res, { verified: true });
 }));
 
 module.exports = router;

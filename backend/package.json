@@ -25,14 +25,15 @@
   "author": "QuesGen AI",
   "license": "Proprietary",
   "dependencies": {
+    "@supabase/supabase-js": "^2.27.0",
+    "bcryptjs": "^2.4.3",
     "cors": "^2.8.6",
     "dotenv": "^16.6.1",
     "express": "^4.22.2",
     "express-rate-limit": "^7.1.5",
     "helmet": "^7.2.0",
     "jsonwebtoken": "^9.0.3",
-    "@supabase/supabase-js": "^2.27.0",
-    "bcryptjs": "^2.4.3",
+    "nodemailer": "^8.0.11",
     "sqlite3": "^5.1.7"
   },
   "devDependencies": {

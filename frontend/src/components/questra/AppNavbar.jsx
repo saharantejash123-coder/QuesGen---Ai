@@ -56,6 +56,8 @@ const roleConfigs = {
       { id: 'vault15',   l: 'Vault-15'         },
       { id: 'scriptlab', l: 'Script-Lab'       },
       { id: 'adaptive',  l: 'Adaptive Testing' },
+      { id: 'features',  l: 'Features'         },
+      { id: 'pricing',   l: 'Pricing'          },
     ],
     showAuth: false,
     showTabs: true,
@@ -110,11 +112,10 @@ const roleConfigs = {
 /* ── Mobile bottom-nav primary items (max 5) ── */
 const mobileNavMap = {
   landing: [
-    { id: 'home',     label: 'Home',      Icon: Home,           isMore: false },
-    { id: 'vault15',  label: 'Vault',     Icon: Archive,        isMore: false },
-    { id: 'oracle',   label: 'Exam Gen',    Icon: Brain,          isMore: false },
-    { id: 'adaptive', label: 'Adaptive',  Icon: Brain,          isMore: false },
-    { id: '__more',   label: 'More',      Icon: MoreHorizontal, isMore: true  },
+    { id: 'home',     label: 'Home',     Icon: Home,           isMore: false },
+    { id: 'features', label: 'Features', Icon: Sparkles,       isMore: false },
+    { id: 'pricing',  label: 'Pricing',  Icon: Tag,            isMore: false },
+    { id: '__more',   label: 'More',     Icon: MoreHorizontal, isMore: true  },
   ],
   login: [
     { id: 'home',     label: 'Home',     Icon: Home,     isMore: false },
@@ -153,14 +154,17 @@ const mobileNavMap = {
 /* ── Pages shown in the More sheet ── */
 const moreSheetMap = {
   landing: [
-    { id: 'logicgen',  label: 'LogicGen',   desc: 'PYQ variable rebuilder',  emoji: '🔄' },
-    { id: 'scriptlab', label: 'Script-Lab', desc: 'AI handwriting coach',    emoji: '✍️' },
-    { id: 'vault15',   label: 'Vault-15',   desc: 'Previous year papers',    emoji: '📚' },
+    { id: 'vault15',   label: 'Vault-15',   desc: 'Previous year papers',     emoji: '📚' },
+    { id: 'oracle',    label: 'Exam Gen',   desc: 'AI exam generator',        emoji: '🔮' },
     { id: 'adaptive',  label: 'Adaptive',   desc: 'AI-powered adaptive test', emoji: '🧠' },
+    { id: 'logicgen',  label: 'LogicGen',   desc: 'PYQ variable rebuilder',   emoji: '🔄' },
+    { id: 'scriptlab', label: 'Script-Lab', desc: 'AI handwriting coach',     emoji: '✍️' },
   ],
   student: [
-    { id: 'scriptlab', label: 'Script-Lab', desc: 'AI handwriting coach', emoji: '✍️' },
-    { id: 'logicgen',  label: 'LogicGen',   desc: 'PYQ variable rebuilder', emoji: '🔄' },
+    { id: 'scriptlab', label: 'Script-Lab', desc: 'AI handwriting coach',     emoji: '✍️' },
+    { id: 'logicgen',  label: 'LogicGen',   desc: 'PYQ variable rebuilder',   emoji: '🔄' },
+    { id: 'features',  label: 'Features',   desc: 'All student features',     emoji: '✨' },
+    { id: 'pricing',   label: 'Pricing',    desc: 'Plans & pricing',          emoji: '💳' },
   ],
   teacher: [],
   admin:   [],
@@ -251,6 +255,26 @@ export default function AppNavbar({ role = 'landing', activeTab, setActiveTab, u
     return activeTab === item.id;
   };
 
+  // Helper to prevent Google Translate from messing up specific words
+  const renderLabel = (text) => {
+    if (language === 'hi') {
+      if (text === 'Exam Generator' || text === 'Exam Gen' || text === 'nav.oracleEngine') {
+        return <span className="notranslate">एग्जाम जनरेटर</span>;
+      }
+      if (text === 'Pricing' || text === 'nav.pricing') {
+        return <span className="notranslate">प्राइसिंग</span>;
+      }
+    } else {
+      if (text === 'Exam Generator' || text === 'Exam Gen' || text === 'nav.oracleEngine') {
+        return <span className="notranslate">Exam Generator</span>;
+      }
+      if (text === 'Pricing' || text === 'nav.pricing') {
+        return <span className="notranslate">Pricing</span>;
+      }
+    }
+    return text.startsWith('nav.') ? t(text) : text;
+  };
+
   /* ─────────────────────────────────────────── */
   return (
     <>
@@ -333,7 +357,7 @@ export default function AppNavbar({ role = 'landing', activeTab, setActiveTab, u
                             position: 'relative',
                           }}
                         >
-                          {t(l.l)}
+                          {renderLabel(l.l)}
                           {(isActive || isHovered) && (
                             <span style={{
                               position: 'absolute', bottom: 0,
@@ -400,7 +424,7 @@ export default function AppNavbar({ role = 'landing', activeTab, setActiveTab, u
                         onMouseEnter={e => { if (activeTab !== tab.id) e.target.style.color = 'var(--text2)'; }}
                         onMouseLeave={e => { if (activeTab !== tab.id) e.target.style.color = 'var(--text3)'; }}
                       >
-                        {tab.l}
+                        {renderLabel(tab.l)}
                       </button>
                     ))}
                   </div>
@@ -741,7 +765,7 @@ export default function AppNavbar({ role = 'landing', activeTab, setActiveTab, u
                     strokeWidth={active ? 2.3 : 1.7}
                   />
                 </div>
-                <span className="mob-nav-label">{item.label}</span>
+                <span className="mob-nav-label">{renderLabel(item.label)}</span>
               </motion.button>
             );
           })}
@@ -822,7 +846,7 @@ export default function AppNavbar({ role = 'landing', activeTab, setActiveTab, u
                       >
                         <div className="mob-sheet-emoji">{item.emoji}</div>
                         <div>
-                          <div style={{ lineHeight: 1.2 }}>{item.label}</div>
+                          <div style={{ lineHeight: 1.2 }}>{renderLabel(item.label)}</div>
                           <div style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--text3)', marginTop: 2 }}>
                             {item.desc}
                           </div>

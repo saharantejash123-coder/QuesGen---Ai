@@ -8,6 +8,8 @@ import SnapSolve from '../components/student/SnapSolve'
 import Vault15Page from './questra/Vault15Page'
 import ScriptLabPage from './questra/ScriptLabPage'
 import AdaptiveTesting from '../components/student/AdaptiveTesting'
+import StudentFeaturesPage from './student/StudentFeaturesPage'
+import StudentPricingPage from './student/StudentPricingPage'
 
 const tabComponents = {
   overview: DashboardOverview,
@@ -17,6 +19,8 @@ const tabComponents = {
   vault15: Vault15Page,
   scriptlab: ScriptLabPage,
   adaptive: AdaptiveTesting,
+  features: StudentFeaturesPage,
+  pricing: StudentPricingPage,
 }
 
 export default function StudentDashboard() {
