@@ -80,31 +80,20 @@ function AnimatedRoutes() {
   );
 }
 
+const GOOGLE_CLIENT_ID = '462752093792-7qe3v01bs6a25v8ldsttt9cenvg1mtg1.apps.googleusercontent.com';
+
 export default function App() {
-  const clientId = import.meta.env.VITE_REACT_APP_GOOGLE_CLIENT_ID;
-  const hasValidClientId = clientId && clientId !== 'YOUR_GOOGLE_CLIENT_ID_HERE';
-
-  const AppContent = (
-    <ThemeProvider>
-      <LanguageProvider>
-        <BrowserRouter>
-          <AnimatedRoutes />
-        </BrowserRouter>
-      </LanguageProvider>
-    </ThemeProvider>
+  return (
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+      <ThemeProvider>
+        <LanguageProvider>
+          <BrowserRouter>
+            <AnimatedRoutes />
+          </BrowserRouter>
+        </LanguageProvider>
+      </ThemeProvider>
+    </GoogleOAuthProvider>
   );
-
-  // If we have a valid Client ID, wrap with GoogleOAuthProvider
-  if (hasValidClientId) {
-    return (
-      <GoogleOAuthProvider clientId={clientId}>
-        {AppContent}
-      </GoogleOAuthProvider>
-    );
-  }
-
-  // Otherwise, render without Google OAuth (traditional login will still work)
-  return AppContent;
 }
 
 
