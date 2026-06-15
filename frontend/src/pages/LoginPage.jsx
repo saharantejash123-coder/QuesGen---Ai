@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { ArrowRight, Loader2, BookOpen, Brain, Target, TrendingUp } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { login, saveSession } from '../services/authService';
+import { getActiveBan } from '../services/adminService';
 
 const GOOGLE_CLIENT_ID = '462752093792-7qe3v01bs6a25v8ldsttt9cenvg1mtg1.apps.googleusercontent.com';
 
@@ -55,6 +56,7 @@ export default function LoginPage() {
     try {
       const user = await login(email, password);
       saveSession(user);
+      if (user._banned || getActiveBan(user.email)) return navigate('/banned');
       redirect(user.role);
     } catch (err) {
       setError(err.message || 'Login failed. Please try again.');

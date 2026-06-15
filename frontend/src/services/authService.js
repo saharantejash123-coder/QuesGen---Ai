@@ -87,6 +87,14 @@ export async function login(email, password) {
       if (data.user) return { ...data.user, role: (data.user.role || 'student').toLowerCase() };
     }
     if (res.status === 401) throw new Error('Incorrect password.');
+    if (res.status === 403) {
+      const banData = await res.json();
+      if (banData.banned) {
+        // Return user with banned flag so LoginPage can save session + redirect
+        return { email: lEmail, role: 'student', firstName: lEmail.split('@')[0], lastName: '', _banned: true, _banReason: banData.reason || '' };
+      }
+      throw new Error('Access denied.');
+    }
     if (res.status === 404) throw new Error('No account found with this email. Please register first.');
   } catch (err) {
     if (err.message.includes('Incorrect') || err.message.includes('No account')) throw err;

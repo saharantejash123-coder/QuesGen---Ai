@@ -17,6 +17,7 @@ import StudentDashboard from './pages/StudentDashboard';
 import TeacherDashboard from './pages/TeacherDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import SchoolDashboard from './pages/SchoolDashboard';
+import BannedPage from './pages/BannedPage';
 
 function AnimatedRoutes() {
   const location = useLocation();
@@ -75,6 +76,7 @@ function AnimatedRoutes() {
               </ProtectedRoute>
             }
           />
+          <Route path="/banned" element={<BannedPage />} />
         </Routes>
       </motion.div>
     </AnimatePresence>

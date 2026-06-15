@@ -3,6 +3,7 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const { successResponse, errorResponse, asyncHandler } = require('../errors');
 const { getClient } = require('../services/supabaseClient');
+const db = require('../db/database');
 const { storeOTP, checkOTP, sendOTPEmail } = require('../services/emailService');
 const googleOAuthService = require('../services/googleOAuthService');
 const { isGmailAccount, isValidEmail, validatePassword } = require('../utils/validation');
@@ -31,6 +32,14 @@ router.post('/login', asyncHandler(async (req, res) => {
       lastName: data.user.user_metadata?.lastName || '',
       role: data.user.user_metadata?.role || 'STUDENT'
     };
+
+    // Check if user is banned
+    const banRow = await new Promise((resolve) => {
+      db.get('SELECT reason FROM banned_users WHERE user_id = ? AND status = ?', [user.id, 'active'], (err, row) => resolve(row || null));
+    });
+    if (banRow) {
+      return res.status(403).json({ success: false, banned: true, reason: banRow.reason || 'No reason provided', error: 'Your account has been banned.' });
+    }
 
     const token = jwt.sign({ userId: user.id, role: user.role, email: user.email }, JWT_SECRET, { expiresIn: JWT_EXPIRY });
     return successResponse(res, { token, user });
