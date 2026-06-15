@@ -6,7 +6,7 @@ import {
 } from 'lucide-react'
 import {
   fetchAllUsers, banUser, unbanUser, apiBanUser, apiDeleteUser,
-  promoteUser, changeUserPlan, apiPromoteUser, apiChangeUserPlan, logAction,
+  promoteUser, changeUserPlan, apiPromoteUser, apiChangeUserPlan, logAction, apiUnbanAll, apiUnbanUser,
 } from '../../services/adminService'
 
 const PLAN_CYCLE = { Free: 'Pro', Pro: 'School', School: 'Free' }
@@ -143,10 +143,18 @@ export default function UserManagement() {
     const u = users.find(x => x.id === userId)
     update(userId, { status: 'Active', banReason: null })
     unbanUser(u?.email || '')
-    await apiBanUser(userId, false, '', u?.email || '')
+    await Promise.all([
+      apiBanUser(userId, false, '', u?.email || ''),
+      apiUnbanUser(u?.email || ''),
+    ])
     logAction({ action: 'USER_UNBANNED', actor: 'Admin', target: u?.email || '', targetRole: u?.type, detail: 'Ban lifted by admin', severity: 'low' })
     setActionMenu(null)
-    if (localStorage.getItem('questra_bans')) loadUsers()
+    loadUsers()
+  }
+  const handleUnbanAll = async () => {
+    if (!window.confirm('Unban ALL users? This clears bans from Supabase, SQLite, and localStorage.')) return
+    await apiUnbanAll()
+    loadUsers()
   }
   const handleChangePlan = (userId, newPlan) => {
     const u = users.find(x => x.id === userId)
@@ -211,6 +219,16 @@ export default function UserManagement() {
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
           </button>
+          {counts.banned > 0 && (
+            <button
+              onClick={handleUnbanAll}
+              title="Unban all"
+              className="flex items-center gap-1.5 px-3 py-2.5 text-sm font-bold rounded-xl border transition-all"
+              style={{ color:'#10b981', borderColor:'rgba(16,185,129,0.3)', background:'rgba(16,185,129,0.08)' }}
+            >
+              <CheckCircle className="w-4 h-4" /> Unban All ({counts.banned})
+            </button>
+          )}
           <button
             onClick={() => setModal({ type:'add' })}
             className="flex items-center gap-2 px-5 py-2.5 text-white text-sm font-bold rounded-xl transition-all hover:-translate-y-0.5"

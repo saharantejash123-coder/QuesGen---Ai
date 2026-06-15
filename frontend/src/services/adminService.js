@@ -242,6 +242,33 @@ export async function syncBanFromBackend(user) {
   return result;
 }
 
+// Unban a single user by email — dedicated endpoint (more reliable than the old PATCH path)
+export async function apiUnbanUser(email) {
+  if (!BACKEND_URL || !email) return;
+  try {
+    await fetch(`${BACKEND_URL}/api/admin/unban`, {
+      method: 'POST',
+      headers: secretHeaders(),
+      body: JSON.stringify({ email }),
+    });
+  } catch { /* ignore */ }
+}
+
+// Unban all — clears bans from Supabase table + Auth + SQLite + localStorage
+export async function apiUnbanAll() {
+  if (BACKEND_URL) {
+    try {
+      await fetch(`${BACKEND_URL}/api/admin/unban-all`, {
+        method: 'POST',
+        headers: secretHeaders(),
+      });
+    } catch { /* ignore */ }
+  }
+  // Also clear local questra_bans entirely
+  localStorage.removeItem('questra_bans');
+  localStorage.removeItem(BANS_KEY);
+}
+
 // Delete via backend (also removes from localStorage)
 export async function apiDeleteUser(id) {
   if (BACKEND_URL) {

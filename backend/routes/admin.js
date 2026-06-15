@@ -185,9 +185,69 @@ function persistBanToSQLite(userId, email, banned, reason) {
       [userId, email, reason || '', new Date().toISOString(), 'active']
     );
   } else {
-    db.run('DELETE FROM banned_users WHERE user_id = ?', [userId]);
+    if (userId) db.run('DELETE FROM banned_users WHERE user_id = ?', [userId]);
+    if (email)  db.run('DELETE FROM banned_users WHERE email = ?', [email]);
   }
 }
+
+// POST /api/admin/unban — email-based unban (works for ALL users regardless of ID)
+router.post('/unban', requireSecret, asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  if (!email) return errorResponse(res, 'Email required', 400);
+  const lcEmail = email.toLowerCase().trim();
+
+  // 1. Clear SQLite by email
+  db.run('DELETE FROM banned_users WHERE email = ?', [lcEmail]);
+
+  // 2. Clear Supabase banned_users table by email
+  const supabase = getClient();
+  if (supabase) {
+    try { await supabase.from('banned_users').delete().eq('email', lcEmail); } catch { /* table may not exist */ }
+  }
+
+  // 3. Find user in Supabase Auth and lift ban_duration
+  if (supabase) {
+    try {
+      const { data } = await supabase.auth.admin.listUsers();
+      if (data?.users) {
+        const u = data.users.find(x => x.email?.toLowerCase() === lcEmail);
+        if (u && u.banned_until && new Date(u.banned_until) > new Date()) {
+          await supabase.auth.admin.updateUserById(u.id, { ban_duration: 'none' }).catch(() => {});
+        }
+      }
+    } catch { /* ignore */ }
+  }
+
+  successResponse(res, { success: true, message: `Ban lifted for ${lcEmail}` });
+}));
+
+// POST /api/admin/unban-all — clear every ban from every storage layer
+router.post('/unban-all', requireSecret, asyncHandler(async (req, res) => {
+  // 1. Clear SQLite banned_users
+  db.run('DELETE FROM banned_users', []);
+
+  // 2. Clear Supabase banned_users table
+  const supabase = getClient();
+  if (supabase) {
+    try { await supabase.from('banned_users').delete().neq('id', 0); } catch { /* table may not exist */ }
+  }
+
+  // 3. Also list all Supabase Auth users and lift their ban_duration
+  if (supabase) {
+    try {
+      const { data } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1000 });
+      if (data?.users) {
+        for (const u of data.users) {
+          if (u.banned_until && new Date(u.banned_until) > new Date()) {
+            await supabase.auth.admin.updateUserById(u.id, { ban_duration: 'none' }).catch(() => {});
+          }
+        }
+      }
+    } catch { /* ignore */ }
+  }
+
+  successResponse(res, { success: true, message: 'All bans lifted from all storage layers' });
+}));
 
 // DELETE /api/admin/users/:id
 router.delete('/users/:id', requireSecret, asyncHandler(async (req, res) => {
