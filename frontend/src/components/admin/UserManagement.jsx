@@ -135,7 +135,7 @@ export default function UserManagement() {
     const u = users.find(x => x.id === userId)
     update(userId, { status: 'Active', banReason: null })
     unbanUser(u?.email || '')
-    apiBanUser(userId, false)
+    apiBanUser(userId, u?.email || '', '', false)
     logAction({ action: 'USER_UNBANNED', actor: 'Admin', target: u?.email || '', targetRole: u?.type, detail: 'Ban lifted by admin', severity: 'low' })
     setActionMenu(null)
   }
