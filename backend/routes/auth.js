@@ -269,6 +269,21 @@ router.post('/send-otp', asyncHandler(async (req, res) => {
   return successResponse(res, { sent: false, demoOtp: result.demoOtp, message: 'SMTP not configured. Use the displayed OTP.' });
 }));
 
+// ── Ban check (no JWT needed — queried by email on login) ────────────────────
+router.get('/ban-check', asyncHandler(async (req, res) => {
+  const { email } = req.query;
+  if (!email) return errorResponse(res, 'Email query param required', 400);
+
+  const row = await new Promise((resolve) => {
+    db.get('SELECT * FROM banned_users WHERE email = ? AND status = ?', [email.toLowerCase().trim(), 'active'], (err, row) => resolve(row || null));
+  });
+
+  if (row) {
+    return successResponse(res, { banned: true, reason: row.reason || '', userId: row.user_id, bannedAt: row.banned_at });
+  }
+  return successResponse(res, { banned: false });
+}));
+
 // ── Verify OTP ────────────────────────────────────────────────────────────────
 router.post('/verify-otp', asyncHandler(async (req, res) => {
   const { email, otp } = req.body;

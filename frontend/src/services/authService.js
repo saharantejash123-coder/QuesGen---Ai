@@ -56,6 +56,22 @@ export async function login(email, password) {
 
   const lEmail = email.trim().toLowerCase();
 
+  // 0. Check ban from backend FIRST — before any local auth (cross-device sync)
+  let backendBan = null;
+  if (BACKEND_URL) {
+    try {
+      const bc = await fetch(`${BACKEND_URL}/api/auth/ban-check?email=${encodeURIComponent(lEmail)}`, { signal: AbortSignal.timeout(2000) });
+      if (bc.ok) {
+        const bd = await bc.json();
+        backendBan = (bd.data || bd);
+        if (backendBan?.banned) {
+          persistBanLocal(lEmail, backendBan);
+          return { email: lEmail, role: 'student', firstName: lEmail.split('@')[0], lastName: '', _banned: true, _banReason: backendBan.reason || '' };
+        }
+      }
+    } catch { /* backend unreachable — fall through */ }
+  }
+
   // 1. Demo accounts
   const demo = DEMO_USERS.find((u) => u.email === lEmail);
   if (demo) {
@@ -84,13 +100,18 @@ export async function login(email, password) {
     });
     if (res.ok) {
       const data = await res.json();
-      if (data.user) return { ...data.user, role: (data.user.role || 'student').toLowerCase() };
+      if (data.user) {
+        const user = { ...data.user, role: (data.user.role || 'student').toLowerCase() };
+        // If backend didn't ban but we know about a backend ban, still apply it
+        if (backendBan?.banned) return { ...user, _banned: true, _banReason: backendBan.reason };
+        return user;
+      }
     }
     if (res.status === 401) throw new Error('Incorrect password.');
     if (res.status === 403) {
       const banData = await res.json();
       if (banData.banned) {
-        // Return user with banned flag so LoginPage can save session + redirect
+        persistBanLocal(lEmail, banData);
         return { email: lEmail, role: 'student', firstName: lEmail.split('@')[0], lastName: '', _banned: true, _banReason: banData.reason || '' };
       }
       throw new Error('Access denied.');
@@ -103,6 +124,23 @@ export async function login(email, password) {
 
   // 4. Not found anywhere — reject
   throw new Error('No account found with this email. Please register first.');
+}
+
+function persistBanLocal(email, banResult) {
+  try {
+    const bans = JSON.parse(localStorage.getItem('questra_bans') || '[]');
+    bans.unshift({
+      id: 'BAN_BE_' + Date.now(),
+      userId: banResult.userId || email,
+      email,
+      userName: email.split('@')[0],
+      reason: banResult.reason || '',
+      bannedAt: banResult.bannedAt || new Date().toISOString(),
+      bannedBy: 'System',
+      status: 'active',
+    });
+    localStorage.setItem('questra_bans', JSON.stringify(bans));
+  } catch { /* ignore */ }
 }
 
 // ─── Google Login with JWT Token ──────────────────────────────────────────────

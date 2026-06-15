@@ -202,6 +202,44 @@ export async function apiBanUser(id, banned, reason = '', email = '') {
   }
 }
 
+// Check ban status from backend (works cross-device)
+export async function apiCheckBan(email) {
+  if (!email || !BACKEND_URL) return null;
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/auth/ban-check?email=${encodeURIComponent(email)}`, { signal: AbortSignal.timeout(3000) });
+    if (res.ok) {
+      const data = await res.json();
+      return data.data || data;
+    }
+  } catch { /* backend offline */ }
+  return null;
+}
+
+// Sync backend ban into localStorage (call on login / ProtectedRoute mount)
+export async function syncBanFromBackend(user) {
+  if (!user?.email) return null;
+  const result = await apiCheckBan(user.email);
+  if (result === null) return null; // backend unreachable — don't touch local state
+  if (result?.banned) {
+    const bans = getBans().filter(b => b.email !== user.email);
+    bans.unshift({
+      id: 'BAN_BE_' + Date.now(),
+      userId: result.userId || user.id,
+      email: user.email,
+      userName: user.name || user.firstName || user.email,
+      reason: result.reason || '',
+      bannedAt: result.bannedAt || new Date().toISOString(),
+      bannedBy: 'System',
+      status: 'active',
+    });
+    save(BANS_KEY, bans);
+    return result; // caller can check result.banned
+  }
+  // Backend explicitly says not banned → remove any active local ban for this user
+  save(BANS_KEY, getBans().filter(b => b.email !== user.email || b.status !== 'active'));
+  return result;
+}
+
 // Delete via backend (also removes from localStorage)
 export async function apiDeleteUser(id) {
   if (BACKEND_URL) {
