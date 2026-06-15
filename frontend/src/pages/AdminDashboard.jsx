@@ -7,6 +7,7 @@ import SchoolManagement from '../components/admin/SchoolManagement'
 import ActivityLogs from '../components/admin/ActivityLogs'
 import PlatformAnalytics from '../components/admin/PlatformAnalytics'
 import SystemSettings from '../components/admin/SystemSettings'
+import ProfilePage from './ProfilePage'
 
 const tabComponents = {
   overview:  AdminOverview,
@@ -15,6 +16,7 @@ const tabComponents = {
   activity:  ActivityLogs,
   analytics: PlatformAnalytics,
   settings:  SystemSettings,
+  profile:   ProfilePage,
 }
 
 export default function AdminDashboard() {
@@ -55,7 +57,11 @@ export default function AdminDashboard() {
         onLogout={handleLogout}
       />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-12">
-        <ActiveComponent user={user} />
+        {activeTab === 'profile' ? (
+          <ProfilePage user={user} onUpdate={setUser} role="admin" setActiveTab={setActiveTab} />
+        ) : (
+          <ActiveComponent user={user} />
+        )}
       </main>
     </div>
   )

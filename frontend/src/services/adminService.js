@@ -119,7 +119,7 @@ function secretHeaders() {
 
 function mapBackendUser(u) {
   const ban  = getActiveBan(u.email)
-  const plan = getUserPlan(u.email, 'Free')
+  const plan = getUserPlan(u.email, u.plan || 'Free')
   const role = getUserRole(u.email, u.role || 'student')
   const name = [u.firstName, u.lastName].filter(Boolean).join(' ') || u.name || u.email?.split('@')[0] || 'Unknown'
   return {
@@ -190,13 +190,13 @@ export async function fetchStats() {
 }
 
 // Ban/unban via backend (also persists locally)
-export async function apiBanUser(id, banned) {
+export async function apiBanUser(id, banned, reason = '', email = '') {
   if (BACKEND_URL) {
     try {
       await fetch(`${BACKEND_URL}/api/admin/users/${id}/ban`, {
         method: 'PATCH',
         headers: secretHeaders(),
-        body: JSON.stringify({ banned }),
+        body: JSON.stringify({ banned, reason, email }),
       })
     } catch { /* ignore */ }
   }
@@ -214,6 +214,45 @@ export async function apiDeleteUser(id) {
   }
   const registered = load('questra_registered', [])
   save('questra_registered', registered.filter(u => u.id !== id))
+}
+
+// Promote role via backend
+export async function apiPromoteUser(id, role) {
+  if (BACKEND_URL) {
+    try {
+      await fetch(`${BACKEND_URL}/api/admin/users/${id}/role`, {
+        method: 'PATCH',
+        headers: secretHeaders(),
+        body: JSON.stringify({ role }),
+      })
+    } catch { /* ignore */ }
+  }
+}
+
+// Change plan via backend
+export async function apiChangeUserPlan(id, plan) {
+  if (BACKEND_URL) {
+    try {
+      await fetch(`${BACKEND_URL}/api/admin/users/${id}/plan`, {
+        method: 'PATCH',
+        headers: secretHeaders(),
+        body: JSON.stringify({ plan }),
+      })
+    } catch { /* ignore */ }
+  }
+}
+
+// Update user profile via backend
+export async function apiUpdateProfile(id, data) {
+  if (BACKEND_URL) {
+    try {
+      await fetch(`${BACKEND_URL}/api/admin/users/${id}/profile`, {
+        method: 'PATCH',
+        headers: secretHeaders(),
+        body: JSON.stringify(data),
+      })
+    } catch { /* ignore */ }
+  }
 }
 
 // ── Real registered users ─────────────────────────────────────

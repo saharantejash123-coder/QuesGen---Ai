@@ -21,13 +21,31 @@ async function listSupabaseUsers() {
   if (!supabase) return [];
   const { data, error } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1000 });
   if (error) throw new Error(error.message);
+
+  // Load persisted plans/roles from SQLite
+  const plans = {};
+  const roles = {};
+  await new Promise((resolve) => {
+    db.all('SELECT user_id, plan FROM user_plans', [], (err, rows) => {
+      if (!err) (rows || []).forEach(r => { plans[r.user_id] = r.plan; });
+      resolve();
+    });
+  });
+  await new Promise((resolve) => {
+    db.all('SELECT user_id, role FROM user_roles', [], (err, rows) => {
+      if (!err) (rows || []).forEach(r => { roles[r.user_id] = r.role; });
+      resolve();
+    });
+  });
+
   return (data.users || []).map(u => ({
     id: u.id,
     email: u.email,
     name: [u.user_metadata?.firstName, u.user_metadata?.lastName].filter(Boolean).join(' ') || u.email?.split('@')[0] || 'Unknown',
     firstName: u.user_metadata?.firstName || '',
     lastName: u.user_metadata?.lastName || '',
-    role: (u.user_metadata?.role || 'student').toLowerCase(),
+    role: roles[u.id] || (u.user_metadata?.role || 'student').toLowerCase(),
+    plan: plans[u.id] || u.user_metadata?.plan || 'Free',
     status: u.banned_until && new Date(u.banned_until) > new Date() ? 'Banned' : 'Active',
     createdAt: u.created_at,
     lastSignIn: u.last_sign_in_at,
@@ -100,15 +118,37 @@ router.post('/logs', requireSecret, (req, res) => {
 // PATCH /api/admin/users/:id/ban
 router.patch('/users/:id/ban', requireSecret, asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { banned } = req.body;
+  const { banned, reason, email } = req.body;
+
+  // Try Supabase first
   const supabase = getClient();
-  if (!supabase) return errorResponse(res, 'Supabase not configured', 503);
-  const { error } = await supabase.auth.admin.updateUserById(id, {
-    ban_duration: banned ? '876000h' : 'none',
-  });
-  if (error) return errorResponse(res, error.message, 500);
-  successResponse(res, { success: true });
+  if (supabase) {
+    const { error } = await supabase.auth.admin.updateUserById(id, {
+      ban_duration: banned ? '876000h' : 'none',
+    });
+    if (!error) {
+      // Also persist to SQLite
+      persistBanToSQLite(id, email || '', banned, reason || '');
+      return successResponse(res, { success: true, source: 'supabase' });
+    }
+    // Fall through to SQLite
+  }
+
+  // SQLite fallback
+  persistBanToSQLite(id, email || '', banned, reason || '');
+  successResponse(res, { success: true, source: 'sqlite' });
 }));
+
+function persistBanToSQLite(userId, email, banned, reason) {
+  if (banned) {
+    db.run(
+      'INSERT OR REPLACE INTO banned_users (user_id, email, reason, banned_at, status) VALUES (?, ?, ?, ?, ?)',
+      [userId, email, reason || '', new Date().toISOString(), 'active']
+    );
+  } else {
+    db.run('DELETE FROM banned_users WHERE user_id = ?', [userId]);
+  }
+}
 
 // DELETE /api/admin/users/:id
 router.delete('/users/:id', requireSecret, asyncHandler(async (req, res) => {
@@ -124,13 +164,95 @@ router.delete('/users/:id', requireSecret, asyncHandler(async (req, res) => {
 router.patch('/users/:id/role', requireSecret, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { role } = req.body;
+
+  // Try Supabase first
   const supabase = getClient();
-  if (!supabase) return errorResponse(res, 'Supabase not configured', 503);
-  const { error } = await supabase.auth.admin.updateUserById(id, {
-    user_metadata: { role },
-  });
-  if (error) return errorResponse(res, error.message, 500);
-  successResponse(res, { success: true });
+  if (supabase) {
+    const { error } = await supabase.auth.admin.updateUserById(id, {
+      user_metadata: { role },
+    });
+    if (!error) return successResponse(res, { success: true });
+    // Fall through to SQLite
+  }
+
+  // SQLite fallback
+  db.run(
+    'INSERT OR REPLACE INTO user_roles (user_id, role, updated_at) VALUES (?, ?, ?)',
+    [id, role.toLowerCase(), new Date().toISOString()],
+    function (err) {
+      if (err) return errorResponse(res, 'Database error', 500);
+      successResponse(res, { success: true, source: 'sqlite' });
+    }
+  );
+}));
+
+// PATCH /api/admin/users/:id/plan
+router.patch('/users/:id/plan', requireSecret, asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { plan } = req.body;
+
+  // Try Supabase first
+  const supabase = getClient();
+  if (supabase) {
+    const { error } = await supabase.auth.admin.updateUserById(id, {
+      user_metadata: { plan },
+    });
+    if (!error) return successResponse(res, { success: true });
+    // Fall through to SQLite
+  }
+
+  // SQLite fallback
+  db.run(
+    'INSERT OR REPLACE INTO user_plans (user_id, plan, updated_at) VALUES (?, ?, ?)',
+    [id, plan, new Date().toISOString()],
+    function (err) {
+      if (err) return errorResponse(res, 'Database error', 500);
+      successResponse(res, { success: true, source: 'sqlite' });
+    }
+  );
+}));
+
+// PATCH /api/admin/users/:id/profile
+router.patch('/users/:id/profile', requireSecret, asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const profile = req.body;
+
+  // Try Supabase first – update user_metadata with profile fields
+  const supabase = getClient();
+  if (supabase) {
+    const metaFields = {};
+    if (profile.firstName !== undefined) metaFields.firstName = profile.firstName;
+    if (profile.lastName !== undefined) metaFields.lastName = profile.lastName;
+    if (profile.phone !== undefined) metaFields.phone = profile.phone;
+    if (profile.schoolName !== undefined) metaFields.schoolName = profile.schoolName;
+    if (profile.subject !== undefined) metaFields.subject = profile.subject;
+    if (profile.displayName !== undefined) metaFields.displayName = profile.displayName;
+    if (Object.keys(metaFields).length > 0) {
+      const { error } = await supabase.auth.admin.updateUserById(id, { user_metadata: metaFields });
+      if (!error) {
+        // Also persist full profile to SQLite
+        db.run(
+          'INSERT OR REPLACE INTO user_profiles (user_id, data, updated_at) VALUES (?, ?, ?)',
+          [id, JSON.stringify(profile), new Date().toISOString()],
+          function (err) {
+            if (err) return errorResponse(res, 'Database error', 500);
+            successResponse(res, { success: true, source: 'supabase' });
+          }
+        );
+        return;
+      }
+    }
+  }
+
+  // SQLite fallback
+  db.run(
+    'INSERT OR REPLACE INTO user_profiles (user_id, data, updated_at) VALUES (?, ?, ?)',
+    [id, JSON.stringify(profile), new Date().toISOString()],
+    function (err) {
+      if (err) return errorResponse(res, 'Database error', 500);
+      successResponse(res, { success: true, source: 'sqlite' });
+    }
+  );
 }));
 
 module.exports = router;

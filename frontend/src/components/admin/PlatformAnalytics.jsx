@@ -74,8 +74,8 @@ export default function PlatformAnalytics() {
         <div className="lg:col-span-2 card p-6">
           <h3 className="font-bold text-lg mb-1" style={{ color: 'var(--text)' }}>User Growth (2026)</h3>
           <p style={{ color: 'var(--text3)' }} className="text-xs mb-6 uppercase tracking-widest font-bold">Monthly registrations</p>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+          <div style={{ minHeight: 256 }}>
+            <ResponsiveContainer width="100%" height={256} minWidth={0}>
               <AreaChart data={monthlyGrowth}>
                 <defs>
                   <linearGradient id="growthGrad" x1="0" y1="0" x2="0" y2="1">
@@ -97,8 +97,8 @@ export default function PlatformAnalytics() {
         <div className="card p-6">
           <h3 className="font-bold text-lg mb-1" style={{ color: 'var(--text)' }}>Board Distribution</h3>
           <p style={{ color: 'var(--text3)' }} className="text-xs mb-6 uppercase tracking-widest font-bold">Market penetration</p>
-          <div className="h-52">
-            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+          <div style={{ minHeight: 208 }}>
+            <ResponsiveContainer width="100%" height={208} minWidth={0}>
               <PieChart>
                 <Pie data={boardDistribution} cx="50%" cy="50%" innerRadius={55} outerRadius={80} paddingAngle={4} dataKey="value" stroke="none">
                   {boardDistribution.map((entry, i) => (
@@ -131,8 +131,8 @@ export default function PlatformAnalytics() {
             <p style={{ color: 'var(--text3)' }} className="text-xs mt-0.5 uppercase tracking-widest font-bold">Scores & Volume by Discipline</p>
           </div>
         </div>
-        <div className="h-72">
-          <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+        <div style={{ minHeight: 288 }}>
+          <ResponsiveContainer width="100%" height={288} minWidth={0}>
             <BarChart data={subjectPerformance}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
               <XAxis dataKey="subject" stroke="var(--text3)" tick={{ fill: 'var(--text3)', fontSize: 12, fontWeight: 600 }} axisLine={false} tickLine={false} />

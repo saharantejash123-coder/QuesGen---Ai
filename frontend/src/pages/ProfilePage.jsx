@@ -1,14 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  User, Mail, Phone, BookOpen, Shield, AlertTriangle,
+  User, Users, Mail, Phone, BookOpen, Building2, Shield, AlertTriangle,
   Settings, GraduationCap, CheckCircle, Save, Trash2,
   Lock, Globe, Sun, Moon, Bell, BellOff, Award,
   Target, Clock, TrendingUp, Edit3, ChevronRight,
-  Key, Layers, Sparkles, BarChart3, Zap, X,
+  Key, Layers, Sparkles, BarChart3, Zap, X, Camera,
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
+import { useIsMobile } from '../hooks/useIsMobile';
+import { apiUpdateProfile } from '../services/adminService';
 
 /* ─── constants ─── */
 const BOARDS    = ['CBSE','RBSE','ICSE','UP Board','Maharashtra','Bihar','MP Board','Karnataka'];
@@ -107,7 +109,7 @@ function StatCard({ icon: Icon, label, value, accent }) {
     <div style={{
       background:'var(--card-bg)', border:'1px solid var(--border)',
       borderRadius:14, padding:'1rem 1.2rem',
-      display:'flex', alignItems:'center', gap:'0.9rem', flex:1,
+      display:'flex', alignItems:'center', gap:'0.9rem', flex:1, minWidth:140,
     }}>
       <div style={{
         width:40, height:40, borderRadius:11, flexShrink:0,
@@ -130,6 +132,7 @@ function StatCard({ icon: Icon, label, value, accent }) {
 export default function ProfilePage({ user: userProp, onUpdate, role = 'student', setActiveTab }) {
   const { dark, setDark } = useTheme();
   const { language, changeLanguage } = useLanguage();
+  const isMobile = useIsMobile(768);
 
   /* ─ derive initial form data from user ─ */
   const init = () => {
@@ -153,6 +156,7 @@ export default function ProfilePage({ user: userProp, onUpdate, role = 'student'
       notifTests:   u.notifTests !== false,
       notifUpdates: u.notifUpdates !== false,
       watermark:    u.watermark || name || 'QuesGen AI',
+      profileImage: u.profileImage || u.avatar || '',
     };
   };
 
@@ -161,7 +165,8 @@ export default function ProfilePage({ user: userProp, onUpdate, role = 'student'
   const [saved, setSaved] = useState(false);
   const [dangerAction, setDangerAction] = useState(null);
   const [dangerInput, setDangerInput] = useState('');
-  const [stats, setStats] = useState({ tests: 0, questions: 0, streak: 0, avgScore: 0 });
+  const [stats, setStats] = useState({ tests: 0, questions: 0, streak: 0, avgScore: 0, papers: 0, students: 0 });
+  const fileInputRef = useRef(null);
 
   /* reload form when userProp changes */
   useEffect(() => { setForm(init()); }, [userProp]);
@@ -191,6 +196,16 @@ export default function ProfilePage({ user: userProp, onUpdate, role = 'student'
     });
   };
 
+  const handleImageChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setForm(f => ({ ...f, profileImage: ev.target?.result || '' }));
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSave = () => {
     const fullName = [form.firstName, form.lastName].filter(Boolean).join(' ') || userProp?.name || '';
     const initials = ((form.firstName?.[0] || '') + (form.lastName?.[0] || '')).toUpperCase() || userProp?.initials || '??';
@@ -203,6 +218,27 @@ export default function ProfilePage({ user: userProp, onUpdate, role = 'student'
     };
     localStorage.setItem('questra_user', JSON.stringify(updated));
     onUpdate?.(updated);
+    if (userProp?.id) {
+      apiUpdateProfile(userProp.id, {
+        firstName: form.firstName,
+        lastName: form.lastName,
+        displayName: form.displayName || fullName,
+        phone: form.phone,
+        bio: form.bio,
+        institution: form.institution,
+        location: form.location,
+        schoolName: form.institution,
+        board: form.board,
+        subject: form.teachSubjects?.[0] || form.subject || '',
+        className: form.className,
+        subjects: form.subjects,
+        goal: form.goal,
+        teachSubjects: form.teachSubjects,
+        teachLevels: form.teachLevels,
+        watermark: form.watermark,
+        profileImage: form.profileImage,
+      })
+    }
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   };
@@ -246,7 +282,7 @@ export default function ProfilePage({ user: userProp, onUpdate, role = 'student'
           Update your personal details and public profile.
         </p>
       </div>
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'1rem' }}>
+      <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap:'1rem' }}>
         <Field label="First Name" value={form.firstName} onChange={setF('firstName')} />
         <Field label="Last Name"  value={form.lastName}  onChange={setF('lastName')}  />
       </div>
@@ -257,7 +293,7 @@ export default function ProfilePage({ user: userProp, onUpdate, role = 'student'
       <Field label="Phone Number" value={form.phone} onChange={setF('phone')} type="tel" />
       <Field label="Bio / About You" value={form.bio} onChange={setF('bio')} textarea
         hint="A short intro about yourself (shown on your profile)." />
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'1rem' }}>
+      <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap:'1rem' }}>
         <Field label="Institution / School" value={form.institution} onChange={setF('institution')} />
         <Field label="City / Location"      value={form.location}    onChange={setF('location')}    />
       </div>
@@ -275,7 +311,7 @@ export default function ProfilePage({ user: userProp, onUpdate, role = 'student'
 
       {(role === 'student') && (
         <>
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'1rem' }}>
+          <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap:'1rem' }}>
             <div style={{ ...col, gap:'0.4rem' }}>
               <label style={{ ...fs('0.75rem',700,'var(--text3)'), textTransform:'uppercase', letterSpacing:'0.5px' }}>Board</label>
               <select value={form.board} onChange={e=>setF('board')(e.target.value)}
@@ -720,20 +756,38 @@ export default function ProfilePage({ user: userProp, onUpdate, role = 'student'
           position:'absolute', top:0, left:0, right:0,
         }} />
 
-        <div style={{ padding:'1.5rem 2rem 1.8rem', position:'relative' }}>
+        <div style={{ padding: isMobile ? '1rem 1rem 1.2rem' : '1.5rem 2rem 1.8rem', position:'relative' }}>
           {/* Avatar row */}
-          <div style={{ ...row, alignItems:'flex-end', gap:'1.4rem', marginBottom:'1.2rem' }}>
-            <div style={{
-              width:88, height:88, borderRadius:24, flexShrink:0,
-              background: roleGrad[role] || 'linear-gradient(135deg,#2354F4,#7c3aed)',
-              display:'flex', alignItems:'center', justifyContent:'center',
-              fontWeight:800, color:'#fff', fontSize:'1.9rem',
-              boxShadow:`0 8px 28px ${accent}55`,
-              border:'4px solid var(--card-bg)',
-              marginTop:48,
-            }}>
-              {userProp?.initials || '??'}
+          <div style={{ ...row, alignItems:'flex-end', gap:'1.4rem', marginBottom:'1.2rem', flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              style={{
+                width: isMobile ? 72 : 88, height: isMobile ? 72 : 88, borderRadius: isMobile ? 20 : 24, flexShrink:0,
+                background: form.profileImage ? 'transparent' : (roleGrad[role] || 'linear-gradient(135deg,#2354F4,#7c3aed)'),
+                display:'flex', alignItems:'center', justifyContent:'center',
+                fontWeight:800, color:'#fff', fontSize:'1.9rem',
+                boxShadow:`0 8px 28px ${accent}55`,
+                border:'4px solid var(--card-bg)',
+                marginTop:48, cursor:'pointer', position:'relative',
+                overflow:'hidden',
+              }}
+              onMouseEnter={e => { const c = e.currentTarget.querySelector('.cam-overlay'); if (c) c.style.opacity = '1'; }}
+              onMouseLeave={e => { const c = e.currentTarget.querySelector('.cam-overlay'); if (c) c.style.opacity = '0'; }}
+            >
+              {form.profileImage ? (
+                <img src={form.profileImage} alt="Profile" style={{ width:'100%', height:'100%', objectFit:'cover', borderRadius:'inherit' }} />
+              ) : (
+                userProp?.initials || '??'
+              )}
+              <div className="cam-overlay" style={{
+                position:'absolute', inset:0, background:'rgba(0,0,0,0.45)',
+                display:'flex', alignItems:'center', justifyContent:'center',
+                opacity:0, transition:'opacity 0.2s', borderRadius:'inherit',
+              }}>
+                <Camera style={{ width:22, height:22, color:'#fff' }} />
+              </div>
             </div>
+            <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageChange} style={{ display:'none' }} />
             <div style={{ flex:1, marginBottom:4 }}>
               <div style={{ ...row, gap:'0.6rem', flexWrap:'wrap', alignItems:'center' }}>
                 <h2 style={{ ...fs('1.4rem',800,'var(--text)'), lineHeight:1.2 }}>
@@ -779,22 +833,42 @@ export default function ProfilePage({ user: userProp, onUpdate, role = 'student'
 
           {/* Stats row */}
           <div style={{ display:'flex', gap:'0.75rem', flexWrap:'wrap' }}>
-            <StatCard icon={Target}    label="Tests Taken"   value={stats.tests}        accent="#2354F4" />
-            <StatCard icon={Zap}       label="Questions Done" value={stats.questions}   accent="#7C3AED" />
-            <StatCard icon={TrendingUp} label="Avg Score"    value={`${stats.avgScore}%`} accent="#10B981" />
-            <StatCard icon={Award}     label="Day Streak"    value={`${stats.streak}d`}  accent="#F59E0B" />
+            {role === 'student' && (
+              <>
+                <StatCard icon={Target}    label="Tests Taken"    value={stats.tests}        accent="#2354F4" />
+                <StatCard icon={Zap}       label="Questions Done" value={stats.questions}    accent="#7C3AED" />
+                <StatCard icon={TrendingUp} label="Avg Score"     value={`${stats.avgScore}%`} accent="#10B981" />
+                <StatCard icon={Award}     label="Day Streak"    value={`${stats.streak}d`}   accent="#F59E0B" />
+              </>
+            )}
+            {role === 'teacher' && (
+              <>
+                <StatCard icon={BookOpen}  label="Papers Created"    value={stats.papers}    accent="#2354F4" />
+                <StatCard icon={Users}     label="Students Reached"  value={stats.students}  accent="#7C3AED" />
+                <StatCard icon={TrendingUp} label="Avg Score"        value={`${stats.avgScore}%`} accent="#10B981" />
+                <StatCard icon={Award}     label="Active Classes"    value={stats.streak}    accent="#F59E0B" />
+              </>
+            )}
+            {(role === 'admin' || role === 'school') && (
+              <>
+                <StatCard icon={Users}     label="Users Managed"   value={stats.tests}     accent="#2354F4" />
+                <StatCard icon={BookOpen}  label="Papers Created"  value={stats.papers}    accent="#7C3AED" />
+                <StatCard icon={Building2} label="Schools Active"  value={stats.students}  accent="#10B981" />
+                <StatCard icon={TrendingUp} label="Actions Today"  value={stats.streak}    accent="#F59E0B" />
+              </>
+            )}
           </div>
         </div>
       </div>
 
       {/* ── Content Grid: Sidebar + Panel ── */}
-      <div style={{ display:'grid', gridTemplateColumns:'220px 1fr', gap:'1.5rem', alignItems:'start' }}>
+      <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '220px 1fr', gap:'1.5rem', alignItems:'start' }}>
 
         {/* Sidebar */}
         <div style={{
           background:'var(--card-bg)', border:'1px solid var(--border)',
-          borderRadius:18, padding:'0.6rem', ...col, gap:'0.2rem',
-          position:'sticky', top:80,
+          borderRadius:18, padding:'0.6rem',
+          ...(isMobile ? { display:'flex', gap:'0.2rem', overflowX:'auto', whiteSpace:'nowrap', position:'static' } : { ...col, gap:'0.2rem', position:'sticky', top:80 }),
         }}>
           {sidebarSections.map(s => (
             <SectionBtn key={s.id} {...s}

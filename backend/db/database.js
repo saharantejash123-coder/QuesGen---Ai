@@ -81,6 +81,41 @@ const initDB = () => {
         created_at TEXT
       )
     `);
+
+    db.run(`
+      CREATE TABLE IF NOT EXISTS user_plans (
+        user_id TEXT PRIMARY KEY,
+        plan TEXT NOT NULL DEFAULT 'Free',
+        updated_at TEXT
+      )
+    `);
+
+    db.run(`
+      CREATE TABLE IF NOT EXISTS user_roles (
+        user_id TEXT PRIMARY KEY,
+        role TEXT NOT NULL,
+        updated_at TEXT
+      )
+    `);
+
+    db.run(`
+      CREATE TABLE IF NOT EXISTS user_profiles (
+        user_id TEXT PRIMARY KEY,
+        data TEXT NOT NULL,
+        updated_at TEXT
+      )
+    `);
+
+    db.run(`
+      CREATE TABLE IF NOT EXISTS banned_users (
+        user_id TEXT PRIMARY KEY,
+        email TEXT,
+        reason TEXT DEFAULT '',
+        banned_at TEXT,
+        banned_by TEXT DEFAULT 'Admin',
+        status TEXT DEFAULT 'active'
+      )
+    `);
   });
 };
 

@@ -6,7 +6,7 @@ import {
 } from 'lucide-react'
 import {
   fetchAllUsers, banUser, unbanUser, apiBanUser, apiDeleteUser,
-  promoteUser, changeUserPlan, logAction,
+  promoteUser, changeUserPlan, apiPromoteUser, apiChangeUserPlan, logAction,
 } from '../../services/adminService'
 
 const PLAN_CYCLE = { Free: 'Pro', Pro: 'School', School: 'Free' }
@@ -68,6 +68,7 @@ export default function UserManagement() {
   const [roleFilter, setRoleFilter] = useState('All')
   const [statusFilter, setStatusFilter] = useState('All')
   const [actionMenu, setActionMenu] = useState(null)
+  const [submenu, setSubmenu] = useState(null)
   const [modal, setModal] = useState(null)
   const [banReason, setBanReason] = useState('')
   const [addForm, setAddForm] = useState({ name:'', email:'', phone:'', school:'', subject:'', board:'' })
@@ -86,7 +87,7 @@ export default function UserManagement() {
   useEffect(() => {
     loadUsers()
     const handle = (e) => {
-      if (menuRef.current && !menuRef.current.contains(e.target)) setActionMenu(null)
+      if (menuRef.current && !menuRef.current.contains(e.target)) { setActionMenu(null); setSubmenu(null) }
     }
     document.addEventListener('mousedown', handle)
     return () => document.removeEventListener('mousedown', handle)
@@ -121,10 +122,12 @@ export default function UserManagement() {
   const menuUser = actionMenu ? users.find(u => u.id === actionMenu.userId) : null
 
   const handleBan = () => {
-    const u = users.find(x => x.id === actionMenu.userId)
-    update(actionMenu.userId, { status: 'Banned', banReason })
-    banUser({ id: actionMenu.userId, email: u?.email || '', name: u?.name || '' }, banReason)
-    apiBanUser(actionMenu.userId, true)
+    const target = modal?.user
+    if (!target) return
+    const u = users.find(x => x.id === target.id)
+    update(target.id, { status: 'Banned', banReason })
+    banUser({ id: target.id, email: u?.email || '', name: u?.name || '' }, banReason)
+    apiBanUser(target.id, true, banReason, u?.email || '')
     logAction({ action: 'USER_BANNED', actor: 'Admin', target: u?.email || '', targetRole: u?.type, detail: banReason, severity: 'high' })
     setActionMenu(null); setModal(null); setBanReason('')
   }
@@ -140,6 +143,7 @@ export default function UserManagement() {
     const u = users.find(x => x.id === userId)
     update(userId, { plan: newPlan })
     changeUserPlan(u?.email || '', newPlan)
+    apiChangeUserPlan(userId, newPlan)
     logAction({ action: 'PLAN_UPGRADED', actor: 'Admin', target: u?.email || '', detail: `Plan changed to ${newPlan}`, severity: 'info' })
     setActionMenu(null)
   }
@@ -147,6 +151,7 @@ export default function UserManagement() {
     const u = users.find(x => x.id === userId)
     update(userId, { type: newRole })
     promoteUser(u?.email || '', newRole)
+    apiPromoteUser(userId, newRole.toLowerCase())
     logAction({ action: 'ROLE_PROMOTED', actor: 'Admin', target: u?.email || '', targetRole: newRole, detail: `Role changed to ${newRole}`, severity: 'medium' })
     setActionMenu(null)
   }
@@ -400,73 +405,75 @@ export default function UserManagement() {
           </button>
 
           {/* Promote Role */}
-          <div style={{ position:'relative' }} className="group/role">
+          <div style={{ position:'relative' }}>
             <button
-              style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, padding:'10px 14px', background:'transparent', border:'none', cursor:'pointer', color:'var(--text2)', fontSize:'0.82rem', fontWeight:600, fontFamily:"'DM Sans',sans-serif", textAlign:'left' }}
-              onMouseEnter={e => e.currentTarget.style.background='var(--bg3)'}
-              onMouseLeave={e => e.currentTarget.style.background='transparent'}
+              onClick={() => setSubmenu(submenu === 'role' ? null : 'role')}
+              style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, padding:'10px 14px', background: submenu === 'role' ? 'var(--bg3)' : 'transparent', border:'none', cursor:'pointer', color:'var(--text2)', fontSize:'0.82rem', fontWeight:600, fontFamily:"'DM Sans',sans-serif", textAlign:'left' }}
+              onMouseEnter={e => { if (submenu !== 'role') e.currentTarget.style.background='var(--bg3)' }}
+              onMouseLeave={e => { if (submenu !== 'role') e.currentTarget.style.background='transparent' }}
             >
               <span style={{ display:'flex', alignItems:'center', gap:10 }}>
                 <Shield style={{ width:15, height:15, flexShrink:0 }} /> Promote Role
               </span>
               <ChevronRight style={{ width:13, height:13, color:'var(--text3)', flexShrink:0 }} />
             </button>
-            <div
-              style={{
-                display:'none',
-                position:'absolute', left:'100%', top:0,
-                background:'var(--card-bg)', border:'1px solid var(--border)', borderRadius:12,
-                boxShadow:'0 10px 30px rgba(0,0,0,0.15)', minWidth:140, zIndex:10, overflow:'hidden',
-              }}
-              className="group-hover/role:block!"
-            >
-              {['Student','Teacher','Admin'].filter(r => r !== menuUser.type).map(r => (
-                <button
-                  key={r}
-                  onClick={() => handlePromoteRole(menuUser.id, r)}
-                  style={{ width:'100%', padding:'9px 14px', background:'transparent', border:'none', cursor:'pointer', color:'var(--text2)', fontSize:'0.8rem', fontWeight:600, fontFamily:"'DM Sans',sans-serif", textAlign:'left' }}
-                  onMouseEnter={e => e.currentTarget.style.background='var(--bg3)'}
-                  onMouseLeave={e => e.currentTarget.style.background='transparent'}
-                >
-                  → {r}
-                </button>
-              ))}
-            </div>
+            {submenu === 'role' && (
+              <div
+                style={{
+                  position:'absolute', left:'100%', top:0,
+                  background:'var(--card-bg)', border:'1px solid var(--border)', borderRadius:12,
+                  boxShadow:'0 10px 30px rgba(0,0,0,0.15)', minWidth:140, zIndex:10, overflow:'hidden',
+                }}
+              >
+                {['Student','Teacher','Admin'].filter(r => r !== menuUser.type).map(r => (
+                  <button
+                    key={r}
+                    onClick={() => { handlePromoteRole(menuUser.id, r); setSubmenu(null) }}
+                    style={{ width:'100%', padding:'9px 14px', background:'transparent', border:'none', cursor:'pointer', color:'var(--text2)', fontSize:'0.8rem', fontWeight:600, fontFamily:"'DM Sans',sans-serif", textAlign:'left' }}
+                    onMouseEnter={e => e.currentTarget.style.background='var(--bg3)'}
+                    onMouseLeave={e => e.currentTarget.style.background='transparent'}
+                  >
+                    → {r}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Change Plan */}
-          <div style={{ position:'relative' }} className="group/plan">
+          <div style={{ position:'relative' }}>
             <button
-              style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, padding:'10px 14px', background:'transparent', border:'none', cursor:'pointer', color:'var(--text2)', fontSize:'0.82rem', fontWeight:600, fontFamily:"'DM Sans',sans-serif", textAlign:'left' }}
-              onMouseEnter={e => e.currentTarget.style.background='var(--bg3)'}
-              onMouseLeave={e => e.currentTarget.style.background='transparent'}
+              onClick={() => setSubmenu(submenu === 'plan' ? null : 'plan')}
+              style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, padding:'10px 14px', background: submenu === 'plan' ? 'var(--bg3)' : 'transparent', border:'none', cursor:'pointer', color:'var(--text2)', fontSize:'0.82rem', fontWeight:600, fontFamily:"'DM Sans',sans-serif", textAlign:'left' }}
+              onMouseEnter={e => { if (submenu !== 'plan') e.currentTarget.style.background='var(--bg3)' }}
+              onMouseLeave={e => { if (submenu !== 'plan') e.currentTarget.style.background='transparent' }}
             >
               <span style={{ display:'flex', alignItems:'center', gap:10 }}>
                 <Star style={{ width:15, height:15, flexShrink:0 }} /> Change Plan
               </span>
               <ChevronRight style={{ width:13, height:13, color:'var(--text3)', flexShrink:0 }} />
             </button>
-            <div
-              style={{
-                display:'none',
-                position:'absolute', left:'100%', top:0,
-                background:'var(--card-bg)', border:'1px solid var(--border)', borderRadius:12,
-                boxShadow:'0 10px 30px rgba(0,0,0,0.15)', minWidth:130, zIndex:10, overflow:'hidden',
-              }}
-              className="group-hover/plan:block!"
-            >
-              {['Free','Pro','School'].filter(p => p !== menuUser.plan).map(p => (
-                <button
-                  key={p}
-                  onClick={() => handleChangePlan(menuUser.id, p)}
-                  style={{ width:'100%', padding:'9px 14px', background:'transparent', border:'none', cursor:'pointer', color: PLAN_COLORS[p]?.color || 'var(--text2)', fontSize:'0.8rem', fontWeight:700, fontFamily:"'DM Sans',sans-serif", textAlign:'left' }}
-                  onMouseEnter={e => e.currentTarget.style.background='var(--bg3)'}
-                  onMouseLeave={e => e.currentTarget.style.background='transparent'}
-                >
-                  → {p}
-                </button>
-              ))}
-            </div>
+            {submenu === 'plan' && (
+              <div
+                style={{
+                  position:'absolute', left:'100%', top:0,
+                  background:'var(--card-bg)', border:'1px solid var(--border)', borderRadius:12,
+                  boxShadow:'0 10px 30px rgba(0,0,0,0.15)', minWidth:130, zIndex:10, overflow:'hidden',
+                }}
+              >
+                {['Free','Pro','School'].filter(p => p !== menuUser.plan).map(p => (
+                  <button
+                    key={p}
+                    onClick={() => { handleChangePlan(menuUser.id, p); setSubmenu(null) }}
+                    style={{ width:'100%', padding:'9px 14px', background:'transparent', border:'none', cursor:'pointer', color: PLAN_COLORS[p]?.color || 'var(--text2)', fontSize:'0.8rem', fontWeight:700, fontFamily:"'DM Sans',sans-serif", textAlign:'left' }}
+                    onMouseEnter={e => e.currentTarget.style.background='var(--bg3)'}
+                    onMouseLeave={e => e.currentTarget.style.background='transparent'}
+                  >
+                    → {p}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <div style={{ height:1, background:'var(--border)', margin:'4px 0' }} />

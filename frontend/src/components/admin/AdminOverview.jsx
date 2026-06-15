@@ -114,8 +114,8 @@ export default function AdminOverview({ user }) {
               Live
             </div>
           </div>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+          <div style={{ minHeight: 256 }}>
+            <ResponsiveContainer width="100%" height={256} minWidth={0}>
               <BarChart data={weeklyData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                 <XAxis dataKey="day" stroke="var(--text3)" tick={{ fill: 'var(--text3)', fontSize: 12, fontWeight: 600 }} axisLine={false} tickLine={false} />
@@ -132,8 +132,8 @@ export default function AdminOverview({ user }) {
         <div className="card p-6 flex flex-col">
           <h3 className="font-bold mb-1" style={{ color: 'var(--text)' }}>Server Health</h3>
           <p style={{ color: 'var(--text3)' }} className="text-xs mb-6 uppercase tracking-widest font-bold">In-Memory Performance</p>
-          <div className="h-44">
-            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+          <div style={{ minHeight: 176 }}>
+            <ResponsiveContainer width="100%" height={176} minWidth={0}>
               <AreaChart data={serverMetrics}>
                 <defs>
                   <linearGradient id="cpuGrad" x1="0" y1="0" x2="0" y2="1">
