@@ -133,7 +133,7 @@ export default function OracleEngine() {
           <h3 style={{ color: 'var(--text)', fontWeight: 600, marginBottom: '.25rem' }}>Probability Distribution</h3>
           <p style={{ color: 'var(--text3)', fontSize: '.75rem', marginBottom: '1rem' }}>Topic-wise appearance probability</p>
           <div style={{ height: 260 }}>
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <BarChart data={chartData} layout="vertical">
                 <XAxis type="number" domain={[0, 100]} stroke="var(--text3)" tick={{ fill: 'var(--text3)', fontSize: 11 }} />
                 <YAxis type="category" dataKey="topic" width={70} stroke="var(--text3)" tick={{ fill: 'var(--text2)', fontSize: 11 }} />

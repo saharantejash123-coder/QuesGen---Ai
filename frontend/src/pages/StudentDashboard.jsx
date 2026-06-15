@@ -10,6 +10,7 @@ import ScriptLabPage from './questra/ScriptLabPage'
 import AdaptiveTesting from '../components/student/AdaptiveTesting'
 import StudentFeaturesPage from './student/StudentFeaturesPage'
 import StudentPricingPage from './student/StudentPricingPage'
+import ProfilePage from './ProfilePage'
 
 const tabComponents = {
   overview: DashboardOverview,
@@ -21,6 +22,7 @@ const tabComponents = {
   adaptive: AdaptiveTesting,
   features: StudentFeaturesPage,
   pricing: StudentPricingPage,
+  profile: ProfilePage,
 }
 
 export default function StudentDashboard() {
@@ -49,6 +51,10 @@ export default function StudentDashboard() {
     navigate('/login')
   }
 
+  const handleUserUpdate = (updated) => {
+    setUser(updated)
+  }
+
   const ActiveComponent = tabComponents[activeTab]
 
   return (
@@ -59,9 +65,13 @@ export default function StudentDashboard() {
         setActiveTab={setActiveTab}
         user={user}
         onLogout={handleLogout}
+        onProfile={() => setActiveTab('profile')}
       />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-12">
-        <ActiveComponent setActiveTab={setActiveTab} setPage={setActiveTab} user={user} />
+        {activeTab === 'profile'
+          ? <ProfilePage user={user} onUpdate={handleUserUpdate} role="student" setActiveTab={setActiveTab} />
+          : <ActiveComponent setActiveTab={setActiveTab} setPage={setActiveTab} user={user} />
+        }
       </main>
     </div>
   )

@@ -1,15 +1,7 @@
+import { useState, useEffect } from 'react'
 import { TrendingUp, Users, BookOpen, Server, ArrowUpRight, Activity, Database, Globe } from 'lucide-react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts'
-
-const platformData = [
-  { day: 'Mon', students: 1240, teachers: 85 },
-  { day: 'Tue', students: 1380, teachers: 92 },
-  { day: 'Wed', students: 1520, teachers: 88 },
-  { day: 'Thu', students: 1410, teachers: 95 },
-  { day: 'Fri', students: 1680, teachers: 110 },
-  { day: 'Sat', students: 1890, teachers: 78 },
-  { day: 'Sun', students: 1020, teachers: 45 },
-]
+import { fetchStats, fetchAllUsers, getLogs } from '../../services/adminService'
 
 const serverMetrics = [
   { time: '6AM', cpu: 12, mem: 34 },
@@ -19,6 +11,26 @@ const serverMetrics = [
   { time: '6PM', cpu: 55, mem: 49 },
   { time: '9PM', cpu: 38, mem: 42 },
 ]
+
+// Build last-7-days registration chart from real user list
+function buildWeeklyChart(users) {
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+  const now = new Date()
+  const buckets = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(now)
+    d.setDate(now.getDate() - (6 - i))
+    return { day: days[d.getDay()], date: d.toDateString(), students: 0, teachers: 0 }
+  })
+  users.forEach(u => {
+    if (!u.joinDate && !u.createdAt) return
+    const joined = new Date(u.joinDate || u.createdAt).toDateString()
+    const bucket = buckets.find(b => b.date === joined)
+    if (!bucket) return
+    if (u.type === 'Teacher') bucket.teachers++
+    else bucket.students++
+  })
+  return buckets
+}
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
@@ -38,11 +50,20 @@ const CustomTooltip = ({ active, payload, label }) => {
 }
 
 export default function AdminOverview({ user }) {
-  // Extract user's full name - combine firstName and lastName
-  const fullName = user 
+  const [stats, setStats]         = useState({ totalUsers: '…', students: '…', teachers: '…', schools: '…', admins: '…', totalQuestions: '…' })
+  const [weeklyData, setWeekly]   = useState([])
+  const [recentLogs, setRecent]   = useState([])
+
+  useEffect(() => {
+    fetchStats().then(s => setStats(s)).catch(() => {})
+    fetchAllUsers().then(users => setWeekly(buildWeeklyChart(users))).catch(() => {})
+    setRecent(getLogs())
+  }, [])
+
+  const fullName = user
     ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.name?.split(' ')[0] || user.email?.split('@')[0] || 'Admin'
     : 'Admin';
-  
+
   return (
     <div className="space-y-6 fade-in">
       <div className="flex flex-col gap-1">
@@ -55,10 +76,10 @@ export default function AdminOverview({ user }) {
       {/* Quick Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { icon: Users, label: 'Total Users', value: '12,847', change: '+342 this week', color: 'blue', bg: 'rgba(59,130,246,0.1)', text: '#3b82f6' },
-          { icon: BookOpen, label: 'Papers Generated', value: '8,291', change: '+1,205 today', color: 'purple', bg: 'rgba(168,85,247,0.1)', text: '#a855f7' },
-          { icon: Server, label: 'Server Uptime', value: '99.97%', change: 'Last 30 days', color: 'emerald', bg: 'rgba(16,185,129,0.1)', text: '#10b981' },
-          { icon: Globe, label: 'Active Schools', value: '284', change: '+18 this month', color: 'amber', bg: 'rgba(245,158,11,0.1)', text: '#f59e0b' },
+          { icon: Users,    label: 'Total Users',      value: stats.totalUsers ?? '…', change: `${stats.students ?? '…'} students`, color: 'blue',   bg: 'rgba(59,130,246,0.1)',  text: '#3b82f6' },
+          { icon: BookOpen, label: 'Questions in DB',  value: stats.totalQuestions ?? '…', change: 'Seeded questions', color: 'purple', bg: 'rgba(168,85,247,0.1)', text: '#a855f7' },
+          { icon: Server,   label: 'Teachers',         value: stats.teachers ?? '…', change: `${stats.admins ?? '…'} admins`, color: 'emerald', bg: 'rgba(16,185,129,0.1)', text: '#10b981' },
+          { icon: Globe,    label: 'School Accounts',  value: stats.schools ?? '…', change: 'Registered schools', color: 'amber', bg: 'rgba(245,158,11,0.1)',  text: '#f59e0b' },
         ].map((stat) => (
           <div key={stat.label} className="card p-5 group shadow-sm hover:shadow-md transition-all">
             <div className="flex items-center justify-between mb-4">
@@ -85,17 +106,17 @@ export default function AdminOverview({ user }) {
         <div className="lg:col-span-2 card p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h3 className="font-bold text-lg" style={{ color: 'var(--text)' }}>Daily Active Users</h3>
-              <p style={{ color: 'var(--text3)' }} className="text-xs mt-0.5">Student vs Teacher usage distribution</p>
+              <h3 className="font-bold text-lg" style={{ color: 'var(--text)' }}>New Registrations (Last 7 Days)</h3>
+              <p style={{ color: 'var(--text3)' }} className="text-xs mt-0.5">Real registration data from Supabase</p>
             </div>
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 text-xs font-bold border border-emerald-500/20">
               <TrendingUp className="w-3.5 h-3.5" />
-              +18% growth
+              Live
             </div>
           </div>
           <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={platformData}>
+            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+              <BarChart data={weeklyData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                 <XAxis dataKey="day" stroke="var(--text3)" tick={{ fill: 'var(--text3)', fontSize: 12, fontWeight: 600 }} axisLine={false} tickLine={false} />
                 <YAxis stroke="var(--text3)" tick={{ fill: 'var(--text3)', fontSize: 12, fontWeight: 600 }} axisLine={false} tickLine={false} />
@@ -112,7 +133,7 @@ export default function AdminOverview({ user }) {
           <h3 className="font-bold mb-1" style={{ color: 'var(--text)' }}>Server Health</h3>
           <p style={{ color: 'var(--text3)' }} className="text-xs mb-6 uppercase tracking-widest font-bold">In-Memory Performance</p>
           <div className="h-44">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
               <AreaChart data={serverMetrics}>
                 <defs>
                   <linearGradient id="cpuGrad" x1="0" y1="0" x2="0" y2="1">
@@ -159,28 +180,43 @@ export default function AdminOverview({ user }) {
       {/* Recent System Events */}
       <div className="card p-6">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="font-bold text-lg" style={{ color: 'var(--text)' }}>Recent System Events</h3>
-          <button className="text-xs font-bold text-blue-500 hover:underline">View All Logs</button>
+          <h3 className="font-bold text-lg" style={{ color: 'var(--text)' }}>Recent Activity</h3>
+          <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-md" style={{ background: 'var(--bg3)', color: 'var(--text3)' }}>
+            Live audit trail
+          </span>
         </div>
-        <div className="space-y-3">
-          {[
-            { event: 'New school onboarded: Delhi Public School, Jaipur', time: '2 hrs ago', type: 'success' },
-            { event: 'AI Worker #4 restarted due to OOM exception', time: '5 hrs ago', type: 'warning' },
-            { event: 'Database nightly backup completed successfully', time: '12 hrs ago', type: 'info' },
-            { event: 'Platform update v2.4.1 deployed to production', time: '1 day ago', type: 'info' },
-          ].map((item, i) => (
-            <div key={i} className="flex items-center justify-between p-4 rounded-xl transition-all border border-transparent hover:border-blue-500/30" style={{ background: 'var(--bg2)' }}>
-              <div className="flex items-center gap-4">
-                <div className={`w-2.5 h-2.5 rounded-full shadow-sm ${item.type === 'success' ? 'bg-emerald-500 shadow-emerald-500/20' : item.type === 'warning' ? 'bg-amber-500 shadow-amber-500/20' : 'bg-blue-500 shadow-blue-500/20'}`} />
-                <p className="text-sm font-medium" style={{ color: 'var(--text2)' }}>{item.event}</p>
-              </div>
-              <div className="flex items-center gap-3">
-                <span style={{ color: 'var(--text3)' }} className="text-[10px] font-bold uppercase tracking-wider">{item.time}</span>
-                <Activity className="w-3.5 h-3.5" style={{ color: 'var(--border)' }} />
-              </div>
-            </div>
-          ))}
-        </div>
+        {recentLogs.length === 0 ? (
+          <div className="py-8 text-center">
+            <Activity className="w-7 h-7 mx-auto mb-2" style={{ color: 'var(--text3)' }} />
+            <p className="text-sm font-bold" style={{ color: 'var(--text2)' }}>No activity yet</p>
+            <p className="text-xs mt-1" style={{ color: 'var(--text3)' }}>Events appear here when users register or admin actions are taken</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {recentLogs.map((log, i) => {
+              const sevColor = log.severity === 'high' ? '#ef4444' : log.severity === 'medium' ? '#f59e0b' : log.severity === 'low' ? '#10b981' : '#3b82f6'
+              return (
+                <div key={log.id || i} className="flex items-center justify-between p-4 rounded-xl transition-all border border-transparent hover:border-blue-500/30" style={{ background: 'var(--bg2)' }}>
+                  <div className="flex items-center gap-4 min-w-0">
+                    <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: sevColor, boxShadow: `0 0 0 2px ${sevColor}25` }} />
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate" style={{ color: 'var(--text2)' }}>
+                        {log.detail || log.action?.replace(/_/g, ' ')}
+                      </p>
+                      <p className="text-[10px] font-bold uppercase tracking-wide mt-0.5" style={{ color: 'var(--text3)' }}>
+                        {log.actor} → {log.target}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0 ml-4">
+                    <span style={{ color: 'var(--text3)' }} className="text-[10px] font-bold uppercase tracking-wider">{log.time}</span>
+                    <Activity className="w-3.5 h-3.5" style={{ color: 'var(--border)' }} />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
     </div>
   )

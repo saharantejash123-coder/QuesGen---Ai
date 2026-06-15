@@ -304,7 +304,7 @@ function OverviewTab({ user, setActiveTab }) {
             </div>
             <Badge color={GREEN}>+15 pts</Badge>
           </div>
-          <ResponsiveContainer width="100%" height={180}>
+          <ResponsiveContainer width="100%" height={180} minWidth={0}>
             <AreaChart data={PERF_TREND} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="perfGrad" x1="0" y1="0" x2="0" y2="1">
@@ -327,7 +327,7 @@ function OverviewTab({ user, setActiveTab }) {
             <div style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--text)' }}>Class Performance</div>
             <div style={{ fontSize: '0.72rem', color: 'var(--text3)', marginTop: 2 }}>Average score by class</div>
           </div>
-          <ResponsiveContainer width="100%" height={180}>
+          <ResponsiveContainer width="100%" height={180} minWidth={0}>
             <BarChart data={CLASS_PERF} margin={{ top: 4, right: 4, left: -20, bottom: 0 }} barCategoryGap="30%">
               <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
               <XAxis dataKey="class" tick={{ fill: axisColor, fontSize: 11 }} axisLine={false} tickLine={false} />
@@ -878,7 +878,7 @@ function ReportsTab() {
         <div className="card" style={{ padding: '1.3rem' }}>
           <div style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--text)', marginBottom: '0.3rem' }}>School Performance Trend</div>
           <div style={{ fontSize: '0.72rem', color: 'var(--text3)', marginBottom: '1.25rem' }}>Average score — Jan to Jun 2026</div>
-          <ResponsiveContainer width="100%" height={200}>
+          <ResponsiveContainer width="100%" height={200} minWidth={0}>
             <AreaChart data={PERF_TREND} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="rptGrad" x1="0" y1="0" x2="0" y2="1">
@@ -899,7 +899,7 @@ function ReportsTab() {
         <div className="card" style={{ padding: '1.3rem' }}>
           <div style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--text)', marginBottom: '0.3rem' }}>Class-Wise Performance</div>
           <div style={{ fontSize: '0.72rem', color: 'var(--text3)', marginBottom: '1.25rem' }}>Average score by section</div>
-          <ResponsiveContainer width="100%" height={200}>
+          <ResponsiveContainer width="100%" height={200} minWidth={0}>
             <BarChart data={CLASS_PERF} margin={{ top: 4, right: 4, left: -20, bottom: 0 }} barCategoryGap="30%">
               <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
               <XAxis dataKey="class" tick={{ fill: axisColor, fontSize: 11 }} axisLine={false} tickLine={false} />

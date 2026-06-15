@@ -1,10 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Activity, Search, AlertTriangle, TrendingUp, Shield,
   Ban, UserPlus, ArrowUpRight, ArrowDownRight, Building2,
-  BookOpen, Globe, Key, Database, FileText, CheckCircle
+  BookOpen, Globe, Key, Database, FileText, CheckCircle, RefreshCw
 } from 'lucide-react'
-import { ACTIVITY_LOGS } from '../../data/adminData'
+import { getLogs } from '../../services/adminService'
 
 // ── Action type display config ──
 const ACTION_CONFIG = {
@@ -60,10 +60,14 @@ function SeverityDot({ severity }) {
 }
 
 export default function ActivityLogs() {
-  const [logs, setLogs]             = useState(ACTIVITY_LOGS)
+  const [logs, setLogs]             = useState([])
   const [search, setSearch]         = useState('')
   const [severityFilter, setSeverity] = useState('all')
   const [expandedId, setExpandedId] = useState(null)
+
+  const loadLogs = () => setLogs(getLogs())
+
+  useEffect(() => { loadLogs() }, [])
 
   const filtered = logs.filter(l => {
     const q = search.toLowerCase()
@@ -89,14 +93,23 @@ export default function ActivityLogs() {
     <div className="space-y-6 fade-in">
 
       {/* ── Header ── */}
-      <div>
-        <h1 className="text-2xl font-bold flex items-center gap-3" style={{ color:'var(--text)' }}>
-          <Activity className="w-7 h-7" style={{ color:'#7c3aed' }} />
-          Activity Logs
-        </h1>
-        <p className="text-sm mt-0.5" style={{ color:'var(--text3)' }}>
-          Complete audit trail of all admin and system actions on the platform
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold flex items-center gap-3" style={{ color:'var(--text)' }}>
+            <Activity className="w-7 h-7" style={{ color:'#7c3aed' }} />
+            Activity Logs
+          </h1>
+          <p className="text-sm mt-0.5" style={{ color:'var(--text3)' }}>
+            Live audit trail — all {logs.length} events from this browser session
+          </p>
+        </div>
+        <button
+          onClick={loadLogs}
+          className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-xl border transition-all shrink-0"
+          style={{ color:'var(--text2)', borderColor:'var(--border)', background:'var(--bg2)' }}
+        >
+          <RefreshCw className="w-3.5 h-3.5" /> Refresh
+        </button>
       </div>
 
       {/* ── Summary Stats ── */}

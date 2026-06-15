@@ -1,8 +1,8 @@
-import { Brain, Shuffle, Camera, FileText, BarChart3, Shield, Eye } from 'lucide-react'
+import { Brain, Shuffle, Camera, FileText, BarChart3, Shield, Eye, Trophy } from 'lucide-react'
 
 const features = [
   {
-    icon: Brain,
+    icon: Trophy,
     title: 'Exam Generator',
     desc: 'AI predicts exam topics with probability scores. Know exactly what to study.',
     color: 'purple',

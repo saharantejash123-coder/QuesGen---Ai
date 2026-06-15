@@ -66,6 +66,21 @@ const initDB = () => {
         data TEXT
       )
     `);
+
+    db.run(`
+      CREATE TABLE IF NOT EXISTS admin_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        action TEXT,
+        actor TEXT,
+        target TEXT,
+        target_role TEXT,
+        detail TEXT,
+        severity TEXT DEFAULT 'info',
+        ip TEXT DEFAULT 'system',
+        school TEXT DEFAULT 'Platform',
+        created_at TEXT
+      )
+    `);
   });
 };
 

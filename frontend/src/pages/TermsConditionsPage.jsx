@@ -132,7 +132,7 @@ export default function TermsConditionsPage() {
   return (
     <div className="min-h-screen bg-[#000000] text-zinc-100 font-sans selection:bg-blue-500/30">
       {/* Header */}
-      <div className="sticky top-0 z-50 bg-[#000000]/80 backdrop-blur-xl border-b border-white/[0.06]">
+      <div className="sticky top-0 z-50 bg-[#000000]/80 backdrop-blur-xl border-b border-white/6">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <Link
             to="/register"

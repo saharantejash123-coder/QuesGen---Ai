@@ -5,6 +5,7 @@ import StudioQ from '../components/teacher/StudioQ'
 import VariTest from '../components/teacher/VariTest'
 import VisionGrade from '../components/teacher/VisionGrade'
 import BridgeReports from '../components/teacher/BridgeReports'
+import ProfilePage from './ProfilePage'
 
 const tabComponents = {
   studio: StudioQ,
@@ -39,6 +40,10 @@ export default function TeacherDashboard() {
     navigate('/login')
   }
 
+  const handleUserUpdate = (updated) => {
+    setUser(updated)
+  }
+
   const ActiveComponent = tabComponents[activeTab]
 
   return (
@@ -49,9 +54,13 @@ export default function TeacherDashboard() {
         setActiveTab={setActiveTab}
         user={user}
         onLogout={handleLogout}
+        onProfile={() => setActiveTab('profile')}
       />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-12">
-        <ActiveComponent user={user} />
+        {activeTab === 'profile'
+          ? <ProfilePage user={user} onUpdate={handleUserUpdate} role="teacher" setActiveTab={setActiveTab} />
+          : <ActiveComponent user={user} />
+        }
       </main>
     </div>
   )

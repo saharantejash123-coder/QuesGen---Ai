@@ -5,7 +5,7 @@ import {
   Home, Sparkles, Archive, Tag, MoreHorizontal,
   LayoutDashboard, Shuffle, PenTool, Layers, Eye, BarChart2,
   TrendingUp, Settings, Users, ChevronRight, ChevronDown,
-  GraduationCap, Building2, Calendar,
+  GraduationCap, Building2, Calendar, User,
 } from 'lucide-react';
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import { useTheme } from '../../context/ThemeContext';
@@ -180,7 +180,7 @@ const moreSheetMap = {
   ],
 };
 
-export default function AppNavbar({ role = 'landing', activeTab, setActiveTab, user, onLogout }) {
+export default function AppNavbar({ role = 'landing', activeTab, setActiveTab, user, onLogout, onProfile }) {
   const { dark, setDark }               = useTheme();
   const { language, changeLanguage, t } = useLanguage();
   const [scrolled, setScrolled]         = useState(false);
@@ -569,6 +569,35 @@ export default function AppNavbar({ role = 'landing', activeTab, setActiveTab, u
 
                           {/* Actions */}
                           <div style={{ padding: '0.5rem' }}>
+                            {/* View Profile */}
+                            <button
+                              onClick={() => { setProfileOpen(false); if (onProfile) onProfile(); else if (setActiveTab) setActiveTab('profile'); }}
+                              style={{
+                                width: '100%', display: 'flex', alignItems: 'center', gap: '0.65rem',
+                                padding: '0.65rem 0.8rem', borderRadius: 11,
+                                background: 'transparent', border: 'none', cursor: 'pointer',
+                                color: 'var(--text)', fontSize: '0.83rem', fontWeight: 600,
+                                fontFamily: "'DM Sans', sans-serif", transition: 'background 0.15s',
+                                textAlign: 'left',
+                              }}
+                              onMouseEnter={e => e.currentTarget.style.background = 'var(--bg3)'}
+                              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                            >
+                              <div style={{
+                                width: 30, height: 30, borderRadius: 9, flexShrink: 0,
+                                background: 'rgba(35,84,244,0.1)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                color: '#2354F4',
+                              }}>
+                                <User style={{ width: 14, height: 14 }} />
+                              </div>
+                              View Profile
+                            </button>
+
+                            {/* Divider */}
+                            <div style={{ height: 1, background: 'var(--border)', margin: '0.3rem 0.4rem' }} />
+
+                            {/* Sign Out */}
                             <button
                               onClick={() => { setProfileOpen(false); onLogout?.(); }}
                               style={{
@@ -676,9 +705,31 @@ export default function AppNavbar({ role = 'landing', activeTab, setActiveTab, u
               </div>
             </div>
 
-            {/* ── Mobile Top Controls (theme + lang only, no hamburger) ── */}
+            {/* ── Mobile Top Controls ── */}
             {isMobile && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+
+                {/* Avatar shortcut → profile (dashboard only) */}
+                {config.showTabs && user && (
+                  <button
+                    onClick={() => {
+                      if (onProfile) onProfile();
+                      else if (setActiveTab) { setActiveTab('profile'); window.scrollTo(0, 0); }
+                    }}
+                    aria-label="My Profile"
+                    style={{
+                      width: 34, height: 34, borderRadius: 10, flexShrink: 0,
+                      background: roleGradients[role] || 'linear-gradient(135deg,#2354F4,#7c3aed)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontWeight: 800, color: '#fff', fontSize: '0.6rem',
+                      border: 'none', cursor: 'pointer',
+                      boxShadow: `0 2px 8px ${(roleColors[role]?.text || '#2354F4')}44`,
+                    }}
+                  >
+                    {user.initials}
+                  </button>
+                )}
+
                 {/* Theme Toggle */}
                 <button
                   onClick={() => setDark(!dark)}
@@ -803,9 +854,25 @@ export default function AppNavbar({ role = 'landing', activeTab, setActiveTab, u
               >
                 <div className="mob-sheet-handle" />
 
-                {/* Dashboard user info */}
+                {/* Dashboard user info — tappable card → profile */}
                 {config.showTabs && user && (
-                  <div className="mob-sheet-user" style={{ marginBottom: '0.5rem', flexDirection: 'column', alignItems: 'flex-start', gap: '0.6rem' }}>
+                  <button
+                    className="mob-sheet-user"
+                    onClick={() => {
+                      setMobileOpen(false);
+                      if (onProfile) onProfile();
+                      else if (setActiveTab) { setActiveTab('profile'); window.scrollTo(0, 0); }
+                    }}
+                    style={{
+                      width: '100%', border: 'none', cursor: 'pointer', textAlign: 'left',
+                      marginBottom: '0.25rem', flexDirection: 'column', alignItems: 'flex-start', gap: '0.6rem',
+                      background: 'var(--bg3)', borderRadius: 16, padding: '0.9rem',
+                      border: `1px solid var(--border)`,
+                      transition: 'all 0.18s',
+                    }}
+                    onTouchStart={e => e.currentTarget.style.background = 'var(--border)'}
+                    onTouchEnd={e => e.currentTarget.style.background = 'var(--bg3)'}
+                  >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', width: '100%' }}>
                       <div style={{
                         width: 46, height: 46, borderRadius: 13, flexShrink: 0,
@@ -820,6 +887,16 @@ export default function AppNavbar({ role = 'landing', activeTab, setActiveTab, u
                         <div style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.name}</div>
                         <div style={{ fontSize: '0.72rem', color: 'var(--text3)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.email}</div>
                       </div>
+                      {/* View Profile arrow */}
+                      <div style={{
+                        display: 'flex', alignItems: 'center', gap: '0.25rem',
+                        color: roleColors[role]?.text || '#2354F4',
+                        fontSize: '0.68rem', fontWeight: 700, flexShrink: 0,
+                        background: (roleColors[role]?.bg || 'rgba(35,84,244,0.1)'),
+                        padding: '0.28rem 0.6rem', borderRadius: 8,
+                      }}>
+                        View Profile <ChevronRight size={11} />
+                      </div>
                     </div>
                     <span style={{
                       display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
@@ -832,7 +909,7 @@ export default function AppNavbar({ role = 'landing', activeTab, setActiveTab, u
                       <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'currentColor', flexShrink: 0 }} />
                       {role?.charAt(0).toUpperCase() + role?.slice(1)}
                     </span>
-                  </div>
+                  </button>
                 )}
 
                 {/* More pages (landing / student) */}

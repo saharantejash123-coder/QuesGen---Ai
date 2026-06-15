@@ -1,4 +1,5 @@
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? '';
+import { logRegistration } from './adminService';
 
 // ─── Demo accounts — always available, no server needed ───────────────────────
 const DEMO_USERS = [
@@ -23,61 +24,30 @@ function saveRegistered(users) {
 // sent=false → SMTP not configured, demoOtp holds the code to display
 export async function sendOTP(email) {
   const backend = BACKEND_URL;
-  try {
-    const res = await fetch(`${backend}/api/auth/send-otp`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: email.trim().toLowerCase() }),
-      signal: AbortSignal.timeout(6000),
-    });
-    const data = await res.json();
-    if (res.ok) {
-      if (data.data?.sent) return { sent: true, demoOtp: null };
-      // Backend running but SMTP unconfigured — use returned demo OTP
-      return { sent: false, demoOtp: data.data?.demoOtp || null };
-    }
-    throw new Error(data.error || 'Failed to send OTP');
-  } catch (err) {
-    // Backend unreachable (wrong URL, offline, CORS, timeout) — fall back to local demo OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    localStorage.setItem('questra_pending_otp', JSON.stringify({
-      email: email.trim().toLowerCase(), otp, expires: Date.now() + 10 * 60 * 1000,
-    }));
-    return { sent: false, demoOtp: otp };
-  }
+  const res = await fetch(`${backend}/api/auth/send-otp`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: email.trim().toLowerCase() }),
+    signal: AbortSignal.timeout(30000), // 30s — Render cold starts can take ~20s
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to send OTP');
+  if (data.data?.sent) return { sent: true, demoOtp: null };
+  // Backend reachable but Brevo not configured on server
+  return { sent: false, demoOtp: data.data?.demoOtp || null };
 }
 
 export async function verifyOTP(email, enteredOtp) {
   const backend = BACKEND_URL;
-
-  // Try backend verification first
-  try {
-    const res = await fetch(`${backend}/api/auth/verify-otp`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: email.trim().toLowerCase(), otp: enteredOtp.trim() }),
-      signal: AbortSignal.timeout(5000),
-    });
-    const data = await res.json();
-    if (res.ok && data.data?.verified) return true;
-    if (!res.ok) throw new Error(data.error || 'Incorrect OTP. Please try again.');
-  } catch (err) {
-    if (!err.message.includes('fetch') && err.name !== 'TimeoutError') throw err;
-    // Backend offline — fall back to localStorage OTP
-  }
-
-  // Offline fallback: check localStorage OTP
-  const raw = localStorage.getItem('questra_pending_otp');
-  if (!raw) throw new Error('No OTP found. Please request a new one.');
-  const record = JSON.parse(raw);
-  if (record.email !== email.trim().toLowerCase()) throw new Error('OTP mismatch. Please request a new one.');
-  if (Date.now() > record.expires) {
-    localStorage.removeItem('questra_pending_otp');
-    throw new Error('OTP has expired. Please request a new one.');
-  }
-  if (record.otp !== enteredOtp.trim()) throw new Error('Incorrect OTP. Please try again.');
-  localStorage.removeItem('questra_pending_otp');
-  return true;
+  const res = await fetch(`${backend}/api/auth/verify-otp`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: email.trim().toLowerCase(), otp: enteredOtp.trim() }),
+    signal: AbortSignal.timeout(30000),
+  });
+  const data = await res.json();
+  if (res.ok && data.data?.verified) return true;
+  throw new Error(data.error || 'Incorrect OTP. Please try again.');
 }
 
 // ─── Login ────────────────────────────────────────────────────────────────────
@@ -218,6 +188,7 @@ export async function register({ email, password, firstName, lastName, role = 's
 
   // Save locally first so login always works
   saveRegistered([...registered, user]);
+  logRegistration(user);
 
   // Also try the backend (non-blocking)
   try {

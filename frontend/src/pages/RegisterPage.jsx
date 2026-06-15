@@ -108,7 +108,7 @@ function RegistrationForm({ role, setRole, formData, setFormData, onSendOTP, isL
           style={{ width: '100%', padding: '0.9rem', borderRadius: 12, border: 'none', background: isLoading ? 'rgba(255,255,255,0.06)' : `linear-gradient(135deg, ${cfg.color}, #2354F4)`, color: '#fff', fontWeight: 700, fontSize: '0.9rem', cursor: isLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', fontFamily: "'DM Sans', sans-serif", transition: 'opacity 0.2s' }}
         >
           {isLoading
-            ? <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} />
+            ? <><Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} /> Sending OTP… (may take ~20s)</>
             : <><Mail size={16} /> Send OTP to Email</>}
         </button>
       </form>

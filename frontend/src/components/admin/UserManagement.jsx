@@ -2,14 +2,12 @@ import { useState, useEffect, useRef } from 'react'
 import {
   Users, Search, UserPlus, MoreVertical, Shield, Ban, Trash2,
   ChevronRight, X, GraduationCap, BookOpen, CheckCircle, AlertTriangle,
-  Phone, Mail, Building2, User, Crown, Star
+  Phone, Mail, Building2, User, Crown, Star, RefreshCw, Loader2
 } from 'lucide-react'
-import { TEACHERS, STUDENTS, SCHOOLS } from '../../data/adminData'
-
-const ALL_USERS = [
-  ...TEACHERS.map(t => ({ ...t, type: 'Teacher' })),
-  ...STUDENTS.map(s => ({ ...s, type: 'Student' })),
-]
+import {
+  fetchAllUsers, banUser, unbanUser, apiBanUser, apiDeleteUser,
+  promoteUser, changeUserPlan, logAction,
+} from '../../services/adminService'
 
 const PLAN_CYCLE = { Free: 'Pro', Pro: 'School', School: 'Free' }
 const STATUS_COLORS = {
@@ -64,17 +62,29 @@ function RoleBadge({ role }) {
 }
 
 export default function UserManagement() {
-  const [users, setUsers] = useState(ALL_USERS)
+  const [users, setUsers] = useState([])
+  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [roleFilter, setRoleFilter] = useState('All')
   const [statusFilter, setStatusFilter] = useState('All')
-  const [actionMenu, setActionMenu] = useState(null)   // { userId, x, y }
-  const [modal, setModal] = useState(null)             // { type, user } or { type: 'add' }
+  const [actionMenu, setActionMenu] = useState(null)
+  const [modal, setModal] = useState(null)
   const [banReason, setBanReason] = useState('')
-  const [addForm, setAddForm] = useState({ name:'', email:'', phone:'', schoolId:'', subject:'', board:'' })
+  const [addForm, setAddForm] = useState({ name:'', email:'', phone:'', school:'', subject:'', board:'' })
   const menuRef = useRef(null)
 
+  const loadUsers = async () => {
+    setLoading(true)
+    try {
+      const data = await fetchAllUsers()
+      setUsers(data)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   useEffect(() => {
+    loadUsers()
     const handle = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) setActionMenu(null)
     }
@@ -111,52 +121,57 @@ export default function UserManagement() {
   const menuUser = actionMenu ? users.find(u => u.id === actionMenu.userId) : null
 
   const handleBan = () => {
+    const u = users.find(x => x.id === actionMenu.userId)
     update(actionMenu.userId, { status: 'Banned', banReason })
+    banUser({ id: actionMenu.userId, email: u?.email || '', name: u?.name || '' }, banReason)
+    apiBanUser(actionMenu.userId, true)
+    logAction({ action: 'USER_BANNED', actor: 'Admin', target: u?.email || '', targetRole: u?.type, detail: banReason, severity: 'high' })
     setActionMenu(null); setModal(null); setBanReason('')
   }
   const handleUnban = (userId) => {
+    const u = users.find(x => x.id === userId)
     update(userId, { status: 'Active', banReason: null })
+    unbanUser(u?.email || '')
+    apiBanUser(userId, false)
+    logAction({ action: 'USER_UNBANNED', actor: 'Admin', target: u?.email || '', targetRole: u?.type, detail: 'Ban lifted by admin', severity: 'low' })
     setActionMenu(null)
   }
   const handleChangePlan = (userId, newPlan) => {
+    const u = users.find(x => x.id === userId)
     update(userId, { plan: newPlan })
+    changeUserPlan(u?.email || '', newPlan)
+    logAction({ action: 'PLAN_UPGRADED', actor: 'Admin', target: u?.email || '', detail: `Plan changed to ${newPlan}`, severity: 'info' })
     setActionMenu(null)
   }
   const handlePromoteRole = (userId, newRole) => {
+    const u = users.find(x => x.id === userId)
     update(userId, { type: newRole })
+    promoteUser(u?.email || '', newRole)
+    logAction({ action: 'ROLE_PROMOTED', actor: 'Admin', target: u?.email || '', targetRole: newRole, detail: `Role changed to ${newRole}`, severity: 'medium' })
     setActionMenu(null)
   }
   const handleRemove = (userId) => {
+    const u = users.find(x => x.id === userId)
     remove(userId)
+    apiDeleteUser(userId)
+    logAction({ action: 'TEACHER_REMOVED', actor: 'Admin', target: u?.email || '', targetRole: u?.type, detail: 'User permanently deleted', severity: 'high' })
     setActionMenu(null); setModal(null)
   }
   const handleAddTeacher = (e) => {
     e.preventDefault()
-    const school = SCHOOLS.find(s => s.id === addForm.schoolId)
     const initials = addForm.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
     const newTeacher = {
       id: `tch_new_${Date.now()}`,
-      name: addForm.name,
-      email: addForm.email,
-      avatar: initials,
-      schoolId: addForm.schoolId,
-      school: school?.shortName || 'Unknown',
-      subject: addForm.subject,
-      board: addForm.board,
-      status: 'Active',
-      plan: 'Free',
-      joinDate: new Date().toISOString().slice(0, 10),
-      lastActive: 'Just now',
-      papersCreated: 0,
-      studentsReached: 0,
-      verified: false,
-      phone: addForm.phone,
-      banReason: null,
-      type: 'Teacher',
+      name: addForm.name, email: addForm.email, avatar: initials,
+      school: addForm.school || '—', subject: addForm.subject,
+      board: addForm.board, status: 'Active', plan: 'Free',
+      joinDate: new Date().toISOString().slice(0, 10), lastActive: 'Just now',
+      papersCreated: 0, studentsReached: 0, phone: addForm.phone, banReason: null, type: 'Teacher',
     }
     setUsers(prev => [newTeacher, ...prev])
+    logAction({ action: 'TEACHER_ADDED', actor: 'Admin', target: addForm.email, targetRole: 'Teacher', detail: `New teacher account created for ${addForm.name}`, severity: 'info' })
     setModal(null)
-    setAddForm({ name:'', email:'', phone:'', schoolId:'', subject:'', board:'' })
+    setAddForm({ name:'', email:'', phone:'', school:'', subject:'', board:'' })
   }
 
   return (
@@ -170,16 +185,26 @@ export default function UserManagement() {
             User Management
           </h1>
           <p className="text-sm mt-0.5" style={{ color:'var(--text3)' }}>
-            {counts.total} registered users across {SCHOOLS.length} schools
+            {loading ? 'Loading users…' : `${counts.total} registered users`}
           </p>
         </div>
-        <button
-          onClick={() => setModal({ type:'add' })}
-          className="flex items-center gap-2 px-5 py-2.5 text-white text-sm font-bold rounded-xl transition-all hover:-translate-y-0.5 shrink-0"
-          style={{ background:'linear-gradient(135deg,#2354F4,#7c3aed)', boxShadow:'0 4px 16px rgba(35,84,244,0.3)' }}
-        >
-          <UserPlus className="w-4 h-4" /> Add Teacher
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={loadUsers}
+            title="Refresh"
+            className="flex items-center gap-1.5 px-3 py-2.5 text-sm font-bold rounded-xl border transition-all"
+            style={{ color:'var(--text2)', borderColor:'var(--border)', background:'var(--bg2)' }}
+          >
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+          </button>
+          <button
+            onClick={() => setModal({ type:'add' })}
+            className="flex items-center gap-2 px-5 py-2.5 text-white text-sm font-bold rounded-xl transition-all hover:-translate-y-0.5"
+            style={{ background:'linear-gradient(135deg,#2354F4,#7c3aed)', boxShadow:'0 4px 16px rgba(35,84,244,0.3)' }}
+          >
+            <UserPlus className="w-4 h-4" /> Add Teacher
+          </button>
+        </div>
       </div>
 
       {/* ── Stats Bar ── */}
@@ -269,6 +294,15 @@ export default function UserManagement() {
               </tr>
             </thead>
             <tbody>
+              {loading && users.length === 0 && Array.from({ length: 5 }).map((_, i) => (
+                <tr key={`skel-${i}`} style={{ borderBottom: '1px solid var(--border)' }}>
+                  {[1,2,3,4,5,6,7].map(c => (
+                    <td key={c} className="px-5 py-3.5">
+                      <div style={{ height: 14, borderRadius: 6, background: 'var(--bg3)', animation: 'pulse 1.5s infinite' }} />
+                    </td>
+                  ))}
+                </tr>
+              ))}
               {filtered.map(u => (
                 <tr
                   key={u.id}
@@ -384,7 +418,7 @@ export default function UserManagement() {
                 background:'var(--card-bg)', border:'1px solid var(--border)', borderRadius:12,
                 boxShadow:'0 10px 30px rgba(0,0,0,0.15)', minWidth:140, zIndex:10, overflow:'hidden',
               }}
-              className="group-hover/role:!block"
+              className="group-hover/role:block!"
             >
               {['Student','Teacher','Admin'].filter(r => r !== menuUser.type).map(r => (
                 <button
@@ -419,7 +453,7 @@ export default function UserManagement() {
                 background:'var(--card-bg)', border:'1px solid var(--border)', borderRadius:12,
                 boxShadow:'0 10px 30px rgba(0,0,0,0.15)', minWidth:130, zIndex:10, overflow:'hidden',
               }}
-              className="group-hover/plan:!block"
+              className="group-hover/plan:block!"
             >
               {['Free','Pro','School'].filter(p => p !== menuUser.plan).map(p => (
                 <button
@@ -673,18 +707,13 @@ export default function UserManagement() {
                       />
                     </div>
                     <div style={{ gridColumn:'1/-1' }}>
-                      <label className="text-[10px] font-bold uppercase tracking-wider block mb-1.5" style={{ color:'var(--text3)' }}>School *</label>
-                      <select
-                        required
-                        value={addForm.schoolId}
-                        onChange={e => setAddForm(p => ({ ...p, schoolId:e.target.value }))}
-                        style={{ width:'100%', background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:12, padding:'10px 14px', color: addForm.schoolId ? 'var(--text)' : 'var(--text3)', fontSize:'0.875rem', fontFamily:"'DM Sans',sans-serif", outline:'none' }}
-                      >
-                        <option value="">Select school...</option>
-                        {SCHOOLS.map(s => (
-                          <option key={s.id} value={s.id}>{s.name} — {s.city}</option>
-                        ))}
-                      </select>
+                      <label className="text-[10px] font-bold uppercase tracking-wider block mb-1.5" style={{ color:'var(--text3)' }}>School</label>
+                      <input
+                        value={addForm.school}
+                        onChange={e => setAddForm(p => ({ ...p, school:e.target.value }))}
+                        placeholder="e.g. Delhi Public School, Jaipur"
+                        style={{ width:'100%', background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:12, padding:'10px 14px', color:'var(--text)', fontSize:'0.875rem', fontFamily:"'DM Sans',sans-serif", outline:'none', boxSizing:'border-box' }}
+                      />
                     </div>
                     <div>
                       <label className="text-[10px] font-bold uppercase tracking-wider block mb-1.5" style={{ color:'var(--text3)' }}>Subject *</label>
