@@ -123,11 +123,19 @@ router.patch('/users/:id/ban', requireSecret, asyncHandler(async (req, res) => {
   // Try Supabase first
   const supabase = getClient();
   if (supabase) {
-    const { error } = await supabase.auth.admin.updateUserById(id, {
-      ban_duration: banned ? '876000h' : 'none',
-    });
+    // Preserve existing metadata when setting ban info
+    let meta = {};
+    try {
+      const { data: existing } = await supabase.auth.admin.getUserById(id);
+      if (existing?.user?.user_metadata) meta = { ...existing.user.user_metadata };
+    } catch { /* no existing metadata */ }
+    if (banned) {
+      meta.banned = true; meta.banReason = reason || ''; meta.bannedAt = new Date().toISOString();
+    } else {
+      meta.banned = false; meta.banReason = null; meta.bannedAt = null;
+    }
+    const { error } = await supabase.auth.admin.updateUserById(id, { ban_duration: banned ? '876000h' : 'none', user_metadata: meta });
     if (!error) {
-      // Also persist to SQLite
       persistBanToSQLite(id, email || '', banned, reason || '');
       return successResponse(res, { success: true, source: 'supabase' });
     }

@@ -269,18 +269,43 @@ router.post('/send-otp', asyncHandler(async (req, res) => {
   return successResponse(res, { sent: false, demoOtp: result.demoOtp, message: 'SMTP not configured. Use the displayed OTP.' });
 }));
 
-// ── Ban check (no JWT needed — queried by email on login) ────────────────────
+// ── Ban check — queries Supabase first, then SQLite ────────────────────────
 router.get('/ban-check', asyncHandler(async (req, res) => {
   const { email } = req.query;
   if (!email) return errorResponse(res, 'Email query param required', 400);
+  const lcEmail = email.toLowerCase().trim();
 
+  // 1. Try Supabase Auth (for real Supabase users)
+  const supabase = getClient();
+  if (supabase) {
+    try {
+      const { data, error } = await supabase.auth.admin.listUsers();
+      if (!error && data?.users) {
+        const u = data.users.find(x => x.email?.toLowerCase() === lcEmail);
+        if (u) {
+          const banned = u.banned_until && new Date(u.banned_until) > new Date();
+          if (banned) {
+            const meta = u.user_metadata || {};
+            return successResponse(res, {
+              banned: true,
+              reason: meta.banReason || '',
+              userId: u.id,
+              bannedAt: u.banned_until,
+            });
+          }
+        }
+      }
+    } catch { /* fall through to SQLite */ }
+  }
+
+  // 2. Fall back to SQLite (for demo / local accounts)
   const row = await new Promise((resolve) => {
-    db.get('SELECT * FROM banned_users WHERE email = ? AND status = ?', [email.toLowerCase().trim(), 'active'], (err, row) => resolve(row || null));
+    db.get('SELECT * FROM banned_users WHERE email = ? AND status = ?', [lcEmail, 'active'], (err, row) => resolve(row || null));
   });
-
   if (row) {
     return successResponse(res, { banned: true, reason: row.reason || '', userId: row.user_id, bannedAt: row.banned_at });
   }
+
   return successResponse(res, { banned: false });
 }));
 

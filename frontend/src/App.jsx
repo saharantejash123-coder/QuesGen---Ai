@@ -4,6 +4,7 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 import { ThemeProvider } from './context/ThemeContext';
 import { LanguageProvider } from './context/LanguageContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import BanGate from './components/BanGate';
 import { AnimatePresence, motion } from 'framer-motion';
 
 import QuestraShell from './pages/questra/QuestraShell';
@@ -32,6 +33,7 @@ function AnimatedRoutes() {
         transition={{ duration: 0.35, ease: 'easeOut' }}
         style={{ minHeight: '100%' }}
       >
+        <BanGate>
         <Routes location={location}>
           {/* New beautifully styled UI */}
           <Route path="/" element={<QuestraShell />} />
@@ -78,6 +80,7 @@ function AnimatedRoutes() {
           />
           <Route path="/banned" element={<BannedPage />} />
         </Routes>
+        </BanGate>
       </motion.div>
     </AnimatePresence>
   );
