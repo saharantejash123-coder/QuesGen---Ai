@@ -25,9 +25,10 @@ async function listSupabaseUsers() {
   const { data, error } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1000 });
   if (error) throw new Error(error.message);
 
-  // Load persisted plans/roles from SQLite
+  // Load persisted plans/roles/bans from SQLite + Supabase table
   const plans = {};
   const roles = {};
+  const bannedEmails = new Set();
   await new Promise((resolve) => {
     db.all('SELECT user_id, plan FROM user_plans', [], (err, rows) => {
       if (!err) (rows || []).forEach(r => { plans[r.user_id] = r.plan; });
@@ -40,6 +41,18 @@ async function listSupabaseUsers() {
       resolve();
     });
   });
+  // Load SQLite bans
+  await new Promise((resolve) => {
+    db.all('SELECT email FROM banned_users WHERE status = ?', ['active'], (err, rows) => {
+      if (!err) (rows || []).forEach(r => { if (r.email) bannedEmails.add(r.email.toLowerCase()); });
+      resolve();
+    });
+  });
+  // Load Supabase table bans
+  try {
+    const { data: sbBans } = await supabase.from('banned_users').select('email').eq('status', 'active');
+    if (sbBans) sbBans.forEach(r => { if (r.email) bannedEmails.add(r.email.toLowerCase()); });
+  } catch { /* table may not exist */ }
 
   return (data.users || []).map(u => ({
     id: u.id,
@@ -49,7 +62,7 @@ async function listSupabaseUsers() {
     lastName: u.user_metadata?.lastName || '',
     role: roles[u.id] || (u.user_metadata?.role || 'student').toLowerCase(),
     plan: plans[u.id] || u.user_metadata?.plan || 'Free',
-    status: u.banned_until && new Date(u.banned_until) > new Date() ? 'Banned' : 'Active',
+    status: (u.banned_until && new Date(u.banned_until) > new Date()) || bannedEmails.has((u.email || '').toLowerCase()) ? 'Banned' : 'Active',
     createdAt: u.created_at,
     lastSignIn: u.last_sign_in_at,
     registrationMethod: u.user_metadata?.registrationMethod || 'email',
@@ -122,30 +135,47 @@ router.post('/logs', requireSecret, (req, res) => {
 router.patch('/users/:id/ban', requireSecret, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { banned, reason, email } = req.body;
+  const lcEmail = (email || '').toLowerCase().trim();
 
-  // Try Supabase first (only if id is a real UUID)
   const supabase = getClient();
-  if (supabase && isUUID(id)) {
-    let meta = {};
-    try {
-      const { data: existing } = await supabase.auth.admin.getUserById(id);
-      if (existing?.user?.user_metadata) meta = { ...existing.user.user_metadata };
-    } catch { /* no existing metadata */ }
-    if (banned) {
-      meta.banned = true; meta.banReason = reason || ''; meta.bannedAt = new Date().toISOString();
-    } else {
-      meta.banned = false; meta.banReason = null; meta.bannedAt = null;
-    }
-    const { error } = await supabase.auth.admin.updateUserById(id, { ban_duration: banned ? '876000h' : 'none', user_metadata: meta });
-    if (!error) {
-      persistBanToSQLite(id, email || '', banned, reason || '');
-      return successResponse(res, { success: true, source: 'supabase' });
-    }
-    // Fall through to SQLite
+
+  // 1. Try Supabase Auth ban (UUID users only)
+  if (supabase && isUUID(id) && banned) {
+    const { error } = await supabase.auth.admin.updateUserById(id, {
+      ban_duration: '876000h',
+    }).catch(() => ({}));
+    if (!error) { /* auth ban set */ }
+  }
+  if (supabase && isUUID(id) && !banned) {
+    const { error } = await supabase.auth.admin.updateUserById(id, {
+      ban_duration: 'none',
+    }).catch(() => ({}));
+    if (!error) { /* auth ban removed */ }
   }
 
-  persistBanToSQLite(id, email || '', banned, reason || '');
-  successResponse(res, { success: true, source: 'sqlite' });
+  // 2. Store in Supabase Data API banned_users table (by email — works for ALL users)
+  let supabaseOk = false;
+  if (supabase) {
+    try {
+      if (banned) {
+        const { error } = await supabase
+          .from('banned_users')
+          .upsert({ email: lcEmail, reason: reason || '', banned_at: new Date().toISOString(), status: 'active' }, { onConflict: 'email' });
+        if (!error) supabaseOk = true;
+      } else {
+        const { error } = await supabase
+          .from('banned_users')
+          .delete()
+          .eq('email', lcEmail);
+        if (!error) supabaseOk = true;
+      }
+    } catch { /* Supabase banned_users table may not exist — fall through */ }
+  }
+
+  // 3. Always persist to SQLite as fallback
+  persistBanToSQLite(id, lcEmail, banned, reason);
+
+  return successResponse(res, { success: true, source: supabaseOk ? 'supabase' : 'sqlite' });
 }));
 
 function persistBanToSQLite(userId, email, banned, reason) {

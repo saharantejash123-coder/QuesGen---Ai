@@ -275,30 +275,36 @@ router.get('/ban-check', asyncHandler(async (req, res) => {
   if (!email) return errorResponse(res, 'Email query param required', 400);
   const lcEmail = email.toLowerCase().trim();
 
-  // 1. Try Supabase Auth (for real Supabase users)
   const supabase = getClient();
+
+  // 1. Try Supabase Data API banned_users table (by email — works for ALL users)
   if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('banned_users')
+        .select('*')
+        .eq('email', lcEmail)
+        .eq('status', 'active')
+        .limit(1);
+      if (!error && data && data.length > 0) {
+        const row = data[0];
+        return successResponse(res, { banned: true, reason: row.reason || '', userId: row.user_id || row.email, bannedAt: row.banned_at });
+      }
+    } catch { /* table may not exist — fall through */ }
+
+    // 2. Try Supabase Auth (for real UUID Supabase users)
     try {
       const { data, error } = await supabase.auth.admin.listUsers();
       if (!error && data?.users) {
         const u = data.users.find(x => x.email?.toLowerCase() === lcEmail);
-        if (u) {
-          const banned = u.banned_until && new Date(u.banned_until) > new Date();
-          if (banned) {
-            const meta = u.user_metadata || {};
-            return successResponse(res, {
-              banned: true,
-              reason: meta.banReason || '',
-              userId: u.id,
-              bannedAt: u.banned_until,
-            });
-          }
+        if (u && u.banned_until && new Date(u.banned_until) > new Date()) {
+          return successResponse(res, { banned: true, reason: (u.user_metadata?.banReason) || '', userId: u.id, bannedAt: u.banned_until });
         }
       }
     } catch { /* fall through to SQLite */ }
   }
 
-  // 2. Fall back to SQLite (for demo / local accounts)
+  // 3. Fall back to SQLite (for demo / local accounts)
   const row = await new Promise((resolve) => {
     db.get('SELECT * FROM banned_users WHERE email = ? AND status = ?', [lcEmail, 'active'], (err, row) => resolve(row || null));
   });
