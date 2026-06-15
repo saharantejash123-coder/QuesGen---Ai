@@ -191,14 +191,16 @@ export async function fetchStats() {
 
 // Ban/unban via backend (also persists locally)
 export async function apiBanUser(id, banned, reason = '', email = '') {
-  if (BACKEND_URL) {
-    try {
-      await fetch(`${BACKEND_URL}/api/admin/users/${id}/ban`, {
-        method: 'PATCH',
-        headers: secretHeaders(),
-        body: JSON.stringify({ banned, reason, email }),
-      })
-    } catch { /* ignore */ }
+  if (!BACKEND_URL) return;
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/admin/users/${id}/ban`, {
+      method: 'PATCH',
+      headers: secretHeaders(),
+      body: JSON.stringify({ banned, reason, email }),
+    });
+    if (!res.ok) console.warn('apiBanUser returned', res.status, await res.text().catch(() => ''));
+  } catch (err) {
+    console.warn('apiBanUser fetch error:', err);
   }
 }
 

@@ -89,8 +89,15 @@ export default function UserManagement() {
     const handle = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) { setActionMenu(null); setSubmenu(null) }
     }
+    const handleStorage = (e) => {
+      if (e.key === 'questra_bans' || e.key === 'questra_role_overrides' || e.key === 'questra_plan_overrides') loadUsers()
+    }
     document.addEventListener('mousedown', handle)
-    return () => document.removeEventListener('mousedown', handle)
+    window.addEventListener('storage', handleStorage)
+    return () => {
+      document.removeEventListener('mousedown', handle)
+      window.removeEventListener('storage', handleStorage)
+    }
   }, [])
 
   const filtered = users.filter(u => {
@@ -121,23 +128,25 @@ export default function UserManagement() {
 
   const menuUser = actionMenu ? users.find(u => u.id === actionMenu.userId) : null
 
-  const handleBan = () => {
+  const handleBan = async () => {
     const target = modal?.user
     if (!target) return
     const u = users.find(x => x.id === target.id)
     update(target.id, { status: 'Banned', banReason })
     banUser({ id: target.id, email: u?.email || '', name: u?.name || '' }, banReason)
-    apiBanUser(target.id, true, banReason, u?.email || '')
+    await apiBanUser(target.id, true, banReason, u?.email || '')
     logAction({ action: 'USER_BANNED', actor: 'Admin', target: u?.email || '', targetRole: u?.type, detail: banReason, severity: 'high' })
     setActionMenu(null); setModal(null); setBanReason('')
+    if (localStorage.getItem('questra_bans')) loadUsers()
   }
-  const handleUnban = (userId) => {
+  const handleUnban = async (userId) => {
     const u = users.find(x => x.id === userId)
     update(userId, { status: 'Active', banReason: null })
     unbanUser(u?.email || '')
-    apiBanUser(userId, u?.email || '', '', false)
+    await apiBanUser(userId, false, '', u?.email || '')
     logAction({ action: 'USER_UNBANNED', actor: 'Admin', target: u?.email || '', targetRole: u?.type, detail: 'Ban lifted by admin', severity: 'low' })
     setActionMenu(null)
+    if (localStorage.getItem('questra_bans')) loadUsers()
   }
   const handleChangePlan = (userId, newPlan) => {
     const u = users.find(x => x.id === userId)
