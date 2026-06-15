@@ -56,14 +56,13 @@ export async function login(email, password) {
 
   const lEmail = email.trim().toLowerCase();
 
-  // 0. Check ban from backend FIRST — before any local auth (cross-device sync)
-  let backendBan = null;
+  // 0. Check ban from backend (cross-device sync)
   if (BACKEND_URL) {
     try {
       const bc = await fetch(`${BACKEND_URL}/api/auth/ban-check?email=${encodeURIComponent(lEmail)}`, { signal: AbortSignal.timeout(2000) });
       if (bc.ok) {
         const bd = await bc.json();
-        backendBan = (bd.data || bd);
+        const backendBan = (bd.data || bd);
         if (backendBan?.banned) {
           persistBanLocal(lEmail, backendBan);
           return { email: lEmail, role: 'student', firstName: lEmail.split('@')[0], lastName: '', _banned: true, _banReason: backendBan.reason || '' };
@@ -77,6 +76,9 @@ export async function login(email, password) {
   if (demo) {
     if (demo.password !== password) throw new Error('Incorrect password.');
     const { password: _, ...user } = demo;
+    // Check localStorage ban (synchronous, works same-browser)
+    const localBan = getLocalBan(lEmail);
+    if (localBan) return { ...user, _banned: true, _banReason: localBan.reason || '' };
     return user;
   }
 
@@ -86,6 +88,8 @@ export async function login(email, password) {
   if (found) {
     if (found.password !== password) throw new Error('Incorrect password.');
     const { password: _, ...user } = found;
+    const localBan = getLocalBan(lEmail);
+    if (localBan) return { ...user, _banned: true, _banReason: localBan.reason || '' };
     return user;
   }
 
@@ -102,8 +106,9 @@ export async function login(email, password) {
       const data = await res.json();
       if (data.user) {
         const user = { ...data.user, role: (data.user.role || 'student').toLowerCase() };
-        // If backend didn't ban but we know about a backend ban, still apply it
-        if (backendBan?.banned) return { ...user, _banned: true, _banReason: backendBan.reason };
+        // Also check local ban as safety net
+        const localBan = getLocalBan(lEmail);
+        if (localBan) return { ...user, _banned: true, _banReason: localBan.reason || '' };
         return user;
       }
     }
@@ -124,6 +129,13 @@ export async function login(email, password) {
 
   // 4. Not found anywhere — reject
   throw new Error('No account found with this email. Please register first.');
+}
+
+function getLocalBan(email) {
+  try {
+    const bans = JSON.parse(localStorage.getItem('questra_bans') || '[]');
+    return bans.find(b => b.email === email && b.status === 'active') || null;
+  } catch { return null; }
 }
 
 function persistBanLocal(email, banResult) {
