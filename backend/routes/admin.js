@@ -5,6 +5,9 @@ const db = require('../db/database');
 const { authMiddleware, roleMiddleware } = require('../middleware');
 const { successResponse, errorResponse, asyncHandler } = require('../errors');
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function isUUID(id) { return UUID_RE.test(id); }
+
 // ── Admin-secret middleware (no JWT needed) ────────────────────────────────────
 // Routes defined BEFORE router.use(authMiddleware) use this instead.
 const ADMIN_SECRET = process.env.ADMIN_SECRET || 'questra_admin_2026';
@@ -120,10 +123,9 @@ router.patch('/users/:id/ban', requireSecret, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { banned, reason, email } = req.body;
 
-  // Try Supabase first
+  // Try Supabase first (only if id is a real UUID)
   const supabase = getClient();
-  if (supabase) {
-    // Preserve existing metadata when setting ban info
+  if (supabase && isUUID(id)) {
     let meta = {};
     try {
       const { data: existing } = await supabase.auth.admin.getUserById(id);
@@ -142,7 +144,6 @@ router.patch('/users/:id/ban', requireSecret, asyncHandler(async (req, res) => {
     // Fall through to SQLite
   }
 
-  // SQLite fallback
   persistBanToSQLite(id, email || '', banned, reason || '');
   successResponse(res, { success: true, source: 'sqlite' });
 }));
@@ -163,6 +164,7 @@ router.delete('/users/:id', requireSecret, asyncHandler(async (req, res) => {
   const { id } = req.params;
   const supabase = getClient();
   if (!supabase) return errorResponse(res, 'Supabase not configured', 503);
+  if (!isUUID(id)) return errorResponse(res, 'Cannot delete demo/local users from Supabase', 400);
   const { error } = await supabase.auth.admin.deleteUser(id);
   if (error) return errorResponse(res, error.message, 500);
   successResponse(res, { success: true });
@@ -173,9 +175,9 @@ router.patch('/users/:id/role', requireSecret, asyncHandler(async (req, res) => 
   const { id } = req.params;
   const { role } = req.body;
 
-  // Try Supabase first
+  // Try Supabase first (only for UUIDs)
   const supabase = getClient();
-  if (supabase) {
+  if (supabase && isUUID(id)) {
     const { error } = await supabase.auth.admin.updateUserById(id, {
       user_metadata: { role },
     });
@@ -183,7 +185,6 @@ router.patch('/users/:id/role', requireSecret, asyncHandler(async (req, res) => 
     // Fall through to SQLite
   }
 
-  // SQLite fallback
   db.run(
     'INSERT OR REPLACE INTO user_roles (user_id, role, updated_at) VALUES (?, ?, ?)',
     [id, role.toLowerCase(), new Date().toISOString()],
@@ -199,9 +200,9 @@ router.patch('/users/:id/plan', requireSecret, asyncHandler(async (req, res) => 
   const { id } = req.params;
   const { plan } = req.body;
 
-  // Try Supabase first
+  // Try Supabase first (only for UUIDs)
   const supabase = getClient();
-  if (supabase) {
+  if (supabase && isUUID(id)) {
     const { error } = await supabase.auth.admin.updateUserById(id, {
       user_metadata: { plan },
     });
@@ -209,7 +210,6 @@ router.patch('/users/:id/plan', requireSecret, asyncHandler(async (req, res) => 
     // Fall through to SQLite
   }
 
-  // SQLite fallback
   db.run(
     'INSERT OR REPLACE INTO user_plans (user_id, plan, updated_at) VALUES (?, ?, ?)',
     [id, plan, new Date().toISOString()],
@@ -225,9 +225,9 @@ router.patch('/users/:id/profile', requireSecret, asyncHandler(async (req, res) 
   const { id } = req.params;
   const profile = req.body;
 
-  // Try Supabase first – update user_metadata with profile fields
+  // Try Supabase first – update user_metadata with profile fields (only for UUIDs)
   const supabase = getClient();
-  if (supabase) {
+  if (supabase && isUUID(id)) {
     const metaFields = {};
     if (profile.firstName !== undefined) metaFields.firstName = profile.firstName;
     if (profile.lastName !== undefined) metaFields.lastName = profile.lastName;
@@ -238,7 +238,6 @@ router.patch('/users/:id/profile', requireSecret, asyncHandler(async (req, res) 
     if (Object.keys(metaFields).length > 0) {
       const { error } = await supabase.auth.admin.updateUserById(id, { user_metadata: metaFields });
       if (!error) {
-        // Also persist full profile to SQLite
         db.run(
           'INSERT OR REPLACE INTO user_profiles (user_id, data, updated_at) VALUES (?, ?, ?)',
           [id, JSON.stringify(profile), new Date().toISOString()],
@@ -252,7 +251,6 @@ router.patch('/users/:id/profile', requireSecret, asyncHandler(async (req, res) 
     }
   }
 
-  // SQLite fallback
   db.run(
     'INSERT OR REPLACE INTO user_profiles (user_id, data, updated_at) VALUES (?, ?, ?)',
     [id, JSON.stringify(profile), new Date().toISOString()],
