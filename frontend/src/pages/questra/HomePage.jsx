@@ -221,20 +221,15 @@ function HomePage({ setPage }) {
   );
 
   /* ─── DESKTOP HERO ─── */
-  const DesktopHero = () => {
-    const iconSize = "clamp(18px,2vw,28px)";
-    const iconWrapperSize = "clamp(40px,4.5vw,64px)";
-
-    return (
+  const DesktopHero = () => (
     <section style={{
       minHeight: "100vh",
       display: "flex", alignItems: "center", justifyContent: "center",
-      flexDirection: "column", textAlign: "center",
+      flexDirection: "column",
       padding: "9rem 5% 5rem",
       position: "relative", overflow: "hidden",
     }}>
-
-      {/* Grid parallax */}
+      {/* Subtle grid background */}
       <ParallaxSection speed={0.2} style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
         <div style={{
           backgroundImage: "linear-gradient(var(--nav-border) 1px,transparent 1px),linear-gradient(90deg,var(--nav-border) 1px,transparent 1px)",
@@ -242,118 +237,178 @@ function HomePage({ setPage }) {
         }} />
       </ParallaxSection>
 
-      {/* Hero content */}
-      <div style={{ position: "relative", zIndex: 1, maxWidth: 1100 }}>
-        <motion.div
-          initial={{ opacity: 0, scale: 0.85, y: -8 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: easings.smooth }}
-          style={{ display: "inline-flex", alignItems: "center", gap: ".5rem", marginBottom: "1.6rem" }}
-        />
+      {/* Two-column hero */}
+      <div style={{ position: "relative", zIndex: 1, width: "100%", maxWidth: 1360, margin: "0 auto" }}>
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: "clamp(3rem,6vw,7rem)",
+          alignItems: "center",
+        }}>
 
-        <motion.h1
-          style={{
-            fontFamily: "'Instrument Serif',serif",
-            fontSize: "clamp(3rem,7vw,7rem)",
-            lineHeight: 0.98, letterSpacing: "-3px",
-            color: "var(--text)", marginBottom: "1.6rem",
-          }}
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2, ease: easings.smooth }}
-        >
-          <TextAnimator text="Stop guessing." delay={0.4} mode="words" />
+          {/* ── LEFT: text ── */}
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.9, duration: 0.6 }}
-            style={{ color: BLUE }}
+            initial={{ opacity: 0, x: -30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, ease: easings.smooth }}
           >
-            <TextAnimator text="Start knowing." delay={1} mode="words" />
+            <motion.h1
+              style={{
+                fontFamily: "'Instrument Serif',serif",
+                fontSize: "clamp(3rem,5.5vw,6.5rem)",
+                lineHeight: 1.0, letterSpacing: "-3px",
+                color: "var(--text)", marginBottom: "1.6rem",
+              }}
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.2, ease: easings.smooth }}
+            >
+              <TextAnimator text="Stop guessing." delay={0.4} mode="words" />
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.9, duration: 0.6 }}
+                style={{ color: BLUE }}
+              >
+                <TextAnimator text="Start knowing." delay={1} mode="words" />
+              </motion.div>
+            </motion.h1>
+
+            <ScrollReveal delay={0.3}>
+              <p style={{
+                fontSize: "clamp(.95rem,1.4vw,1.2rem)",
+                color: "var(--text3)", lineHeight: 1.85,
+                maxWidth: 520, marginBottom: "2.4rem",
+              }}>
+                QuesGen centralises 15 years of examination intelligence — predicting your next paper, improving your handwriting one step at a time, and saving teachers 15 hours every week.
+              </p>
+            </ScrollReveal>
+
+            <motion.div
+              style={{ display: "flex", flexWrap: "wrap", gap: "clamp(0.7rem,1.5vw,1.2rem)" }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.55, duration: 0.6, ease: easings.smooth }}
+            >
+              <motion.button className="btn-p"
+                onClick={() => { setPage("features"); window.scrollTo(0, 0); }}
+                whileHover={{ scale: 1.04, y: -2 }} whileTap={{ scale: 0.97 }}
+                style={{ fontSize: "clamp(0.9rem,1.1vw,1rem)", padding: "0.9rem 2rem" }}
+              >
+                Explore Platform <ArrowRight size={16} style={{ marginLeft: 4 }} />
+              </motion.button>
+              <motion.button className="btn-g"
+                onClick={() => { setPage("vault15"); window.scrollTo(0, 0); }}
+                whileHover={{ scale: 1.04, y: -2 }} whileTap={{ scale: 0.97 }}
+                style={{ fontSize: "clamp(0.9rem,1.1vw,1rem)", padding: "0.9rem 2rem" }}
+              >
+                Open Vault-15 🗄️
+              </motion.button>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+              transition={{ delay: 0.9, duration: 0.6 }}
+              style={{
+                display: "flex", alignItems: "center", flexWrap: "wrap",
+                gap: "clamp(0.5rem,1vw,0.9rem)", marginTop: "2rem",
+                fontSize: "clamp(0.75rem,0.85vw,0.88rem)", color: "var(--text3)", fontWeight: 600,
+                letterSpacing: "0.5px",
+              }}
+            >
+              {["12,500+ Papers", "15 Years", "7+ Boards", "AI-Powered"].map((item, i) => (
+                <React.Fragment key={i}>
+                  <span>{item}</span>
+                  {i < 3 && <span style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--text3)", opacity: 0.4, display: "inline-block" }} />}
+                </React.Fragment>
+              ))}
+            </motion.div>
           </motion.div>
-        </motion.h1>
 
-        <ScrollReveal delay={0.3}>
-          <p style={{
-            fontSize: "clamp(.95rem,2.2vw,1.25rem)",
-            color: "var(--text3)", lineHeight: 1.85,
-            maxWidth: 640, margin: "0 auto 2.6rem",
-          }}>
-            QuesGen centralises 15 years of examination intelligence — predicting your next paper, improving your handwriting one step at a time, and saving teachers 15 hours every week.
-          </p>
-        </ScrollReveal>
-
-        <motion.div
-          className="fr"
-          style={{ justifyContent: "center", gap: "clamp(0.85rem,2vw,1.4rem)" }}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.55, duration: 0.6, ease: easings.smooth }}
-        >
-          <motion.button className="btn-p"
-            onClick={() => { setPage("features"); window.scrollTo(0, 0); }}
-            whileHover={{ scale: 1.04, y: -2 }} whileTap={{ scale: 0.97 }}
-            style={{ fontSize: "clamp(0.92rem,1.2vw,1.05rem)", padding: "clamp(0.8rem,1.2vw,1rem) clamp(1.8rem,2.5vw,2.4rem)" }}
+          {/* ── RIGHT: big logo ── */}
+          <motion.div
+            initial={{ opacity: 0, x: 40 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ type: "spring", stiffness: 90, damping: 20, delay: 0.18 }}
+            style={{ display: "flex", alignItems: "center", justifyContent: "center" }}
           >
-            Explore Platform <ArrowRight size="clamp(15px,1.2vw,18px)" style={{ marginLeft: 2 }} />
-          </motion.button>
-          <motion.button className="btn-g"
-            onClick={() => { setPage("vault15"); window.scrollTo(0, 0); }}
-            whileHover={{ scale: 1.04, y: -2 }} whileTap={{ scale: 0.97 }}
-            style={{ fontSize: "clamp(0.92rem,1.2vw,1.05rem)", padding: "clamp(0.8rem,1.2vw,1rem) clamp(1.8rem,2.5vw,2.4rem)" }}
-          >
-            Open Vault-15 🗄️
-          </motion.button>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-          transition={{ delay: 0.9, duration: 0.6 }}
-          style={{
-            display: "flex", alignItems: "center", justifyContent: "center",
-            gap: "clamp(0.6rem,1.2vw,1rem)", marginTop: "2.6rem", flexWrap: "wrap",
-            fontSize: "clamp(0.75rem,0.9vw,0.9rem)", color: "var(--text3)", fontWeight: 600,
-            letterSpacing: "0.5px",
-          }}
-        >
-          {["12,500+ Papers", "15 Years", "7+ Boards", "AI-Powered"].map((item, i) => (
-            <React.Fragment key={i}>
-              <span>{item}</span>
-              {i < 3 && <span style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--text3)", opacity: 0.5, display: "inline-block" }} />}
-            </React.Fragment>
-          ))}
-        </motion.div>
-      </div>
-
-      {/* Stats row — bigger on large screens */}
-      <StaggerContainer
-        className="fr"
-        style={{
-          position: "relative", zIndex: 1,
-          display: "flex", gap: "clamp(2rem,6vw,6rem)",
-          marginTop: "clamp(4rem,6vw,7rem)", flexWrap: "wrap", justifyContent: "center",
-        }}
-        containerVariants={staggerContainerVariants}
-        childVariants={staggerChildVariants}
-      >
-        {stats.map((s, i) => (
-          <motion.div key={i} style={{ textAlign: "center" }} whileHover={{ scale: 1.08, y: -5 }} transition={{ duration: 0.3 }}>
             <div style={{
-              fontFamily: "'Instrument Serif',serif",
-              fontSize: "clamp(1.6rem,4.5vw,2.8rem)",
-              color: "var(--text)", letterSpacing: "-1.5px",
+              position: "relative",
+              width: "min(480px,42vw)", height: "min(480px,42vw)",
+              display: "flex", alignItems: "center", justifyContent: "center",
             }}>
-              <NumberCounter value={parseInt(s.n)} suffix={s.n.includes('+') ? '+' : ''} duration={2.5} delay={i * 0.15} />
-            </div>
-            <div style={{ fontSize: "clamp(0.72rem,0.85vw,0.85rem)", color: "var(--text2)", marginTop: ".3rem", letterSpacing: ".8px", textTransform: "uppercase", fontWeight: 600 }}>
-              {s.l}
+              {/* Glow behind the circle */}
+              <div style={{
+                position: "absolute", inset: "-15%",
+                borderRadius: "50%",
+                background: "radial-gradient(circle, rgba(35,84,244,0.18) 0%, transparent 70%)",
+                pointerEvents: "none",
+              }} />
+              {/* Floating blue circle with logo */}
+              <motion.div
+                animate={{ y: [-10, 10, -10] }}
+                transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
+                style={{
+                  width: "100%", height: "100%",
+                  borderRadius: "50%",
+                  background: "linear-gradient(145deg, #1a40d4 0%, #2354F4 50%, #4a6fff 100%)",
+                  boxShadow:
+                    "0 32px 100px rgba(35,84,244,0.42)," +
+                    "0 8px 32px rgba(35,84,244,0.22)," +
+                    "inset 0 1px 0 rgba(255,255,255,0.15)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  position: "relative",
+                }}
+              >
+                <div style={{
+                  position: "absolute", top: "8%", left: "15%", right: "15%", height: "35%",
+                  borderRadius: "50%",
+                  background: "radial-gradient(ellipse, rgba(255,255,255,0.14) 0%, transparent 70%)",
+                  pointerEvents: "none",
+                }} />
+                <img
+                  src="/logo.png"
+                  alt="QuesGen AI"
+                  style={{
+                    width: "62%", height: "62%",
+                    objectFit: "contain",
+                    filter: "brightness(0) invert(1)",
+                    position: "relative", zIndex: 1,
+                    userSelect: "none",
+                  }}
+                />
+              </motion.div>
             </div>
           </motion.div>
-        ))}
-      </StaggerContainer>
+        </div>
+
+        {/* Stats row — full width below the grid */}
+        <StaggerContainer
+          style={{
+            display: "flex", gap: "clamp(2rem,6vw,6rem)",
+            marginTop: "clamp(4rem,6vw,7rem)", flexWrap: "wrap", justifyContent: "center",
+          }}
+          containerVariants={staggerContainerVariants}
+          childVariants={staggerChildVariants}
+        >
+          {stats.map((s, i) => (
+            <motion.div key={i} style={{ textAlign: "center" }} whileHover={{ scale: 1.08, y: -5 }} transition={{ duration: 0.3 }}>
+              <div style={{
+                fontFamily: "'Instrument Serif',serif",
+                fontSize: "clamp(1.6rem,4.5vw,2.8rem)",
+                color: "var(--text)", letterSpacing: "-1.5px",
+              }}>
+                <NumberCounter value={parseInt(s.n)} suffix={s.n.includes('+') ? '+' : ''} duration={2.5} delay={i * 0.15} />
+              </div>
+              <div style={{ fontSize: "clamp(0.72rem,0.85vw,0.85rem)", color: "var(--text2)", marginTop: ".3rem", letterSpacing: ".8px", textTransform: "uppercase", fontWeight: 600 }}>
+                {s.l}
+              </div>
+            </motion.div>
+          ))}
+        </StaggerContainer>
+      </div>
     </section>
   );
-  };
 
   /* ─── MOBILE MODULE CAROUSEL ─── */
   const MobileModuleCarousel = () => (
