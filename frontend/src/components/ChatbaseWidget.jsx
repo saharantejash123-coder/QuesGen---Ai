@@ -25,11 +25,7 @@ export default function ChatbaseWidget() {
     if (!document.getElementById('chatbase-hide-btn')) {
       const style = document.createElement('style');
       style.id = 'chatbase-hide-btn';
-      style.textContent = `
-        #chatbase-bubble-button,
-        #chatbase-bubble-window { display: none !important; }
-        #chatbase-bubble-window.chatbase-open { display: flex !important; }
-      `;
+      style.textContent = `#chatbase-bubble-button { display: none !important; }`;
       document.head.appendChild(style);
     }
   }, []);
