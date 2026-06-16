@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Sparkles, ArrowRight, Brain, Shield, CheckCircle, Tag,
+  Sparkles, ArrowRight, Brain, Shield, CheckCircle, Tag, Lock,
 } from 'lucide-react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { useLanguage } from '../../context/LanguageContext';
@@ -20,7 +20,7 @@ const item = {
 /* Trust badges — mirrors Verdora's "Quality Guaranteed · Secure Delivery · Best Offers" row */
 const TRUST = [
   { icon: CheckCircle, text: 'Quality Guaranteed', color: '#2354F4' },
-  { icon: Truck,       text: 'Secure Delivery',    color: '#2354F4' },
+  { icon: Lock,        text: 'Secure Platform',    color: '#2354F4' },
   { icon: Tag,         text: 'Best Offers',        color: '#D97706', pill: true },
 ];
 
