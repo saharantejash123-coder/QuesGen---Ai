@@ -1,30 +1,123 @@
-import { Users, BookOpen, Award, TrendingUp } from 'lucide-react'
-import { useLanguage } from '../../context/LanguageContext'
+import { Users, BookOpen, Award, TrendingUp } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { useLanguage } from '../../context/LanguageContext';
+
+const STATS = [
+  {
+    icon: Users,
+    value: '2,50,000+',
+    label: 'landing.stats.students',
+    iconColor: '#2354F4',
+    iconBg: 'rgba(35,84,244,0.1)',
+    glow: 'rgba(35,84,244,0.12)',
+  },
+  {
+    icon: BookOpen,
+    value: '4,28,500+',
+    label: 'landing.stats.vaultQuestions',
+    iconColor: '#7C3AED',
+    iconBg: 'rgba(124,58,237,0.1)',
+    glow: 'rgba(124,58,237,0.10)',
+  },
+  {
+    icon: Award,
+    value: '7+',
+    label: 'landing.stats.boardsCovered',
+    iconColor: '#059669',
+    iconBg: 'rgba(5,150,105,0.1)',
+    glow: 'rgba(5,150,105,0.10)',
+  },
+  {
+    icon: TrendingUp,
+    value: '92%',
+    label: 'landing.stats.improvementRate',
+    iconColor: '#D97706',
+    iconBg: 'rgba(217,119,6,0.1)',
+    glow: 'rgba(217,119,6,0.10)',
+  },
+];
 
 export default function StatsSection() {
   const { t } = useLanguage();
-  const stats = [
-    { icon: Users, value: '2,50,000+', label: 'landing.stats.students', color: 'text-purple-400', bg: 'bg-purple-500/10' },
-    { icon: BookOpen, value: '4,28,500+', label: 'landing.stats.vaultQuestions', color: 'text-blue-400', bg: 'bg-blue-500/10' },
-    { icon: Award, value: '7+', label: 'landing.stats.boardsCovered', color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-    { icon: TrendingUp, value: '92%', label: 'landing.stats.improvementRate', color: 'text-amber-400', bg: 'bg-amber-500/10' },
-  ]
 
   return (
-    <section className="py-12 sm:py-16 lg:py-20 border-y border-slate-800/50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 2xl:px-16">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 xl:gap-10">
-          {stats.map((stat) => (
-            <div key={stat.label} className="text-center group p-4 sm:p-0">
-              <div className={`w-12 h-12 lg:w-16 lg:h-16 rounded-xl lg:rounded-2xl ${stat.bg} flex items-center justify-center mx-auto mb-3 lg:mb-4 group-hover:scale-110 transition-transform`}>
-                <stat.icon className={`w-6 h-6 lg:w-8 lg:h-8 ${stat.color.replace('400', '600 dark:text-' + stat.color.split('-')[1] + '-400')}`} />
+    <section style={{ padding: '4rem 0', background: 'var(--bg)' }}>
+      {/* Top divider */}
+      <div style={{
+        maxWidth: 1280, margin: '0 auto', padding: '0 1.5rem',
+        borderTop: '1px solid var(--border)', paddingTop: '4rem',
+      }}>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, 1fr)',
+          gap: '1.25rem',
+        }}
+          className="stats-grid"
+        >
+          {STATS.map((stat, i) => (
+            <motion.div
+              key={stat.label}
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-60px' }}
+              transition={{ delay: i * 0.1, type: 'spring', stiffness: 200, damping: 22 }}
+              whileHover={{ y: -4, transition: { duration: 0.2 } }}
+              style={{
+                background: 'var(--card-bg)',
+                border: '1px solid var(--border)',
+                borderRadius: 18,
+                padding: '1.6rem 1.4rem',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                textAlign: 'center',
+                gap: '0.75rem',
+                cursor: 'default',
+                boxShadow: `0 4px 24px ${stat.glow}`,
+                transition: 'box-shadow 0.3s ease',
+              }}
+            >
+              <div style={{
+                width: 52, height: 52, borderRadius: 14,
+                background: stat.iconBg,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0,
+              }}>
+                <stat.icon size={24} color={stat.iconColor} strokeWidth={1.8} />
               </div>
-              <div className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-slate-900 dark:text-white mb-1">{stat.value}</div>
-              <div className="text-xs sm:text-sm lg:text-base text-slate-500 dark:text-slate-400">{t(stat.label)}</div>
-            </div>
+              <div>
+                <div style={{
+                  fontSize: 'clamp(1.6rem, 3vw, 2.2rem)',
+                  fontWeight: 800,
+                  color: 'var(--text)',
+                  lineHeight: 1.1,
+                  letterSpacing: '-0.02em',
+                }}>
+                  {stat.value}
+                </div>
+                <div style={{
+                  fontSize: '0.82rem',
+                  color: 'var(--text3)',
+                  marginTop: '0.3rem',
+                  fontWeight: 500,
+                  lineHeight: 1.4,
+                }}>
+                  {t(stat.label)}
+                </div>
+              </div>
+            </motion.div>
           ))}
         </div>
       </div>
+
+      <style>{`
+        @media (max-width: 900px) {
+          .stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
+        }
+        @media (max-width: 480px) {
+          .stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 0.85rem !important; }
+        }
+      `}</style>
     </section>
-  )
+  );
 }

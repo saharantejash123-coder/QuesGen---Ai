@@ -1,7 +1,7 @@
 /* ═══════════════════════════════════════════════════════════════
    MOBILE UI — QuesGen Mobile-First Design System
-   Only applies at max-width: 900px.
-   Desktop (> 900px) styles are completely untouched.
+   Only applies at max-width: 1040px.
+   Desktop (> 1040px) styles are completely untouched.
 ═══════════════════════════════════════════════════════════════ */
 
 /* ──────────────────────────────────────────
@@ -118,43 +118,88 @@
 }
 
 /* ──────────────────────────────────────────
-   BOTTOM SHEET OVERLAY
+   NAVIGATION DRAWER OVERLAY
 ────────────────────────────────────────── */
 .mob-overlay {
   position: fixed;
   inset: 0;
-  z-index: 300;
-  background: rgba(0, 0, 0, 0.35);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  z-index: 398;
+  background: rgba(0, 0, 0, 0.48);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   -webkit-tap-highlight-color: transparent;
 }
 
 /* ──────────────────────────────────────────
-   BOTTOM SHEET
+   RIGHT-SIDE NAVIGATION DRAWER
 ────────────────────────────────────────── */
 .mob-sheet {
   position: fixed;
-  bottom: 0;
-  left: 0;
+  top: 0;
   right: 0;
-  z-index: 301;
+  bottom: 0;
+  width: min(380px, 88vw);
+  z-index: 399;
   background: var(--card-bg);
-  border-radius: 26px 26px 0 0;
-  padding: 0.5rem 1rem 1.5rem;
-  padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
-  max-height: 82vh;
-  overflow-y: auto;
-  box-shadow: 0 -12px 48px rgba(0, 0, 0, 0.18);
-  -webkit-overflow-scrolling: touch;
+  border-left: 1px solid var(--border);
+  box-shadow: -24px 0 80px rgba(0, 0, 0, 0.22);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
+/* ── Drawer Header: logo + close button ── */
+.mob-sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.1rem;
+  min-height: 64px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  background: var(--nav-bg-scroll);
+}
+
+/* ── Drawer Body: scrollable nav items ── */
+.mob-sheet-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.85rem 0.8rem;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.mob-sheet-body::-webkit-scrollbar { width: 3px; }
+.mob-sheet-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+/* ── Drawer Footer: auth / sign-out ── */
+.mob-sheet-footer {
+  flex-shrink: 0;
+  padding: 0.9rem 1rem;
+  border-top: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem;
+  background: var(--bg2);
+  padding-bottom: calc(0.9rem + env(safe-area-inset-bottom, 0px));
+}
+
+/* Legacy handle hidden */
 .mob-sheet-handle {
-  width: 40px;
-  height: 4px;
-  border-radius: 100px;
-  background: var(--border);
-  margin: 0.25rem auto 1.25rem;
+  display: none;
+}
+
+/* ── Remove bottom padding for roles without bottom nav ── */
+@media (max-width: 1040px) {
+  body[data-nav-role="landing"] main,
+  body[data-nav-role="login"] main {
+    padding-bottom: 0 !important;
+  }
+  body[data-nav-role="landing"] footer,
+  body[data-nav-role="login"] footer {
+    margin-bottom: 0 !important;
+  }
 }
 
 .mob-sheet-section-title {
@@ -245,7 +290,7 @@
 /* ──────────────────────────────────────────
    GLOBAL MOBILE ADJUSTMENTS
 ────────────────────────────────────────── */
-@media (max-width: 900px) {
+@media (max-width: 1040px) {
   main {
     /* floating island is ~58px tall + 12px from bottom + 10px buffer */
     padding-bottom: 88px;
@@ -594,6 +639,46 @@
   }
 }
 
+/* ── Oracle paper preview on mobile ── */
+@media (max-width: 1040px) {
+  .print-doc {
+    padding: 20px !important;
+    min-height: auto !important;
+    font-size: 13px !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  .print-doc h1 { font-size: 18px !important; }
+  .print-doc h2 { font-size: 16px !important; }
+  .print-doc h3 { font-size: 14px !important; }
+  .print-doc > div[style*="textAlign: 'center'"] > div[style*="display:'flex'"] {
+    flex-direction: column !important;
+    gap: 4px !important;
+    font-size: 12px !important;
+  }
+  .print-doc .opts-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ── Pricing cards: ensure they stack nicely on all mobile sizes ── */
+@media (max-width: 600px) {
+  section .g3 {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+}
+
+/* ── Auth/CTA section text fix for narrow screens ── */
+@media (max-width: 480px) {
+  .mob-hero-headline {
+    font-size: clamp(2rem, 9vw, 2.5rem) !important;
+  }
+  .st {
+    font-size: clamp(1.5rem, 7vw, 2rem) !important;
+  }
+}
+
 /* ── Very small screens: single column everywhere ── */
 @media (max-width: 400px) {
   .g4 {
@@ -602,9 +687,24 @@
   .g2 {
     gap: 1rem !important;
   }
+  .mob-hero {
+    padding: 4rem 1rem 2rem !important;
+  }
+  .opts-grid {
+    grid-template-columns: 1fr !important;
+  }
 }
 
 /* Prevent body scroll when sheet is open */
 body.mob-sheet-open {
   overflow: hidden;
+}
+
+/* Hide scrollbar for dashboard tabs container */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

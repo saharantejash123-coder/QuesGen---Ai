@@ -14,11 +14,13 @@ import RegisterPage from './pages/RegisterPage';
 import GoogleCallback from './pages/GoogleCallback';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsConditionsPage from './pages/TermsConditionsPage';
+import CookiePolicyPage from './pages/CookiePolicyPage';
 import StudentDashboard from './pages/StudentDashboard';
 import TeacherDashboard from './pages/TeacherDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import SchoolDashboard from './pages/SchoolDashboard';
 import BannedPage from './pages/BannedPage';
+import ChatbaseWidget from './components/ChatbaseWidget';
 
 function AnimatedRoutes() {
   const location = useLocation();
@@ -44,8 +46,12 @@ function AnimatedRoutes() {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/auth/google/callback" element={<GoogleCallback />} />
           <Route path="/api/auth/callback/google" element={<GoogleCallback />} />
-          <Route path="/privacy" element={<PrivacyPolicyPage />} />
-          <Route path="/terms" element={<TermsConditionsPage />} />
+          {/* Legal pages — multiple path aliases so links always resolve */}
+          <Route path="/privacy"         element={<PrivacyPolicyPage />} />
+          <Route path="/privacy-policy"  element={<PrivacyPolicyPage />} />
+          <Route path="/terms"           element={<TermsConditionsPage />} />
+          <Route path="/terms-conditions" element={<TermsConditionsPage />} />
+          <Route path="/cookie-policy"   element={<CookiePolicyPage />} />
           <Route
             path="/student"
             element={
@@ -95,6 +101,7 @@ export default function App() {
         <LanguageProvider>
           <BrowserRouter>
             <AnimatedRoutes />
+            <ChatbaseWidget />
           </BrowserRouter>
         </LanguageProvider>
       </ThemeProvider>

@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { ArrowRight, Loader2, BookOpen, Brain, Target, TrendingUp } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
-import { login, saveSession } from '../services/authService';
+import { login, saveSession, getSession } from '../services/authService';
 import { getActiveBan, syncBanFromBackend } from '../services/adminService';
 
 const GOOGLE_CLIENT_ID = '462752093792-7qe3v01bs6a25v8ldsttt9cenvg1mtg1.apps.googleusercontent.com';
@@ -48,6 +48,12 @@ export default function LoginPage() {
     else if (r === 'teacher') navigate('/teacher');
     else navigate('/student');
   };
+
+  /* Already logged in → skip login page */
+  useEffect(() => {
+    const session = getSession();
+    if (session?.role) redirect(session.role);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleLogin = async (e) => {
     e.preventDefault();

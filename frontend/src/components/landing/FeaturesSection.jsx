@@ -1,112 +1,205 @@
-import { Brain, Shuffle, Camera, FileText, BarChart3, Shield, Eye, Trophy } from 'lucide-react'
+import { Brain, Shuffle, Camera, FileText, BarChart3, Shield, Eye, Trophy } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const features = [
   {
     icon: Trophy,
     title: 'Exam Generator',
     desc: 'AI predicts exam topics with probability scores. Know exactly what to study.',
-    color: 'purple',
-    tag: 'Student'
+    color: '#2354F4',
+    bg: 'rgba(35,84,244,0.08)',
+    tag: 'Student',
+    tagColor: '#2354F4',
+    tagBg: 'rgba(35,84,244,0.08)',
   },
   {
     icon: Shuffle,
     title: 'LogicGen Shuffler',
-    desc: 'Dynamically alters PYQ parameters. No more rote memorization.',
-    color: 'blue',
-    tag: 'Student'
+    desc: 'Dynamically alters PYQ parameters so no two questions feel the same.',
+    color: '#7C3AED',
+    bg: 'rgba(124,58,237,0.08)',
+    tag: 'Student',
+    tagColor: '#2354F4',
+    tagBg: 'rgba(35,84,244,0.08)',
   },
   {
     icon: Brain,
     title: 'Adaptive Testing',
-    desc: 'AI-powered MCQ papers that adapt to your performance. Questions are weighted 2–4× toward your weak areas for maximum improvement.',
-    color: 'cyan',
-    tag: 'Student'
+    desc: 'AI-powered MCQ papers that adapt to your performance, weighting weak areas 2–4×.',
+    color: '#0EA5E9',
+    bg: 'rgba(14,165,233,0.08)',
+    tag: 'Student',
+    tagColor: '#2354F4',
+    tagBg: 'rgba(35,84,244,0.08)',
   },
   {
     icon: FileText,
     title: 'Studio-Q Papers',
     desc: 'Generate complete exam papers with answer keys in under 10 seconds.',
-    color: 'emerald',
-    tag: 'Teacher'
+    color: '#059669',
+    bg: 'rgba(5,150,105,0.08)',
+    tag: 'Teacher',
+    tagColor: '#059669',
+    tagBg: 'rgba(5,150,105,0.08)',
   },
   {
     icon: Shield,
     title: 'Vari-Test Anti-Cheat',
-    desc: 'One-click paper variants (Set A/B/C) for cheat-proof exams.',
-    color: 'amber',
-    tag: 'Teacher'
+    desc: 'One-click paper variants (Set A/B/C) for cheat-proof, fair exams.',
+    color: '#D97706',
+    bg: 'rgba(217,119,6,0.08)',
+    tag: 'Teacher',
+    tagColor: '#059669',
+    tagBg: 'rgba(5,150,105,0.08)',
   },
   {
     icon: Eye,
     title: 'Vision-Grade OCR',
     desc: 'Auto-grade handwritten answer sheets with AI-powered OCR technology.',
-    color: 'indigo',
-    tag: 'Teacher'
+    color: '#6366F1',
+    bg: 'rgba(99,102,241,0.08)',
+    tag: 'Teacher',
+    tagColor: '#059669',
+    tagBg: 'rgba(5,150,105,0.08)',
   },
   {
     icon: BarChart3,
     title: 'Pilot Dashboard',
-    desc: 'Class-wide heatmaps pinpointing weak areas. Bridge reports to parents.',
-    color: 'teal',
-    tag: 'Teacher'
+    desc: 'Class-wide heatmaps pinpointing weak areas with bridge reports to parents.',
+    color: '#0D9488',
+    bg: 'rgba(13,148,136,0.08)',
+    tag: 'Teacher',
+    tagColor: '#059669',
+    tagBg: 'rgba(5,150,105,0.08)',
   },
-]
-
-const colorMap = {
-  purple: { bg: 'bg-purple-500/10', text: 'text-purple-600 dark:text-purple-400', border: 'border-purple-500/20' },
-  blue: { bg: 'bg-blue-500/10', text: 'text-blue-600 dark:text-blue-400', border: 'border-blue-500/20' },
-  cyan: { bg: 'bg-cyan-500/10', text: 'text-cyan-600 dark:text-cyan-400', border: 'border-cyan-500/20' },
-  rose: { bg: 'bg-rose-500/10', text: 'text-rose-600 dark:text-rose-400', border: 'border-rose-500/20' },
-  emerald: { bg: 'bg-emerald-500/10', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-emerald-500/20' },
-  amber: { bg: 'bg-amber-500/10', text: 'text-amber-600 dark:text-amber-400', border: 'border-amber-500/20' },
-  indigo: { bg: 'bg-indigo-500/10', text: 'text-indigo-600 dark:text-indigo-400', border: 'border-indigo-500/20' },
-  teal: { bg: 'bg-teal-500/10', text: 'text-teal-600 dark:text-teal-400', border: 'border-teal-500/20' },
-}
+  {
+    icon: Camera,
+    title: 'SnapSolve AI',
+    desc: 'Photograph any question and get a step-by-step AI solution instantly.',
+    color: '#EC4899',
+    bg: 'rgba(236,72,153,0.08)',
+    tag: 'Student',
+    tagColor: '#2354F4',
+    tagBg: 'rgba(35,84,244,0.08)',
+  },
+];
 
 export default function FeaturesSection() {
   return (
-    <section className="py-20 lg:py-28" style={{ background: 'var(--bg)' }}>
+    <section style={{ padding: '5.5rem 0', background: 'var(--bg)' }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 2xl:px-16">
-        <div className="text-center mb-14 lg:mb-20">
-          <h2 className="st mb-4">
-            Every tool you need.<br /><span className="text-gradient">Nothing you don't.</span>
+
+        {/* Header */}
+        <div style={{ textAlign: 'center', marginBottom: '3.5rem' }}>
+          <span style={{
+            display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
+            padding: '0.3rem 0.9rem', borderRadius: 100,
+            background: 'rgba(35,84,244,0.08)', border: '1px solid rgba(35,84,244,0.18)',
+            fontSize: '0.75rem', fontWeight: 700, color: '#2354F4',
+            letterSpacing: '0.05em', textTransform: 'uppercase',
+            marginBottom: '1rem',
+          }}>
+            Platform Features
+          </span>
+          <h2 className="st" style={{ marginBottom: '0.75rem', marginTop: '0.75rem' }}>
+            Every tool you need.{' '}
+            <span className="text-gradient">Nothing you don't.</span>
           </h2>
-          <p className="ss mx-auto">From predictive analytics to instant paper generation — 8 student modules and 4 teacher tools in one coherent ecosystem.</p>
+          <p className="ss" style={{ margin: '0 auto' }}>
+            8 student modules and 4 teacher tools — from predictive analytics to instant paper generation.
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-6 xl:gap-7">
-          {features.map((feat) => {
-            const colors = colorMap[feat.color]
-            return (
-              <div key={feat.title} className="glass-card rounded-xl lg:rounded-2xl p-6 lg:p-8 hover:-translate-y-1 group cursor-default">
-                <div className="flex items-center justify-between mb-5 lg:mb-6">
-                  <div
-                    className="w-12 h-12 lg:w-14 lg:h-14 rounded-xl lg:rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform"
-                    style={{ background: `${colors.text.includes('blue') ? '#2354F4' : colors.text.includes('purple') ? '#7C3AED' : colors.text.includes('emerald') ? '#10B981' : colors.text.includes('amber') ? '#F59E0B' : '#3B82F6'}14` }}
-                  >
-                    <feat.icon
-                      className="w-6 h-6 lg:w-7 lg:h-7"
-                      style={{ color: colors.text.includes('blue') ? '#2354F4' : colors.text.includes('purple') ? '#7C3AED' : colors.text.includes('emerald') ? '#10B981' : colors.text.includes('amber') ? '#F59E0B' : '#3B82F6' }}
-                    />
-                  </div>
-                  <span
-                    className="text-[10px] lg:text-xs font-bold uppercase tracking-widest px-2.5 py-1 rounded-full"
-                    style={{
-                      background: feat.tag === 'Teacher' ? 'var(--bg3)' : 'rgba(35,84,244,0.1)',
-                      color: feat.tag === 'Teacher' ? 'var(--text)' : '#2354F4',
-                      border: '1px solid var(--border)'
-                    }}
-                  >
-                    {feat.tag}
-                  </span>
+        {/* Grid */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, 1fr)',
+          gap: '1.1rem',
+        }} className="feat-grid">
+          {features.map((feat, i) => (
+            <motion.div
+              key={feat.title}
+              initial={{ opacity: 0, y: 28 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-50px' }}
+              transition={{ delay: (i % 4) * 0.08, type: 'spring', stiffness: 190, damping: 22 }}
+              whileHover={{ y: -5, transition: { duration: 0.2 } }}
+              style={{
+                background: 'var(--card-bg)',
+                border: '1px solid var(--border)',
+                borderRadius: 18,
+                padding: '1.5rem',
+                cursor: 'default',
+                transition: 'border-color 0.25s ease, box-shadow 0.25s ease',
+                position: 'relative',
+                overflow: 'hidden',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.borderColor = `${feat.color}40`;
+                e.currentTarget.style.boxShadow = `0 8px 32px ${feat.bg.replace('0.08', '0.15')}`;
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.borderColor = 'var(--border)';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+            >
+              {/* Subtle top gradient */}
+              <div style={{
+                position: 'absolute', top: 0, left: 0, right: 0, height: 3,
+                background: `linear-gradient(90deg, ${feat.color}, transparent)`,
+                opacity: 0, transition: 'opacity 0.25s ease',
+              }} className="feat-topbar" />
+
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                <div style={{
+                  width: 44, height: 44, borderRadius: 12,
+                  background: feat.bg,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'transform 0.2s ease',
+                }}>
+                  <feat.icon size={20} color={feat.color} strokeWidth={1.8} />
                 </div>
-                <h3 className="text-lg lg:text-xl font-bold mb-2 lg:mb-3" style={{ color: 'var(--text)' }}>{feat.title}</h3>
-                <p className="text-sm lg:text-base leading-relaxed" style={{ color: 'var(--text2)' }}>{feat.desc}</p>
+                <span style={{
+                  fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.06em',
+                  textTransform: 'uppercase',
+                  padding: '0.2rem 0.6rem', borderRadius: 100,
+                  background: feat.tagBg,
+                  color: feat.tagColor,
+                  border: `1px solid ${feat.tagColor}25`,
+                }}>
+                  {feat.tag}
+                </span>
               </div>
-            )
-          })}
+
+              <h3 style={{
+                fontWeight: 700, fontSize: '0.92rem',
+                color: 'var(--text)', marginBottom: '0.45rem',
+                lineHeight: 1.3,
+              }}>
+                {feat.title}
+              </h3>
+              <p style={{
+                fontSize: '0.8rem', color: 'var(--text3)',
+                lineHeight: 1.6, margin: 0,
+              }}>
+                {feat.desc}
+              </p>
+            </motion.div>
+          ))}
         </div>
       </div>
+
+      <style>{`
+        @media (max-width: 1100px) {
+          .feat-grid { grid-template-columns: repeat(3, 1fr) !important; }
+        }
+        @media (max-width: 768px) {
+          .feat-grid { grid-template-columns: repeat(2, 1fr) !important; }
+        }
+        @media (max-width: 480px) {
+          .feat-grid { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
     </section>
-  )
+  );
 }
