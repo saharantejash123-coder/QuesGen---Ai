@@ -1,18 +1,20 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 const BLUE="#2354F4",AMBER="#D97706",TEAL="#0891B2",VIOLET="#7C3AED",GREEN="#059669";
 
 import ScrollReveal from '../../components/animations/ScrollReveal';
 import StaggerContainer from '../../components/animations/StaggerContainer';
 import HoverCard from '../../components/animations/HoverCard';
 import FAQItem from '../../components/questra/FAQItem';
+import SubscriptionModal from '../../components/questra/SubscriptionModal';
 
 function PricingPage(){
   const [billing,setBilling]=useState("monthly");
+  const [subModal, setSubModal] = useState(null);
   const tiers=[
     {name:"Core Access",price:{monthly:"Free",yearly:"Free"},desc:"Zero financial barrier. Start learning immediately.",color:"var(--text2)",cta:"Get Started Free",ctaC:"ghost",
       features:["Last 3 years PYQ access (Vault-15 preview)","3 Oracle predictions per month","3 LogicGen paper generations/month","Briefs for 2 chapters","Basic Navigator roadmap","Script-Lab — 1 session/month"]},
     {name:"Student Pro",price:{monthly:"₹199",yearly:"₹149"},period:"/month",popular:true,desc:"For serious exam aspirants who want the full edge.",color:BLUE,cta:"Start Free Trial",ctaC:"primary",
-      features:["Full Vault-15 — 15 yrs, 7+ boards","Unlimited AI Confidence Scores","LogicGen — unlimited shuffles","Adaptive Testing — unlimited practice tests","Script-Lab — unlimited + progress tracking","Clarity AI — English & Hindi","Briefs for all chapters","Full Navigator + smart redistribution","Edge-Sync offline access"]},
+      features:["Full Vault-15 — 15 yrs, 7+ boards","Unlimited AI Confidence Scores","LogicGen — unlimited shuffles","Adaptive Testing — unlimited practice tests","Script-Lab — unlimited + progress tracking","Clarity AI — English & Hindi","Briefs for all chapters","Full Navigator + smart redistribution"]},
     {name:"School / Coaching",price:{monthly:"₹999",yearly:"₹749"},period:"/month",desc:"For institutions and Kota coaching centres.",color:AMBER,cta:"Book a Demo",ctaC:"amber",
       features:["Everything in Student Pro","Studio-Q — unlimited paper generation","Vari-Test Set A/B/C anti-cheat","Vision-Grade OCR auto-grading","Pilot Dashboard class heatmaps","Bridge-Reports via WhatsApp","Custom branding on papers","Unlimited teacher accounts","Priority support"]},
   ];
@@ -55,7 +57,9 @@ function PricingPage(){
                   </li>
                 ))}
               </ul>
-              <button className={t.ctaC==="primary"?"btn-p":t.ctaC==="amber"?"btn-a":"btn-g"} style={{width:"100%",justifyContent:"center"}}>{t.cta}</button>
+              <button className={t.ctaC==="primary"?"btn-p":t.ctaC==="amber"?"btn-a":"btn-g"} style={{width:"100%",justifyContent:"center"}}
+                onClick={t.price[billing]!=="Free"?()=>setSubModal({name:t.name,price:t.price[billing]+(t.period||"")}):undefined}
+              >{t.cta}</button>
             </HoverCard>
           ))}
         </StaggerContainer>
@@ -65,7 +69,7 @@ function PricingPage(){
           <h2 style={{fontFamily:"'Instrument Serif',serif",fontSize:"1.9rem",color:"var(--text)",textAlign:"center",marginBottom:"2rem"}}>Common questions</h2>
         </ScrollReveal>
         {[
-          {q:"Does the free tier work offline?",a:"Yes — Core Access includes Edge-Sync with the latest 3 years of Vault-15 PYQs and Briefs for 2 chapters. Everything is cached locally on first sync under 1 MB."},
+          {q:"Does the free tier cover all subjects?",a:"Core Access includes Vault-15 PYQs from the last 3 years, 3 Oracle predictions per month, and Briefs for 2 chapters. Upgrade to Student Pro for unlimited access."},
           {q:"Is RBSE (Rajasthan Board) covered?",a:"Fully. Vault-15 includes every RBSE paper from 2010 to 2025, tagged across all four metadata vectors. Oracle predictions are tailored per board."},
           {q:"How does Script-Lab work with phone photos?",a:"Script-Lab's vision model is trained on real classroom writing conditions — not studio scans. It works reliably with photos taken under normal indoor lighting."},
           {q:"What if I miss sessions on the Navigator?",a:"Nothing punitive. The Navigator quietly redistributes your missed topics across remaining days and recalculates the completion path without any alerts."},
@@ -85,6 +89,7 @@ function PricingPage(){
           </div>
         </ScrollReveal>
       </section>
+      {subModal && <SubscriptionModal planName={subModal.name} planPrice={subModal.price} onClose={()=>setSubModal(null)}/>}
     </div>
   );
 }

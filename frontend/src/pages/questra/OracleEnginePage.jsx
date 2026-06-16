@@ -304,7 +304,7 @@ ${sectionsHTML}
       {step === 3 && paper && (
         <div className="fade-in">
           {/* Action Bar */}
-          <div className="hide-on-print oracle-action-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', padding: '1rem', background: 'var(--card-bg)', borderRadius: 12, border: '1px solid var(--border)' }}>
+          <div className="hide-on-print oracle-action-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap:'1rem', marginBottom: '2rem', padding: '1rem', background: 'var(--card-bg)', borderRadius: 12, border: '1px solid var(--border)', flexWrap:'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
               <div style={{ padding: '0.5rem', borderRadius: 8, background: 'rgba(35,84,244,0.1)' }}>
                 <CheckCircle style={{ width: 24, height: 24, color: '#2354F4' }} />

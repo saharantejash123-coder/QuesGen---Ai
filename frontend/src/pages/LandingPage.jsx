@@ -8,7 +8,7 @@ import StatsSection from '../components/landing/StatsSection'
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen" style={{ background: 'var(--bg)' }}>
+    <div className="min-h-screen" style={{ background: 'var(--bg)', paddingTop: 0 }}>
       <AppNavbar role="landing" />
       <main>
         <HeroSection />

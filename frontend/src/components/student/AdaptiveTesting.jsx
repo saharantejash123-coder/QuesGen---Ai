@@ -507,7 +507,7 @@ const AdaptiveTesting = () => {
 
           {/* Current Question */}
           <div className="card" style={{ padding:'2rem',marginBottom:'1.5rem' }}>
-            <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'1.5rem' }}>
+            <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'1.5rem',flexWrap:'wrap',gap:'.6rem' }}>
               <div style={{ display:'flex',alignItems:'center',gap:'.8rem' }}>
                 <span style={{ width:36,height:36,background:'linear-gradient(135deg,rgba(124,58,237,.15),rgba(35,84,244,.1))',
                   borderRadius:10,display:'flex',alignItems:'center',justifyContent:'center',

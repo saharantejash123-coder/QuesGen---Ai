@@ -147,7 +147,7 @@ function Vault15Page(){
       <section style={{padding:"0 5% 5rem",maxWidth:1200,margin:"0 auto"}}>
         <div style={{background:"var(--card-bg)",border:"1px solid var(--border)",borderRadius:20,overflow:"hidden"}}>
           {/* Header bar */}
-          <div style={{background:"rgba(124,58,237,.06)",borderBottom:"1px solid rgba(124,58,237,.12)",padding:"1.2rem 1.8rem",display:"flex",alignItems:"center",gap:".8rem"}}>
+          <div style={{background:"rgba(124,58,237,.06)",borderBottom:"1px solid rgba(124,58,237,.12)",padding:"1.2rem 1.8rem",display:"flex",alignItems:"center",gap:".8rem",flexWrap:"wrap"}}>
             <span style={{fontSize:"1.2rem"}}>🗄️</span>
             <span style={{fontWeight:700,color:"#7C3AED",fontSize:".9rem"}}>Paper Archive Browser</span>
             <span style={{marginLeft:"auto",fontSize:".72rem",color:"var(--text3)",fontFamily:"'JetBrains Mono',monospace"}}>12,500+ papers indexed</span>
@@ -219,7 +219,7 @@ function Vault15Page(){
                         <span style={{fontSize:".62rem",fontWeight:700,padding:".15rem .45rem",borderRadius:5,background:"rgba(255,255,255,.06)",color:"var(--text3)"}}>{p.pages} Pages</span>
                       </div>
                       {/* Sets */}
-                      <div style={{display:"flex",gap:".3rem"}}>
+                      <div style={{display:"flex",gap:".3rem",flexWrap:"wrap"}}>
                         {p.sets.map(s=>(
                           <span key={s} style={{fontSize:".62rem",fontWeight:600,padding:".2rem .5rem",borderRadius:6,border:"1px solid var(--border)",color:"var(--text3)"}}>{s}</span>
                         ))}
@@ -277,7 +277,7 @@ function Vault15Page(){
             {/* Paper Set Tabs */}
             <div style={{marginBottom:"1.2rem"}}>
               <div style={{fontSize:".68rem",fontWeight:700,color:"var(--text3)",textTransform:"uppercase",letterSpacing:".5px",marginBottom:".5rem"}}>Available Sets</div>
-              <div style={{display:"flex",gap:".5rem"}}>
+              <div style={{display:"flex",gap:".5rem",flexWrap:"wrap"}}>
                 {viewPaper.sets.map(s=>(
                   <button key={s} onClick={()=>setActiveSet(s)} style={{padding:".5rem 1rem",borderRadius:10,border:activeSet===s?"1px solid #7C3AED":"1px solid var(--border)",background:activeSet===s?"rgba(124,58,237,.12)":"var(--bg3)",color:activeSet===s?"#7C3AED":"var(--text3)",fontSize:".82rem",fontWeight:600,cursor:"pointer",transition:"all .2s"}}>{s}</button>
                 ))}

@@ -277,7 +277,7 @@ function HomePage({ setPage }) {
           <h2 style={{fontFamily:"'Instrument Serif',serif",fontSize:"clamp(2rem,4vw,3rem)",color:"#F1F5F9",marginBottom:"1rem"}}>
             Built for every student.<br/><em style={{color:"#60A5FA"}}>From village to Kota.</em>
           </h2>
-          <p style={{color:"#64748B",fontSize:"1.05rem",marginBottom:"2.5rem"}}>Full platform works offline in under 1 MB. Because rural Rajasthan deserves the same preparation quality as the best coaching centres.</p>
+          <p style={{color:"#64748B",fontSize:"1.05rem",marginBottom:"2.5rem"}}>Built for students across India — from the biggest cities to the smallest villages.</p>
           <div style={{display:"flex",gap:"1rem",justifyContent:"center",flexWrap:"wrap"}}>
             <button className="btn-primary" onClick={() => { setPage("pricing"); window.scrollTo(0,0); }}>See Pricing →</button>
             <button className="btn-ghost" onClick={() => { setPage("logicgen"); window.scrollTo(0,0); }}>Try LogicGen Demo</button>
@@ -581,7 +581,7 @@ function FeaturesPage({ setPage }) {
     { icon:"📸", name:"SnapSolve", color:TEAL, desc:"Point your phone camera at any unsolved problem — homework, textbook, or previous exam. SnapSolve delivers a multi-stage step-by-step breakdown alongside three Twin Questions built with identical logic for immediate reinforcement.", detail:["Works with phone camera photos","Step-by-step resolution with reasoning","3 auto-generated Twin Questions","Supports diagrams and graphs","Hindi & English explanations"] },
     { icon:"✍️", name:"Script-Lab", color:"#D97706", desc:"Addresses the critical loss of presentation marks in Indian examinations. Upload handwritten mock answers. AI evaluates kerning, baseline alignment, paragraph structure, and whitespace — returning one focused micro-improvement at a time.", detail:["Analyses kerning & baseline drift","Evaluates whitespace & paragraph hierarchy","One targeted improvement per session","Tracks progress across sessions","Works with any language script"] },
     { icon:"💡", name:"Clarity AI", color:"#059669", desc:"Processes dense academic textbook jargon and translates it into fluid, high-retention conversational text. Available in parallel English and Hindi views — making complex concepts accessible to every student regardless of language background.", detail:["Instant English & Hindi translation","Jargon → conversational language","Preserves all technical accuracy","Works on any NCERT or state board text","Copy & share simplified explanations"] },
-    { icon:"📄", name:"Briefs · Core-Sheets", color:BLUE, desc:"Condenses every textbook chapter into a standardised 1-page digital reference document containing key formulas, essential dates, structural diagrams, and core concepts — the only thing you need in the 5 minutes before an exam.", detail:["1-page per chapter, guaranteed","Key formulas & essential dates","Structural diagrams & mnemonics","Auto-updates if syllabus changes","Available offline via Edge-Sync"] },
+    { icon:"📄", name:"Briefs · Core-Sheets", color:BLUE, desc:"Condenses every textbook chapter into a standardised 1-page digital reference document containing key formulas, essential dates, structural diagrams, and core concepts — the only thing you need in the 5 minutes before an exam.", detail:["1-page per chapter, guaranteed","Key formulas & essential dates","Structural diagrams & mnemonics","Auto-updates if syllabus changes"] },
     { icon:"🎧", name:"Echo-Learning", color:AMBER, desc:"Converts Briefs directly into high-fidelity conversational audio podcasts using natural voice synthesis. Auditory-preference learners can absorb the entire syllabus while commuting, exercising, or resting — zero screen time required.", detail:["Natural voice synthesis, not robotic TTS","Briefs → 8-12 minute audio episodes","Background playback while using other apps","Downloaded for offline listening","Hindi and English voice options"] },
     { icon:"⚔️", name:"Strive · Battle Mode", color:"#7C3AED", desc:"A highly gamified peer-to-peer competitive environment. Enter live timed quiz battles covering explicit syllabus sub-sections, risk and win Genie Coins, climb the global leaderboard — making daily practice genuinely addictive.", detail:["Live 1v1 and group battles","Genie Coins economy with rewards","City, state, and national leaderboards","Covers every board and competitive exam","Daily challenges tied to Oracle predictions"] },
     { icon:"🗺️", name:"Navigator Map", color:TEAL, desc:"A self-correcting study calendar that maps a clear path to 100% syllabus completion. Miss a study window due to illness or life? The engine auto-redistributes topics across remaining days — no punitive alerts, no guilt.", detail:["Covers 100% of syllabus automatically","Auto-redistributes missed sessions","Links to Oracle predictions dynamically","Visual completion heatmap","Syncs progress across all devices"] },
@@ -878,7 +878,7 @@ function PricingPage() {
         "Echo-Learning audio podcasts",
         "Strive Arena + Genie Coins",
         "Full Navigator + smart redistribution",
-        "Edge-Sync offline access",
+
       ],
     },
     {
@@ -960,7 +960,7 @@ function PricingPage() {
       <section style={{padding:"5rem 5%",maxWidth:800,margin:"0 auto"}}>
         <h2 style={{fontFamily:"'Instrument Serif',serif",fontSize:"2rem",color:"#F1F5F9",textAlign:"center",marginBottom:"2.5rem"}}>Common questions</h2>
         {[
-          { q:"Does the free tier actually work offline?", a:"Yes — Core Access includes Edge-Sync with the latest 3 years of PYQs and Briefs for 2 chapters. Everything under 1 MB is cached locally on your first sync." },
+          { q:"Does the free tier cover all subjects?", a:"Core Access includes Vault-15 PYQs from the last 3 years, 3 Oracle predictions per month, and Briefs for 2 chapters. Upgrade to Student Pro for unlimited access." },
           { q:"How does Script-Lab work on phone photos?", a:"Script-Lab's vision model is trained on real classroom writing conditions — not studio scans. It works reliably with photos taken under normal indoor lighting at arm's length." },
           { q:"Can a coaching centre use this for 200 students?", a:"The School/Coaching tier supports unlimited student accounts and teacher seats. Vari-Test generates unique Set A/B/C papers preventing copying across any class size." },
           { q:"Is RBSE (Rajasthan Board) covered?", a:"Fully. Vault-15 includes every RBSE paper from 2010 to 2026, tagged across all four metadata vectors. Oracle predictions are tailored per board — RBSE gets its own trend analysis." },

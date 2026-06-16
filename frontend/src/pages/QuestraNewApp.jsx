@@ -154,7 +154,7 @@ function HomePage({setPage}){
                 {icon:"📦",t:"4,28,500+ Questions",d:"Every board, every class, 2010–2025 — fully indexed"},
                 {icon:"🏷️",t:"4-Vector Metadata",d:"Difficulty · Bloom's Level · Frequency · AI Score"},
                 {icon:"📊",t:"Trend Heatmaps",d:"Visual year-wise topic frequency charts per board"},
-                {icon:"🔌",t:"Edge-Sync Offline",d:"Full archive synced under 1 MB for rural access"},
+
               ].map((item,i)=>(
                 <div key={i} style={{display:"flex",gap:".9rem",alignItems:"flex-start"}}>
                   <div style={{width:36,height:36,background:"rgba(124,58,237,.1)",border:"1px solid rgba(124,58,237,.2)",borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",fontSize:".95rem",flexShrink:0}}>{item.icon}</div>
@@ -229,7 +229,7 @@ function HomePage({setPage}){
       <section style={{padding:"5rem 5%",textAlign:"center",background:"linear-gradient(135deg,rgba(35,84,244,.07),rgba(8,145,178,.04))"}}>
         <div style={{maxWidth:650,margin:"0 auto"}}>
           <h2 style={{fontFamily:"'Instrument Serif',serif",fontSize:"clamp(1.8rem,4vw,2.8rem)",color:"#F1F5F9",marginBottom:"1rem"}}>Built for every student.<br/><em style={{color:"#60A5FA"}}>From village to Kota.</em></h2>
-          <p style={{color:"#64748B",fontSize:"1rem",marginBottom:"2.2rem"}}>Full platform works offline in under 1 MB. Because rural Rajasthan deserves the same preparation quality as the best coaching centres.</p>
+          <p style={{color:"#64748B",fontSize:"1rem",marginBottom:"2.2rem"}}>Built for students across India — from the biggest cities to the smallest villages.</p>
           <div className="fr" style={{justifyContent:"center"}}>
             <button className="btn-p" onClick={()=>{setPage("pricing");window.scrollTo(0,0);}}>See Pricing →</button>
             <button className="btn-g" onClick={()=>{setPage("logicgen");window.scrollTo(0,0);}}>Try LogicGen Demo</button>
@@ -666,13 +666,13 @@ function FeaturesPage({setPage}){
   const [tab,setTab]=useState("student");
   const [sel,setSel]=useState(0);
   const sf=[
-    {icon:"🗄️",name:"Vault-15",color:VIOLET,desc:"The largest tagged PYQ archive ever built for Indian boards — 4,28,500+ questions from 2010–2025, each carrying Difficulty, Bloom's Taxonomy, Historical Frequency, and AI Confidence metadata tags.",detail:["4,28,500+ questions fully indexed","7+ boards, Class 9–12","4-Vector metadata per question","Year-wise trend heatmaps","Edge-Sync offline under 1 MB"]},
+    {icon:"🗄️",name:"Vault-15",color:VIOLET,desc:"The largest tagged PYQ archive ever built for Indian boards — 4,28,500+ questions from 2010–2025, each carrying Difficulty, Bloom's Taxonomy, Historical Frequency, and AI Confidence metadata tags.",detail:["4,28,500+ questions fully indexed","7+ boards, Class 9–12","4-Vector metadata per question","Year-wise trend heatmaps"]},
     {icon:"🏆",name:"Exam Generator",color:BLUE,desc:"Runs cyclical time-series analysis on Vault-15 and monitors official board circular releases. Generates a Confidence Score for every syllabus topic — explicit probability percentages tied to the upcoming exam cycle.",detail:["15-year historical trend analysis","Monitors board sample papers & circulars","Per-topic Confidence Scores (e.g. 89%)","Updates after each official board communication","Covers all 7+ boards simultaneously"]},
     {icon:"🔄",name:"LogicGen",color:AMBER,desc:"Strips any PYQ down to its core logic structure, then rebuilds it — same concept, completely new numbers, names, coordinates, or scenarios. Forces genuine structural understanding over static answer memorisation.",detail:["Infinite unique variants per question","Replaces integers, entities, and scenarios","Paired Oracle predictions for probability","Export as PDF for offline practice","Works for maths, science, and humanities"]},
     {icon:"🧠",name:"Adaptive Testing",color:TEAL,desc:"Generate dynamic, AI-powered tests on the fly. Questions adapt to your specific weak areas and provide detailed explanations to help you master every topic.",detail:["Unlimited AI-generated questions","Adapts to your weak areas","Instant AI explanations","Performance history tracking","Continuous skill mastery"]},
     {icon:"✍️",name:"Script-Lab",color:"#D97706",desc:"Addresses the critical loss of presentation marks in Indian exams. Upload handwritten mock answers. AI evaluates kerning, baseline alignment, paragraph structure, and whitespace — returning one focused micro-improvement at a time.",detail:["Analyses kerning & baseline drift","Evaluates whitespace & paragraph hierarchy","One targeted improvement per session","Tracks progress across sessions","Works with any language script"]},
     {icon:"💡",name:"Clarity AI",color:GREEN,desc:"Processes dense academic textbook jargon and translates it into fluid, high-retention conversational text. Available in parallel English and Hindi views.",detail:["Instant English & Hindi translation","Jargon → conversational language","Preserves all technical accuracy","Works on any NCERT or state board text","Copy & share simplified explanations"]},
-    {icon:"📄",name:"Briefs",color:BLUE,desc:"Condenses every textbook chapter into a standardised 1-page digital reference document containing key formulas, essential dates, structural diagrams, and core concepts.",detail:["1-page per chapter, guaranteed","Key formulas & essential dates","Structural diagrams & mnemonics","Auto-updates if syllabus changes","Available offline via Edge-Sync"]},
+    {icon:"📄",name:"Briefs",color:BLUE,desc:"Condenses every textbook chapter into a standardised 1-page digital reference document containing key formulas, essential dates, structural diagrams, and core concepts.",detail:["1-page per chapter, guaranteed","Key formulas & essential dates","Structural diagrams & mnemonics","Auto-updates if syllabus changes"]},
     {icon:"🗺️",name:"Navigator",color:TEAL,desc:"A self-correcting study calendar that maps a clear path to 100% syllabus completion. Miss a session? The engine auto-redistributes topics across remaining days — no guilt.",detail:["Covers 100% of syllabus automatically","Auto-redistributes missed sessions","Links to Oracle predictions dynamically","Visual completion heatmap","Syncs progress across all devices"]},
   ];
   const tf=[
@@ -881,7 +881,7 @@ function PricingPage(){
     {name:"Core Access",price:{monthly:"Free",yearly:"Free"},desc:"Zero financial barrier. Start learning immediately.",color:"#475569",cta:"Get Started Free",ctaC:"ghost",
       features:["Last 3 years PYQ access (Vault-15 preview)","3 Oracle predictions per month","3 LogicGen paper generations/month","Briefs for 2 chapters","Basic Navigator roadmap","Script-Lab — 1 session/month"]},
     {name:"Student Pro",price:{monthly:"₹199",yearly:"₹149"},period:"/month",popular:true,desc:"For serious exam aspirants who want the full edge.",color:BLUE,cta:"Start Free Trial",ctaC:"primary",
-      features:["Full Vault-15 — 15 yrs, 7+ boards","Unlimited AI Confidence Scores","LogicGen — unlimited shuffles","Adaptive Testing — unlimited practice tests","Script-Lab — unlimited + progress tracking","Clarity AI — English & Hindi","Briefs for all chapters","Full Navigator + smart redistribution","Edge-Sync offline access"]},
+      features:["Full Vault-15 — 15 yrs, 7+ boards","Unlimited AI Confidence Scores","LogicGen — unlimited shuffles","Adaptive Testing — unlimited practice tests","Script-Lab — unlimited + progress tracking","Clarity AI — English & Hindi","Briefs for all chapters","Full Navigator + smart redistribution"]},
     {name:"School / Coaching",price:{monthly:"₹999",yearly:"₹749"},period:"/month",desc:"For institutions and Kota coaching centres.",color:AMBER,cta:"Book a Demo",ctaC:"amber",
       features:["Everything in Student Pro","Studio-Q — unlimited paper generation","Vari-Test Set A/B/C anti-cheat","Vision-Grade OCR auto-grading","Pilot Dashboard class heatmaps","Bridge-Reports via WhatsApp","Custom branding on papers","Unlimited teacher accounts","Priority support"]},
   ];
@@ -926,7 +926,7 @@ function PricingPage(){
       <section style={{padding:"4rem 5%",maxWidth:760,margin:"0 auto"}}>
         <h2 style={{fontFamily:"'Instrument Serif',serif",fontSize:"1.9rem",color:"#F1F5F9",textAlign:"center",marginBottom:"2rem"}}>Common questions</h2>
         {[
-          {q:"Does the free tier work offline?",a:"Yes — Core Access includes Edge-Sync with the latest 3 years of Vault-15 PYQs and Briefs for 2 chapters. Everything is cached locally on first sync under 1 MB."},
+          {q:"Does the free tier cover all subjects?",a:"Core Access includes Vault-15 PYQs from the last 3 years, 3 Oracle predictions per month, and Briefs for 2 chapters. Upgrade to Student Pro for unlimited access."},
           {q:"Is RBSE (Rajasthan Board) covered?",a:"Fully. Vault-15 includes every RBSE paper from 2010 to 2025, tagged across all four metadata vectors. Oracle predictions are tailored per board."},
           {q:"How does Script-Lab work with phone photos?",a:"Script-Lab's vision model is trained on real classroom writing conditions — not studio scans. It works reliably with photos taken under normal indoor lighting."},
           {q:"What if I miss sessions on the Navigator?",a:"Nothing punitive. The Navigator quietly redistributes your missed topics across remaining days and recalculates the completion path without any alerts."},

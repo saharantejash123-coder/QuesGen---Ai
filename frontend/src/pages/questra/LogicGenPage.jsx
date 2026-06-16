@@ -93,7 +93,7 @@ function LogicGenPage(){
             </div>
             <div style={{marginBottom:"1.3rem"}}>
               <label style={{fontSize:".68rem",fontWeight:700,color:"var(--text3)",letterSpacing:".5px",display:"block",marginBottom:".35rem",textTransform:"uppercase"}}>Difficulty</label>
-              <div style={{display:"flex",gap:".4rem"}}>
+              <div style={{display:"flex",gap:".4rem",flexWrap:"wrap"}}>
                 {["easy","medium","hard"].map(d=>(
                   <button key={d} onClick={()=>setDiff(d)} style={{flex:1,padding:".45rem .2rem",border:"none",borderRadius:7,cursor:"pointer",fontSize:".78rem",fontWeight:600,fontFamily:"'DM Sans',sans-serif",background:diff===d?BLUE:"var(--bg)",color:diff===d?"#fff":"var(--text3)",transition:"all .2s",textTransform:"capitalize"}}>{d}</button>
                 ))}

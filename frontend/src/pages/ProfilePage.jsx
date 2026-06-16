@@ -737,7 +737,7 @@ export default function ProfilePage({ user: userProp, onUpdate, role = 'student'
 
   /* ═══ RENDER ═══ */
   return (
-    <div className="fade-in" style={{ ...col, gap:'2rem', paddingBottom:'3rem' }}>
+    <div className="fade-in" style={{ ...col, gap:'2rem', paddingBottom:'3rem', maxWidth:1200, margin:'0 auto', width:'100%', overflowWrap:'break-word', wordBreak:'break-word' }}>
 
       {/* ── Profile Hero Card ── */}
       <div style={{
@@ -862,7 +862,7 @@ export default function ProfilePage({ user: userProp, onUpdate, role = 'student'
       </div>
 
       {/* ── Content Grid: Sidebar + Panel ── */}
-      <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '220px 1fr', gap:'1.5rem', alignItems:'start' }}>
+      <div style={{ display:'grid', gridTemplateColumns: isMobile ? '1fr' : '220px 1fr', gap:'1.5rem', alignItems:'start', minWidth:0 }}>
 
         {/* Sidebar */}
         <div style={{
@@ -880,7 +880,7 @@ export default function ProfilePage({ user: userProp, onUpdate, role = 'student'
         </div>
 
         {/* Content Panel */}
-        <div style={{ background:'var(--card-bg)', border:'1px solid var(--border)', borderRadius:18, padding:'1.8rem' }}>
+        <div style={{ background:'var(--card-bg)', border:'1px solid var(--border)', borderRadius:18, padding:'1.8rem', overflowWrap:'break-word', wordBreak:'break-word', minWidth:0 }}>
           <AnimatePresence mode="wait">
             <motion.div
               key={section}
