@@ -21,7 +21,11 @@ export default function GoogleCallback() {
 
     if (idToken) {
       loginWithGoogleToken(idToken)
-        .then(user => { saveSession(user); go(user.role); })
+        .then(user => {
+          saveSession(user);
+          if (user._banned) { navigate('/banned', { replace: true }); return; }
+          go(user.role);
+        })
         .catch(() => navigate('/login?error=auth_failed'));
       return;
     }

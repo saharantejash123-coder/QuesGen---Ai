@@ -30,7 +30,7 @@ function HomePage({ setPage }) {
 
   const modules = [
     { icon: "🗄️",  name: "Vault-15",        desc: "15-year indexed archive of original board exam papers across 7+ boards.", color: VIOLET  },
-    { icon: "🔮",  name: "Exam Generator",    desc: "AI predicts upcoming exam topics with Confidence Scores from 15-year analysis.", color: BLUE    },
+    { icon: "🏆",  name: "Exam Generator",    desc: "AI predicts upcoming exam topics with Confidence Scores from 15-year analysis.", color: BLUE    },
     { icon: "🔄",  name: "LogicGen",         desc: "Rebuilds PYQs with fresh variables — forces structural mastery, not rote memory.", color: AMBER   },
     { icon: "🧠",  name: "Adaptive Testing", desc: "Dynamic AI-generated tests that adapt to your weak areas in real-time.", color: TEAL    },
     { icon: "✍️",  name: "Script-Lab",       desc: "AI reads your handwriting and gives tiny, achievable improvement nudges.", color: "#D97706"},
@@ -613,10 +613,7 @@ function HomePage({ setPage }) {
       position: 'relative', overflow: 'hidden',
     }}>
       {/* Icon grid — 2x2 */}
-      <div style={{
-        display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem',
-        marginBottom: '1.8rem',
-      }}>
+      <div className="r2" style={{ marginBottom: '1.8rem' }}>
         {[
           { Icon: Users,     color: BLUE,   label: "Students" },
           { Icon: Shield,    color: VIOLET, label: "Trusted"  },

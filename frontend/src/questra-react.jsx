@@ -123,7 +123,7 @@ function HomePage({ setPage }) {
     { num: "< 10s", label: "Paper generated" },
   ];
   const modules = [
-    { icon: "🔮", name: "Exam Generator", desc: "AI predicts exam topics with Confidence Scores based on 15-year pattern analysis.", color: BLUE },
+    { icon: "🏆", name: "Exam Generator", desc: "AI predicts exam topics with Confidence Scores based on 15-year pattern analysis.", color: BLUE },
     { icon: "🔄", name: "LogicGen", desc: "Rebuilds PYQs with fresh variables — forces structural mastery, not rote memory.", color: AMBER },
     { icon: "📸", name: "SnapSolve", desc: "Photo of any problem → step-by-step solution + 3 Twin Questions for reinforcement.", color: TEAL },
     { icon: "✍️", name: "Script-Lab", desc: "AI reads your handwriting and gives tiny, achievable improvement nudges — one at a time.", color: "#7C3AED" },
@@ -479,7 +479,7 @@ function ScriptLabPage() {
                   </div>
 
                   {/* Metrics */}
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:".8rem",marginTop:"1rem"}}>
+                  <div className="r2-sm" style={{marginTop:"1rem"}}>
                     {[["Legibility","74%","#10B981"],["Consistency","61%","#F59E0B"],["Spacing","48%","#EF4444"],["Pressure","82%","#10B981"]].map(([k,v,c], i) => (
                       <div key={i} style={{background:"rgba(255,255,255,.03)",border:"1px solid rgba(255,255,255,.07)",borderRadius:10,padding:".8rem"}}>
                         <div style={{fontSize:".72rem",color:"#475569",fontWeight:600,marginBottom:".4rem"}}>{k}</div>
@@ -576,7 +576,7 @@ function ScriptLabPage() {
 function FeaturesPage({ setPage }) {
   const [activeTab, setActiveTab] = useState("student");
   const studentFeatures = [
-    { icon:"🔮", name:"Exam Generator", color:BLUE, desc:"Runs cyclical time-series analysis on Vault-15 and monitors official board circular releases. Generates a Confidence Score for every syllabus topic — not vague advice, but explicit probability percentages tied to the upcoming exam cycle.", detail:["15-year historical trend analysis","Monitors board sample papers & circulars","Per-topic Confidence Scores (e.g. 89%)","Updates after each official board communication","Covers all 7+ boards simultaneously"] },
+    { icon:"🏆", name:"Exam Generator", color:BLUE, desc:"Runs cyclical time-series analysis on Vault-15 and monitors official board circular releases. Generates a Confidence Score for every syllabus topic — not vague advice, but explicit probability percentages tied to the upcoming exam cycle.", detail:["15-year historical trend analysis","Monitors board sample papers & circulars","Per-topic Confidence Scores (e.g. 89%)","Updates after each official board communication","Covers all 7+ boards simultaneously"] },
     { icon:"🔄", name:"LogicGen · AI Shuffler", color:AMBER, desc:"Strips any PYQ down to its naked mathematical or situational logic. Then rebuilds it — same concept, completely new numbers, names, coordinates, or scenarios. Forces genuine structural understanding over static answer memorisation.", detail:["Infinite unique variants per question","Replaces integers, entities, and scenarios","Paired Oracle predictions for probability","Export as PDF for offline practice","Works for maths, science, and humanities"] },
     { icon:"📸", name:"SnapSolve", color:TEAL, desc:"Point your phone camera at any unsolved problem — homework, textbook, or previous exam. SnapSolve delivers a multi-stage step-by-step breakdown alongside three Twin Questions built with identical logic for immediate reinforcement.", detail:["Works with phone camera photos","Step-by-step resolution with reasoning","3 auto-generated Twin Questions","Supports diagrams and graphs","Hindi & English explanations"] },
     { icon:"✍️", name:"Script-Lab", color:"#D97706", desc:"Addresses the critical loss of presentation marks in Indian examinations. Upload handwritten mock answers. AI evaluates kerning, baseline alignment, paragraph structure, and whitespace — returning one focused micro-improvement at a time.", detail:["Analyses kerning & baseline drift","Evaluates whitespace & paragraph hierarchy","One targeted improvement per session","Tracks progress across sessions","Works with any language script"] },
@@ -645,7 +645,7 @@ function FeaturesPage({ setPage }) {
 
             <div style={{marginBottom:"2rem"}}>
               <div style={{fontSize:".72rem",fontWeight:700,color:"#475569",letterSpacing:"1px",textTransform:"uppercase",marginBottom:".9rem"}}>Key Capabilities</div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:".6rem"}}>
+              <div className="r2-sm">
                 {current.detail.map((d, i) => (
                   <div key={i} style={{display:"flex",gap:".6rem",alignItems:"flex-start"}}>
                     <span style={{color:current.color,fontWeight:700,marginTop:".1rem",flexShrink:0}}>✓</span>
@@ -834,7 +834,7 @@ function LogicGenPage() {
 
                 {prediction && (
                   <div style={{background:"rgba(217,119,6,.06)",border:"1px solid rgba(217,119,6,.2)",borderRadius:14,padding:"1.2rem",display:"flex",gap:"1rem",alignItems:"flex-start"}}>
-                    <span style={{fontSize:"1.3rem",flexShrink:0}}>🔮</span>
+                    <span style={{fontSize:"1.3rem",flexShrink:0}}>🏆</span>
                     <p style={{fontSize:".85rem",color:"#FCD34D",lineHeight:1.65}}>{prediction}</p>
                   </div>
                 )}

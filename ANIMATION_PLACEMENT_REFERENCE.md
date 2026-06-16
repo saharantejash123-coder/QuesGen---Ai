@@ -100,7 +100,7 @@
 │  │ [Scroll]        │ 📌 [ScrollReveal +      │ │
 │  │                 │    HoverCard]           │ │
 │  │ 🗄️ Vault-15    │ ┌──────────────────────┐ │ │
-│  │ 🔮 Oracle      │ │ Feature Name          │ │ │
+│  │ 🏆 Oracle      │ │ Feature Name          │ │ │
 │  │ 🔄 LogicGen    │ │ Feature Description   │ │ │
 │  │ 🧠 Adaptive    │ │ • Capability 1        │ │ │
 │  │ ✍️  Script-Lab │ │ • Capability 2        │ │ │

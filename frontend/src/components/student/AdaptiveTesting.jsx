@@ -320,7 +320,7 @@ const AdaptiveTesting = () => {
             </div>
 
             {/* Filters */}
-            <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1rem',marginBottom:'1.5rem' }}>
+            <div className="r2" style={{ gap:'1rem',marginBottom:'1.5rem' }}>
               {[
                 { l:'Board',        v:board,        fn:setBoard,                       opts:boards },
                 { l:'Class',        v:cls,          fn:setCls,                         opts:allClasses },
@@ -541,7 +541,7 @@ const AdaptiveTesting = () => {
               {q.text}
             </p>
 
-            <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:'.8rem' }}>
+            <div className="opts-grid">
               {q.options.map((opt, oi) => {
                 const sel = answers[q.id] === opt;
                 const letter = String.fromCharCode(65+oi);
@@ -684,7 +684,7 @@ const AdaptiveTesting = () => {
                           {q.chapter} · Q{idx+1}
                         </div>
                         <p style={{ fontSize:'.92rem',color:'var(--text)',marginBottom:'1rem',fontWeight:500 }}>{q.text}</p>
-                        <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:'.5rem',marginBottom:q.explanation?'1rem':0 }}>
+                        <div className="opts-grid" style={{ gap:'.5rem',marginBottom:q.explanation?'1rem':0 }}>
                           {q.options.map(opt => {
                             const isAns = opt === q.answer;
                             const isWrong = opt === ua && !ok;

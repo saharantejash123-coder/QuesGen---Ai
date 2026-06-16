@@ -1,15 +1,47 @@
 // LLM API Integration using Gemini
-// Hardcoded API key for reliability (bypasses Vite env caching)
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
 
-// Models ordered by speed & quota availability
-const MODELS = ['gemini-2.5-flash', 'gemini-2.0-flash-lite', 'gemini-1.5-flash'];
+// Models ordered by preference; each has a separate free-tier quota bucket
+// Note: 1.5-flash and 1.5-flash-8b removed — not available on v1beta (404)
+const MODELS = [
+  'gemini-2.5-flash',
+  'gemini-2.0-flash',
+  'gemini-2.0-flash-lite',
+];
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-/**
- * POST to Gemini API with timeout and detailed error logging.
- * Returns { data, error } so callers can see WHY it failed.
- */
+// Parse "Please retry in 45.4s" hint from quota error messages
+function parseRetryDelay(errMsg) {
+  const m = errMsg && errMsg.match(/retry in ([\d.]+)s/i);
+  return m ? Math.ceil(parseFloat(m[1]) * 1000) : 0;
+}
+
+// Wait between models: respect the quota hint but cap at 60s; skip if longer
+async function waitBetweenModels(lastError, modelName) {
+  const delay = Math.max(parseRetryDelay(lastError), 1500);
+  if (delay > 60000) {
+    console.warn(`[LLM] ${modelName} quota window too long (${(delay/1000).toFixed(0)}s), skipping immediately`);
+    return;
+  }
+  await sleep(delay);
+}
+
+// Retry a model once if we get a 429 with a reasonable retry delay
+async function retryOnQuota(apiKey, model, body, timeoutMs = 90000) {
+  const { data, error } = await geminiPost(apiKey, model, body, timeoutMs);
+  if (!error) return { data, error: null };
+  // Only retry quota errors (no error object shape to check, so look for key phrases)
+  if (error && (error.includes('quota') || error.includes('rate limit') || error.includes('429'))) {
+    const delay = parseRetryDelay(error);
+    if (delay > 0 && delay <= 60000) {
+      console.warn(`[LLM] ${model} quota hit, retrying after ${(delay/1000).toFixed(0)}s...`);
+      await sleep(delay + 500);
+      return await geminiPost(apiKey, model, body, timeoutMs);
+    }
+  }
+  return { data, error };
+}
+
 async function geminiPost(apiKey, model, body, timeoutMs = 90000) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
   const ctrl = new AbortController();
@@ -31,11 +63,11 @@ async function geminiPost(apiKey, model, body, timeoutMs = 90000) {
     const elapsed = ((Date.now() - start) / 1000).toFixed(1);
 
     if (data.error) {
-      console.warn(`[LLM] ${model} returned error after ${elapsed}s:`, data.error.message);
+      console.warn(`[LLM] ${model} error after ${elapsed}s:`, data.error.message);
       return { data: null, error: data.error.message };
     }
 
-    console.log(`[LLM] ${model} responded OK in ${elapsed}s`);
+    console.log(`[LLM] ${model} OK in ${elapsed}s`);
     return { data, error: null };
   } catch (e) {
     clearTimeout(t);
@@ -51,12 +83,181 @@ function extractText(data) {
   return data?.candidates?.[0]?.content?.parts?.[0]?.text ?? null;
 }
 
+// Fallback sanitizer for models that ignore JSON mode
 function stripFences(s) {
   if (!s) return s;
   if (s.startsWith('```json')) s = s.slice(7).replace(/```\s*$/, '').trim();
   else if (s.startsWith('```')) s = s.slice(3).replace(/```\s*$/, '').trim();
   return s.trim();
 }
+
+function sanitizeJson(text) {
+  if (!text) return text;
+  let s = stripFences(text);
+  s = s.replace(/\/\/[^\n]*/g, '').replace(/\/\*[\s\S]*?\*\//g, '');
+  s = s.replace(/,\s*([}\]])/g, '$1');
+
+  // State machine: escape bare control chars inside JSON strings
+  let out = '', inStr = false, esc = false;
+  for (const ch of s) {
+    if (esc)          { out += ch; esc = false; continue; }
+    if (ch === '\\' && inStr) { out += ch; esc = true; continue; }
+    if (ch === '"')   { inStr = !inStr; out += ch; continue; }
+    if (inStr) {
+      if (ch === '\n') { out += '\\n'; continue; }
+      if (ch === '\r') { out += '\\r'; continue; }
+      if (ch === '\t') { out += '\\t'; continue; }
+    }
+    out += ch;
+  }
+  return out.trim();
+}
+
+// Attempt to recover truncated JSON array by closing open brackets/strings
+function recoverTruncatedJson(text) {
+  if (!text) return text;
+  let s = text.trim();
+  // If it ends mid-string, close the string
+  let inStr = false, esc = false;
+  for (let i = 0; i < s.length; i++) {
+    const ch = s[i];
+    if (esc) { esc = false; continue; }
+    if (ch === '\\') { esc = true; continue; }
+    if (ch === '"') { inStr = !inStr; }
+  }
+  if (inStr) s += '"';
+  // Count open/close braces and brackets
+  let openBrace = 0, openBracket = 0;
+  inStr = false; esc = false;
+  for (const ch of s) {
+    if (esc) { esc = false; continue; }
+    if (ch === '\\') { esc = true; continue; }
+    if (ch === '"') { inStr = !inStr; continue; }
+    if (inStr) continue;
+    if (ch === '{') openBrace++;
+    if (ch === '}') openBrace--;
+    if (ch === '[') openBracket++;
+    if (ch === ']') openBracket--;
+  }
+  while (openBrace > 0) { s += '}'; openBrace--; }
+  while (openBracket > 0) { s += ']'; openBracket--; }
+  return s;
+}
+
+// ─── JSON mode schemas (Gemini forces valid JSON output with these) ────────────
+
+const ADAPTIVE_Q_SCHEMA = {
+  type: 'ARRAY',
+  items: {
+    type: 'OBJECT',
+    properties: {
+      id:          { type: 'STRING' },
+      text:        { type: 'STRING' },
+      options:     { type: 'ARRAY', items: { type: 'STRING' } },
+      answer:      { type: 'STRING' },
+      difficulty:  { type: 'INTEGER' },
+      chapter:     { type: 'STRING' },
+      explanation: { type: 'STRING' },
+    },
+    required: ['text', 'options', 'answer', 'difficulty', 'chapter', 'explanation'],
+  },
+};
+
+const QUESTION_SCHEMA = {
+  type: 'OBJECT',
+  properties: {
+    text:    { type: 'STRING' },
+    type:    { type: 'STRING' },
+    options: { type: 'ARRAY', items: { type: 'STRING' } },
+    conf:    { type: 'INTEGER' },
+  },
+  required: ['text', 'type', 'conf'],
+};
+
+const PAPER_SCHEMA = {
+  type: 'OBJECT',
+  properties: {
+    sections: {
+      type: 'ARRAY',
+      items: {
+        type: 'OBJECT',
+        properties: {
+          id:               { type: 'STRING' },
+          name:             { type: 'STRING' },
+          marksPerQuestion: { type: 'NUMBER' },
+          count:            { type: 'INTEGER' },
+          type:             { type: 'STRING' },
+          questions:        { type: 'ARRAY', items: QUESTION_SCHEMA },
+        },
+        required: ['id', 'name', 'marksPerQuestion', 'count', 'type', 'questions'],
+      },
+    },
+  },
+  required: ['sections'],
+};
+
+const VAULT_QUESTION_SCHEMA = {
+  type: 'OBJECT',
+  properties: {
+    no:     { type: 'INTEGER' },
+    text:   { type: 'STRING' },
+    answer: { type: 'STRING' },
+    topic:  { type: 'STRING' },
+    optionA: { type: 'STRING' },
+    optionB: { type: 'STRING' },
+    optionC: { type: 'STRING' },
+    optionD: { type: 'STRING' },
+  },
+  required: ['no', 'text'],
+};
+
+const VAULT_PAPER_SCHEMA = {
+  type: 'OBJECT',
+  properties: {
+    metadata: {
+      type: 'OBJECT',
+      properties: {
+        board:       { type: 'STRING' },
+        class:       { type: 'STRING' },
+        subject:     { type: 'STRING' },
+        year:        { type: 'INTEGER' },
+        set:         { type: 'STRING' },
+        totalMarks:  { type: 'INTEGER' },
+        time:        { type: 'STRING' },
+        generatedBy: { type: 'STRING' },
+      },
+      required: ['board', 'class', 'subject', 'year', 'totalMarks', 'time'],
+    },
+    generalInstructions: { type: 'ARRAY', items: { type: 'STRING' } },
+    sections: {
+      type: 'ARRAY',
+      items: {
+        type: 'OBJECT',
+        properties: {
+          id:              { type: 'STRING' },
+          name:            { type: 'STRING' },
+          type:            { type: 'STRING' },
+          marksPerQuestion: { type: 'INTEGER' },
+          questions:       { type: 'ARRAY', items: VAULT_QUESTION_SCHEMA },
+        },
+        required: ['id', 'name', 'type', 'questions'],
+      },
+    },
+    answerKey: {
+      type: 'ARRAY',
+      items: {
+        type: 'OBJECT',
+        properties: {
+          qNo:    { type: 'INTEGER' },
+          answer: { type: 'STRING' },
+          marks:  { type: 'INTEGER' },
+        },
+        required: ['qNo', 'answer', 'marks'],
+      },
+    },
+  },
+  required: ['metadata', 'sections'],
+};
 
 // ─────────────────────────────────────────────────────
 // ADAPTIVE TESTING: Generate fresh MCQ questions via AI
@@ -65,7 +266,6 @@ export const generateAdaptiveQuestionsWithLLM = async (
   apiKey,
   { board, cls, subject, chapter, count = 10, weakAreas = {}, sessionSeed = '' }
 ) => {
-  // Always use the hardcoded key as primary, fall back to passed key
   const key = API_KEY || apiKey;
   if (!key) return null;
 
@@ -77,45 +277,56 @@ export const generateAdaptiveQuestionsWithLLM = async (
   const prompt = `You are an expert MCQ question setter for ${board} Board, ${cls}, Subject: ${subject}.
 Generate exactly ${count} unique, high-quality Multiple Choice Questions for the topic: "${chapter}".
 
-STRICT RULES:
-1. Every question must have exactly 4 options (A, B, C, D).
-2. Only ONE option is correct — write it exactly as it appears in the options array.
-3. Questions must NOT be standard textbook copy-pastes — make them conceptually challenging.
-4. Vary difficulty: ~30% easy, ~50% medium, ~20% hard.
-5. Distractors must be plausible — not obviously wrong.
-6. ${weakChapterList ? `Emphasise weak sub-topics: ${weakChapterList}.` : 'Cover diverse sub-concepts.'}
-7. Session seed: "${sessionSeed}" — ensures unique questions each run.
-8. Include a short explanation (1-2 sentences) for the correct answer.
-
-Return ONLY a raw JSON array — NO markdown, NO fences:
-[{"id":"aq_0","text":"Question?","options":["A","B","C","D"],"answer":"A","difficulty":2,"chapter":"${chapter}","explanation":"Why A is correct."}]
-
-Generate all ${count} questions now.`;
+Rules:
+- Each question must have exactly 4 options.
+- Only ONE option is correct — the "answer" field must exactly match one of the options strings.
+- Vary difficulty: ~30% easy (difficulty 1), ~50% medium (difficulty 2), ~20% hard (difficulty 3).
+- Distractors must be plausible.
+- ${weakChapterList ? `Emphasise weak sub-topics: ${weakChapterList}.` : 'Cover diverse sub-concepts.'}
+- Session seed: "${sessionSeed}" — ensures unique questions each run.
+- Include a short explanation (1-2 sentences) for the correct answer.`;
 
   let lastError = '';
 
   for (let i = 0; i < MODELS.length; i++) {
-    if (i > 0) await sleep(1500);
-    const { data, error } = await geminiPost(key, MODELS[i], {
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0.92, maxOutputTokens: 4096 },
-    }, 90000); // 90 second timeout — gemini-2.5-flash can take 20-40s for 10 questions
+    if (i > 0) await waitBetweenModels(lastError, MODELS[i - 1]);
 
-    if (error) { lastError = error; }
+    const { data, error } = await retryOnQuota(key, MODELS[i], {
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: {
+        temperature: 0.9,
+        maxOutputTokens: 8192,
+        responseMimeType: 'application/json',
+        responseSchema: ADAPTIVE_Q_SCHEMA,
+      },
+    }, 90000);
+
+    if (error) { lastError = error; continue; }
+
     const text = extractText(data);
     if (!text) continue;
 
     try {
-      const start = text.indexOf('['), end = text.lastIndexOf(']');
-      const qs = JSON.parse(start !== -1 ? text.slice(start, end + 1) : text.trim());
+      const qs = JSON.parse(sanitizeJson(text));
       if (Array.isArray(qs) && qs.length > 0) {
-        console.log(`[LLM] Successfully parsed ${qs.length} adaptive questions`);
+        console.log(`[LLM] Parsed ${qs.length} adaptive questions from ${MODELS[i]}`);
         return qs.map((q, idx) => ({ ...q, id: `ai_${Date.now()}_${idx}` }));
       }
     } catch (parseErr) {
       console.warn(`[LLM] JSON parse failed for ${MODELS[i]}:`, parseErr.message);
-      lastError = `Failed to parse AI response: ${parseErr.message}`;
-      continue;
+      // Try truncated JSON recovery as last resort
+      try {
+        const recovered = recoverTruncatedJson(sanitizeJson(text));
+        const qs = JSON.parse(recovered);
+        if (Array.isArray(qs) && qs.length > 0) {
+          console.log(`[LLM] Recovered ${qs.length} adaptive questions from truncated ${MODELS[i]} response`);
+          return qs.map((q, idx) => ({ ...q, id: `ai_${Date.now()}_${idx}` }));
+        }
+      } catch (recoverErr) {
+        console.warn(`[LLM] Recovery also failed for ${MODELS[i]}:`, recoverErr.message);
+      }
+      console.warn(`[LLM] Raw text (first 300 chars):`, text.slice(0, 300));
+      lastError = `Parse failed: ${parseErr.message}`;
     }
   }
 
@@ -135,37 +346,50 @@ export const generatePaperWithLLM = async (apiKey, board, cls, subject, blueprin
   ).join('\n');
 
   const prompt = `You are an expert exam paper setter for ${board} board, ${cls}, Subject: ${subject}.
-Generate a complete, high-quality mock examination paper following this blueprint exactly:
+Generate a complete mock examination paper following this blueprint exactly:
 ${sectionInstructions}
 
-Assign an "AI Confidence" score (70-99) per question indicating exam probability.
+Assign an "conf" score (70-99) per question indicating exam probability.`;
 
-Return ONLY valid JSON — no markdown, no fences, no extra text:
-{"sections":[{"id":"A","name":"Section A","marksPerQuestion":1,"count":5,"type":"MCQ","questions":[{"text":"Question?","type":"MCQ","options":["Opt1","Opt2","Opt3","Opt4"],"conf":89}]}]}`;
-
+  let lastError = '';
   for (let i = 0; i < MODELS.length; i++) {
-    if (i > 0) await sleep(1500);
-    const { data, error } = await geminiPost(key, MODELS[i], {
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0.7, maxOutputTokens: 8192 },
-    }, 120000); // 2 minute timeout for full papers
+    if (i > 0) await waitBetweenModels(lastError, MODELS[i - 1]);
 
-    if (error) console.warn(`[LLM] Paper gen ${MODELS[i]} error:`, error);
+    const { data, error } = await retryOnQuota(key, MODELS[i], {
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 8192,
+        responseMimeType: 'application/json',
+        responseSchema: PAPER_SCHEMA,
+      },
+    }, 120000);
+
+    if (error) { lastError = error; console.warn(`[LLM] Paper gen ${MODELS[i]} error:`, error); continue; }
+
     const text = extractText(data);
     if (!text) continue;
 
     try {
-      let s = stripFences(text);
-      const start = s.indexOf('{'), end = s.lastIndexOf('}');
-      if (start !== -1 && end !== -1) s = s.slice(start, end + 1);
-      const paper = JSON.parse(s);
+      const paper = JSON.parse(sanitizeJson(text));
       if (paper.sections?.length > 0) {
-        console.log(`[LLM] Successfully generated paper with ${paper.sections.length} sections`);
+        console.log(`[LLM] Generated paper with ${paper.sections.length} sections from ${MODELS[i]}`);
         return paper;
       }
     } catch (parseErr) {
       console.warn(`[LLM] Paper parse failed for ${MODELS[i]}:`, parseErr.message);
-      continue;
+      // Try truncated JSON recovery
+      try {
+        const recovered = recoverTruncatedJson(sanitizeJson(text));
+        const paper = JSON.parse(recovered);
+        if (paper.sections?.length > 0) {
+          console.log(`[LLM] Recovered paper from truncated ${MODELS[i]} response`);
+          return paper;
+        }
+      } catch (recoverErr) {
+        console.warn(`[LLM] Paper recovery also failed:`, recoverErr.message);
+      }
+      lastError = `Parse failed: ${parseErr.message}`;
     }
   }
 
@@ -203,31 +427,44 @@ Blueprint:
 ${sectionDesc}
 Total Marks: ${bp.totalMarks} | Time: ${bp.time}
 
-Return ONLY raw JSON (NO markdown, NO fences):
-{"metadata":{"board":"${board}","class":"${cls}","subject":"${subject}","year":${year},"set":"${set}","totalMarks":${bp.totalMarks},"time":"${bp.time}","generatedBy":"QuesGen AI"},"generalInstructions":["instruction 1","instruction 2"],"sections":[{"id":"A","name":"Section A","type":"MCQ","marksPerQuestion":1,"questions":[{"no":1,"text":"Question?","options":{"A":"opt1","B":"opt2","C":"opt3","D":"opt4"},"answer":"B","topic":"Topic"}]}],"answerKey":[{"qNo":1,"answer":"B","marks":1}]}
+For MCQ questions, put the 4 option texts in optionA, optionB, optionC, optionD fields.
+The "answer" field for MCQ should be "A", "B", "C", or "D".
 Generate the complete paper now.`;
 
+  let lastError = '';
   for (let i = 0; i < MODELS.length; i++) {
-    if (i > 0) await sleep(1500);
-    const { data, error } = await geminiPost(key, MODELS[i], {
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0.65, maxOutputTokens: 8192 },
-    }, 120000); // 2 minute timeout
+    if (i > 0) await waitBetweenModels(lastError, MODELS[i - 1]);
 
-    if (error) console.warn(`[LLM] Vault paper ${MODELS[i]} error:`, error);
+    const { data, error } = await retryOnQuota(key, MODELS[i], {
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: {
+        temperature: 0.65,
+        maxOutputTokens: 8192,
+        responseMimeType: 'application/json',
+        responseSchema: VAULT_PAPER_SCHEMA,
+      },
+    }, 120000);
+
+    if (error) { lastError = error; console.warn(`[LLM] Vault paper ${MODELS[i]} error:`, error); continue; }
+
     const text = extractText(data);
     if (!text) continue;
 
     try {
-      let s = stripFences(text);
-      const start = s.indexOf('{'), end = s.lastIndexOf('}');
-      if (start !== -1 && end !== -1) s = s.slice(start, end + 1);
-      const result = JSON.parse(s);
-      console.log(`[LLM] Successfully generated vault paper`);
+      const result = JSON.parse(sanitizeJson(text));
+      console.log(`[LLM] Generated vault paper from ${MODELS[i]}`);
       return result;
     } catch (parseErr) {
       console.warn(`[LLM] Vault paper parse failed for ${MODELS[i]}:`, parseErr.message);
-      continue;
+      try {
+        const recovered = recoverTruncatedJson(sanitizeJson(text));
+        const result = JSON.parse(recovered);
+        console.log(`[LLM] Recovered vault paper from truncated ${MODELS[i]} response`);
+        return result;
+      } catch (recoverErr) {
+        console.warn(`[LLM] Vault paper recovery also failed:`, recoverErr.message);
+      }
+      lastError = `Parse failed: ${parseErr.message}`;
     }
   }
 

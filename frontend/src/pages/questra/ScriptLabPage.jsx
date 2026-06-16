@@ -456,7 +456,7 @@ export default function ScriptLabPage() {
                     </div>
 
                     {/* Scores */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '.6rem' }}>
+                    <div className="r2-sm">
                       {Object.entries(result.scores).map(([k, v]) => (
                         <ScoreBar key={k} label={k} value={v} color={scoreColor(v)} />
                       ))}

@@ -11,6 +11,29 @@ const { isGmailAccount, isValidEmail, validatePassword } = require('../utils/val
 const JWT_SECRET = process.env.JWT_SECRET || 'questra_super_secret_key_123';
 const JWT_EXPIRY = process.env.JWT_EXPIRY || '7d';
 
+// Shared ban-check helper — checks Supabase table then SQLite by user_id OR email
+async function checkActiveBan(supabase, email, userId) {
+  const lcEmail = (email || '').toLowerCase();
+  if (supabase) {
+    try {
+      const { data } = await supabase
+        .from('banned_users')
+        .select('reason')
+        .eq('email', lcEmail)
+        .eq('status', 'active')
+        .limit(1);
+      if (data && data.length > 0) return { banned: true, reason: data[0].reason || '' };
+    } catch { /* table may not exist */ }
+  }
+  return new Promise((resolve) => {
+    db.get(
+      'SELECT reason FROM banned_users WHERE (user_id = ? OR email = ?) AND status = ?',
+      [userId || '', lcEmail, 'active'],
+      (err, row) => resolve(row ? { banned: true, reason: row.reason || '' } : { banned: false })
+    );
+  });
+}
+
 // Login endpoint
 router.post('/login', asyncHandler(async (req, res) => {
   const { email, password } = req.body;
@@ -33,12 +56,10 @@ router.post('/login', asyncHandler(async (req, res) => {
       role: data.user.user_metadata?.role || 'STUDENT'
     };
 
-    // Check if user is banned
-    const banRow = await new Promise((resolve) => {
-      db.get('SELECT reason FROM banned_users WHERE user_id = ? AND status = ?', [user.id, 'active'], (err, row) => resolve(row || null));
-    });
-    if (banRow) {
-      return res.status(403).json({ success: false, banned: true, reason: banRow.reason || 'No reason provided', error: 'Your account has been banned.' });
+    // Check ban by user_id AND email so email-only bans are caught too
+    const banResult = await checkActiveBan(supabase, user.email, user.id);
+    if (banResult.banned) {
+      return res.status(403).json({ success: false, banned: true, email: user.email, reason: banResult.reason || 'No reason provided', error: 'Your account has been banned.' });
     }
 
     const token = jwt.sign({ userId: user.id, role: user.role, email: user.email }, JWT_SECRET, { expiresIn: JWT_EXPIRY });
@@ -172,7 +193,11 @@ router.post('/google-verify', asyncHandler(async (req, res) => {
       });
 
       if (signInData && signInData.user) {
-        // User exists, log them in
+        // User exists — check ban before issuing token
+        const banResult = await checkActiveBan(supabase, email, signInData.user.id);
+        if (banResult.banned) {
+          return res.status(403).json({ success: false, banned: true, email, reason: banResult.reason || '', error: 'Your account has been banned.' });
+        }
         const user = {
           id: signInData.user.id,
           email: signInData.user.email,
@@ -207,6 +232,10 @@ router.post('/google-verify', asyncHandler(async (req, res) => {
           });
 
           if (retryData && retryData.user) {
+            const banResult2 = await checkActiveBan(supabase, email, retryData.user.id);
+            if (banResult2.banned) {
+              return res.status(403).json({ success: false, banned: true, email, reason: banResult2.reason || '', error: 'Your account has been banned.' });
+            }
             const user = {
               id: retryData.user.id,
               email: retryData.user.email,

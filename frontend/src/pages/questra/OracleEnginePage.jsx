@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Brain, FileText, Download, CheckCircle, Clock, Sparkles, AlertTriangle, Printer, TrendingUp, RefreshCw } from 'lucide-react';
+import { Brain, FileText, Download, CheckCircle, Clock, Sparkles, AlertTriangle, Printer, TrendingUp, RefreshCw, Trophy } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { generatePaperAsync } from '../../data/oracleData';
 import { useTheme } from '../../context/ThemeContext';
@@ -164,7 +164,7 @@ ${sectionsHTML}
       {/* Header (hidden on print) */}
       <div className="hide-on-print" style={{ marginBottom: '2rem', textAlign: 'center' }}>
         <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 64, height: 64, borderRadius: 20, background: 'linear-gradient(135deg, rgba(35,84,244,0.1), rgba(124,58,237,0.1))', marginBottom: '1rem' }}>
-          <Brain style={{ width: 32, height: 32, color: '#2354F4' }} />
+          <Trophy style={{ width: 32, height: 32, color: '#2354F4' }} />
         </div>
         <h1 className="st">{t('oracle.title')}</h1>
         <p className="ss" style={{ margin: '0.5rem auto' }}>{t('oracle.subtitle')}</p>
@@ -189,7 +189,7 @@ ${sectionsHTML}
                 </select>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div className="r2" style={{ gap: '1rem' }}>
                 <div>
                   <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', marginBottom: '0.5rem', display: 'block' }}>{t('oracle.selectClass')}</label>
                   <select value={cls} onChange={(e) => setCls(e.target.value)}>
@@ -381,7 +381,7 @@ ${sectionsHTML}
                           </div>
                           
                           {q.options && (
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginLeft: '10px' }}>
+                            <div className="opts-grid" style={{ gap: '8px', marginLeft: '10px' }}>
                               {q.options.map((opt, i) => (
                                 <div key={i}>({String.fromCharCode(97 + i)}) {typeof opt === 'string' ? opt.replace(/^\s*[\(\[]?[a-dA-D][\)\].]\s*/i, '') : opt}</div>
                               ))}

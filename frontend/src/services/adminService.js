@@ -246,12 +246,15 @@ export async function syncBanFromBackend(user) {
 export async function apiUnbanUser(email) {
   if (!BACKEND_URL || !email) return;
   try {
-    await fetch(`${BACKEND_URL}/api/admin/unban`, {
+    const res = await fetch(`${BACKEND_URL}/api/admin/unban`, {
       method: 'POST',
       headers: secretHeaders(),
       body: JSON.stringify({ email }),
     });
-  } catch { /* ignore */ }
+    if (!res.ok) console.warn('apiUnbanUser returned', res.status, await res.text().catch(() => ''));
+  } catch (err) {
+    console.warn('apiUnbanUser fetch error:', err);
+  }
 }
 
 // Unban all — clears bans from Supabase table + Auth + SQLite + localStorage

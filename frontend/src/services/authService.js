@@ -176,6 +176,14 @@ export async function loginWithGoogleToken(googleToken) {
         return { ...user, role: (user.role || 'student').toLowerCase(), loginMethod: 'google' };
       }
     }
+    if (res.status === 403) {
+      const bd = await res.json();
+      if (bd.banned) {
+        const email = bd.email || decodeJWT(googleToken)?.email?.toLowerCase() || '';
+        persistBanLocal(email, bd);
+        return { email, role: 'student', firstName: email.split('@')[0], lastName: '', loginMethod: 'google', _banned: true, _banReason: bd.reason || '' };
+      }
+    }
   } catch (err) {
     console.warn('Backend Google verify failed, using local decode:', err);
   }

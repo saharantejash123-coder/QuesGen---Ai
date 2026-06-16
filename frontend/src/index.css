@@ -595,6 +595,65 @@ select option { background: var(--bg2); color: var(--text); }
 }
 
 /* ═══════════════════════════════════════════════
+   RESPONSIVE OPTIONS GRID — for MCQ option buttons
+   Auto-stacks to 1 column on mobile (≤900px)
+═══════════════════════════════════════════════ */
+.opts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.8rem;
+}
+@media (max-width: 900px) {
+  .opts-grid { grid-template-columns: 1fr; }
+}
+
+/* Responsive 2-col grid that stacks on very small screens */
+.r2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
+}
+@media (max-width: 600px) {
+  .r2 { grid-template-columns: 1fr; }
+}
+
+/* Responsive feature/info 2-col that stacks at 600px */
+.r2-sm {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+}
+@media (max-width: 600px) {
+  .r2-sm { grid-template-columns: 1fr; }
+}
+
+/* Responsive 4-col footer grid: 4cols → 2cols → 1col */
+.r4 {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: 3rem;
+}
+@media (max-width: 900px) {
+  .r4 { grid-template-columns: 1fr 1fr; gap: 2rem; }
+}
+@media (max-width: 600px) {
+  .r4 { grid-template-columns: 1fr; gap: 1.5rem; }
+}
+
+/* Responsive 4-col slim: 4cols → 2cols → 1col */
+.r4-sm {
+  display: grid;
+  grid-template-columns: 1.8fr 1fr 1fr 1fr;
+  gap: 2rem;
+}
+@media (max-width: 900px) {
+  .r4-sm { grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+}
+@media (max-width: 600px) {
+  .r4-sm { grid-template-columns: 1fr; gap: 1rem; }
+}
+
+/* ═══════════════════════════════════════════════
    PRINT
 ═══════════════════════════════════════════════ */
 @media print {

@@ -6,6 +6,7 @@ import {
   LayoutDashboard, Shuffle, PenTool, Layers, Eye, BarChart2,
   TrendingUp, Settings, Users, ChevronRight, ChevronDown,
   GraduationCap, Building2, Calendar, User,
+  Trophy,
 } from 'lucide-react';
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import { useTheme } from '../../context/ThemeContext';
@@ -124,7 +125,7 @@ const mobileNavMap = {
   ],
   student: [
     { id: 'overview', label: 'Home',       Icon: LayoutDashboard, isMore: false },
-    { id: 'oracle',   label: 'Exam Gen',     Icon: Brain,           isMore: false },
+    { id: 'oracle',   label: 'Exam Gen',     Icon: Trophy,           isMore: false },
     { id: 'adaptive', label: 'Adaptive',   Icon: Brain,           isMore: false },
     { id: 'vault15',  label: 'Vault',      Icon: Archive,         isMore: false },
     { id: '__more',   label: 'More',       Icon: MoreHorizontal,  isMore: true  },
@@ -156,7 +157,7 @@ const mobileNavMap = {
 const moreSheetMap = {
   landing: [
     { id: 'vault15',   label: 'Vault-15',   desc: 'Previous year papers',     emoji: '📚' },
-    { id: 'oracle',    label: 'Exam Gen',   desc: 'AI exam generator',        emoji: '🔮' },
+    { id: 'oracle',    label: 'Exam Gen',   desc: 'AI exam generator',        emoji: '🏆' },
     { id: 'adaptive',  label: 'Adaptive',   desc: 'AI-powered adaptive test', emoji: '🧠' },
     { id: 'logicgen',  label: 'LogicGen',   desc: 'PYQ variable rebuilder',   emoji: '🔄' },
     { id: 'scriptlab', label: 'Script-Lab', desc: 'AI handwriting coach',     emoji: '✍️' },

@@ -71,6 +71,8 @@ export default function UserManagement() {
   const [submenu, setSubmenu] = useState(null)
   const [modal, setModal] = useState(null)
   const [banReason, setBanReason] = useState('')
+  const [banInFlight, setBanInFlight] = useState(false)
+  const [unbanInFlight, setUnbanInFlight] = useState(null) // userId being unbanned
   const [addForm, setAddForm] = useState({ name:'', email:'', phone:'', school:'', subject:'', board:'' })
   const menuRef = useRef(null)
 
@@ -130,27 +132,53 @@ export default function UserManagement() {
 
   const handleBan = async () => {
     const target = modal?.user
-    if (!target) return
+    if (!target || banInFlight) return
     const u = users.find(x => x.id === target.id)
-    update(target.id, { status: 'Banned', banReason })
-    banUser({ id: target.id, email: u?.email || '', name: u?.name || '' }, banReason)
-    await apiBanUser(target.id, true, banReason, u?.email || '')
-    logAction({ action: 'USER_BANNED', actor: 'Admin', target: u?.email || '', targetRole: u?.type, detail: banReason, severity: 'high' })
-    setActionMenu(null); setModal(null); setBanReason('')
-    if (localStorage.getItem('questra_bans')) loadUsers()
+    const email = u?.email || ''
+    const reason = banReason.trim()
+    if (!reason) return
+    setBanInFlight(true)
+    // Optimistic UI update immediately
+    update(target.id, { status: 'Banned', banReason: reason })
+    // Write to localStorage first so same-browser enforcement is instant
+    banUser({ id: target.id, email, name: u?.name || '' }, reason)
+    setModal(null); setActionMenu(null); setBanReason('')
+    try {
+      // Persist to backend (Supabase + SQLite) — both paths for redundancy
+      await apiBanUser(target.id, true, reason, email)
+      logAction({ action: 'USER_BANNED', actor: 'Admin', target: email, targetRole: u?.type, detail: reason, severity: 'high' })
+    } catch (err) {
+      console.warn('[ban] backend error (localStorage ban still active):', err)
+    } finally {
+      setBanInFlight(false)
+      loadUsers()
+    }
   }
+
   const handleUnban = async (userId) => {
+    if (unbanInFlight === userId) return
     const u = users.find(x => x.id === userId)
+    const email = u?.email || ''
+    setUnbanInFlight(userId)
+    // Optimistic UI update + clear localStorage ban immediately
     update(userId, { status: 'Active', banReason: null })
-    unbanUser(u?.email || '')
-    await Promise.all([
-      apiBanUser(userId, false, '', u?.email || ''),
-      apiUnbanUser(u?.email || ''),
-    ])
-    logAction({ action: 'USER_UNBANNED', actor: 'Admin', target: u?.email || '', targetRole: u?.type, detail: 'Ban lifted by admin', severity: 'low' })
+    unbanUser(email)
     setActionMenu(null)
-    loadUsers()
+    try {
+      // Hit both unban endpoints in parallel for maximum reliability
+      await Promise.all([
+        apiBanUser(userId, false, '', email),
+        apiUnbanUser(email),
+      ])
+      logAction({ action: 'USER_UNBANNED', actor: 'Admin', target: email, targetRole: u?.type, detail: 'Ban lifted by admin', severity: 'low' })
+    } catch (err) {
+      console.warn('[unban] backend error:', err)
+    } finally {
+      setUnbanInFlight(null)
+      loadUsers()
+    }
   }
+
   const handleUnbanAll = async () => {
     if (!window.confirm('Unban ALL users? This clears bans from Supabase, SQLite, and localStorage.')) return
     await apiUnbanAll()
@@ -412,7 +440,6 @@ export default function UserManagement() {
             borderRadius:16,
             boxShadow:'0 20px 50px rgba(0,0,0,0.2)',
             minWidth:220,
-            overflow:'hidden',
           }}
         >
           {/* Menu Header */}
@@ -447,9 +474,9 @@ export default function UserManagement() {
             {submenu === 'role' && (
               <div
                 style={{
-                  position:'absolute', left:'100%', top:0,
+                  position:'absolute', right:'100%', top:0, marginRight:4,
                   background:'var(--card-bg)', border:'1px solid var(--border)', borderRadius:12,
-                  boxShadow:'0 10px 30px rgba(0,0,0,0.15)', minWidth:140, zIndex:10, overflow:'hidden',
+                  boxShadow:'0 10px 30px rgba(0,0,0,0.2)', minWidth:140, zIndex:10,
                 }}
               >
                 {['Student','Teacher','Admin'].filter(r => r !== menuUser.type).map(r => (
@@ -483,9 +510,9 @@ export default function UserManagement() {
             {submenu === 'plan' && (
               <div
                 style={{
-                  position:'absolute', left:'100%', top:0,
+                  position:'absolute', right:'100%', top:0, marginRight:4,
                   background:'var(--card-bg)', border:'1px solid var(--border)', borderRadius:12,
-                  boxShadow:'0 10px 30px rgba(0,0,0,0.15)', minWidth:130, zIndex:10, overflow:'hidden',
+                  boxShadow:'0 10px 30px rgba(0,0,0,0.2)', minWidth:130, zIndex:10,
                 }}
               >
                 {['Free','Pro','School'].filter(p => p !== menuUser.plan).map(p => (
@@ -518,11 +545,15 @@ export default function UserManagement() {
           ) : (
             <button
               onClick={() => handleUnban(menuUser.id)}
-              style={{ width:'100%', display:'flex', alignItems:'center', gap:10, padding:'10px 14px', background:'transparent', border:'none', cursor:'pointer', color:'#10b981', fontSize:'0.82rem', fontWeight:600, fontFamily:"'DM Sans',sans-serif", textAlign:'left' }}
-              onMouseEnter={e => e.currentTarget.style.background='rgba(16,185,129,0.08)'}
+              disabled={unbanInFlight === menuUser.id}
+              style={{ width:'100%', display:'flex', alignItems:'center', gap:10, padding:'10px 14px', background:'transparent', border:'none', cursor: unbanInFlight === menuUser.id ? 'not-allowed' : 'pointer', color:'#10b981', fontSize:'0.82rem', fontWeight:600, fontFamily:"'DM Sans',sans-serif", textAlign:'left', opacity: unbanInFlight === menuUser.id ? 0.6 : 1 }}
+              onMouseEnter={e => { if (unbanInFlight !== menuUser.id) e.currentTarget.style.background='rgba(16,185,129,0.08)' }}
               onMouseLeave={e => e.currentTarget.style.background='transparent'}
             >
-              <CheckCircle style={{ width:15, height:15, flexShrink:0 }} /> Unban User
+              {unbanInFlight === menuUser.id
+                ? <><Loader2 style={{ width:15, height:15, flexShrink:0, animation:'spin 1s linear infinite' }} /> Unbanning…</>
+                : <><CheckCircle style={{ width:15, height:15, flexShrink:0 }} /> Unban User</>
+              }
             </button>
           )}
 
@@ -574,7 +605,7 @@ export default function UserManagement() {
                   </button>
                 </div>
                 <div style={{ padding:24 }}>
-                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+                  <div className="r2" style={{ gap:12 }}>
                     {[
                       { label:'School', value:modal.user.school, Icon:Building2 },
                       { label:'Subject / Class', value:modal.user.subject || modal.user.class, Icon:BookOpen },
@@ -650,10 +681,10 @@ export default function UserManagement() {
                   </button>
                   <button
                     onClick={handleBan}
-                    disabled={!banReason.trim()}
-                    style={{ flex:1, padding:'11px', borderRadius:12, background: banReason.trim() ? '#ef4444' : 'var(--bg3)', border:'none', color: banReason.trim() ? '#fff' : 'var(--text3)', fontWeight:700, fontSize:'0.85rem', cursor: banReason.trim() ? 'pointer' : 'not-allowed', fontFamily:"'DM Sans',sans-serif", transition:'all 0.2s' }}
+                    disabled={!banReason.trim() || banInFlight}
+                    style={{ flex:1, padding:'11px', borderRadius:12, background: banReason.trim() && !banInFlight ? '#ef4444' : 'var(--bg3)', border:'none', color: banReason.trim() && !banInFlight ? '#fff' : 'var(--text3)', fontWeight:700, fontSize:'0.85rem', cursor: banReason.trim() && !banInFlight ? 'pointer' : 'not-allowed', fontFamily:"'DM Sans',sans-serif", transition:'all 0.2s', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}
                   >
-                    Confirm Ban
+                    {banInFlight ? <><Loader2 style={{ width:14, height:14, animation:'spin 1s linear infinite' }} /> Banning…</> : 'Confirm Ban'}
                   </button>
                 </div>
               </div>
@@ -710,7 +741,7 @@ export default function UserManagement() {
                   </button>
                 </div>
                 <form onSubmit={handleAddTeacher} style={{ padding:24 }}>
-                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
+                  <div className="r2" style={{ gap:14 }}>
                     <div style={{ gridColumn:'1/-1' }}>
                       <label className="text-[10px] font-bold uppercase tracking-wider block mb-1.5" style={{ color:'var(--text3)' }}>Full Name *</label>
                       <input

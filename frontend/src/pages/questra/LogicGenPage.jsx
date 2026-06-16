@@ -148,7 +148,7 @@ function LogicGenPage(){
                   ))}
                 </AnimatedGrid>
                   <div style={{background:"rgba(217,119,6,.06)",border:"1px solid rgba(217,119,6,.2)",borderRadius:12,padding:"1.1rem",display:"flex",gap:".8rem",alignItems:"flex-start"}}>
-                    <span style={{fontSize:"1.2rem",flexShrink:0}}>🔮</span>
+                    <span style={{fontSize:"1.2rem",flexShrink:0}}>🏆</span>
                     <p style={{fontSize:".83rem",color:"#FCD34D",lineHeight:1.6}}>{prediction}</p>
                   </div>
               </ScrollReveal>

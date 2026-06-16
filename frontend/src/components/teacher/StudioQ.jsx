@@ -168,7 +168,7 @@ ${sectionsHTML}
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label style={{ color: 'var(--text3)' }} className="text-xs uppercase font-bold mb-1.5 block">Class</label>
                   <select
@@ -323,7 +323,7 @@ ${sectionsHTML}
                                 <span className="font-bold shrink-0 text-xs" style={{ color: 'var(--text3)' }}>[{sec.marksPerQuestion}]</span>
                               </div>
                               {q.options && (
-                                <div className="grid grid-cols-2 gap-1 ml-2 text-xs" style={{ color: 'var(--text2)' }}>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 ml-2 text-xs" style={{ color: 'var(--text2)' }}>
                                   {(Array.isArray(q.options)
                                     ? q.options
                                     : Object.values(q.options)

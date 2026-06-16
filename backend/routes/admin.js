@@ -8,6 +8,15 @@ const { successResponse, errorResponse, asyncHandler } = require('../errors');
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function isUUID(id) { return UUID_RE.test(id); }
 
+// Promise-based db.run — sqlite3 is callback-based, this lets us await it
+function runDB(sql, params = []) {
+  return new Promise((resolve, reject) => {
+    db.run(sql, params, function (err) {
+      if (err) reject(err); else resolve(this);
+    });
+  });
+}
+
 // ── Admin-secret middleware (no JWT needed) ────────────────────────────────────
 // Routes defined BEFORE router.use(authMiddleware) use this instead.
 const ADMIN_SECRET = process.env.ADMIN_SECRET || 'questra_admin_2026';
@@ -140,18 +149,14 @@ router.patch('/users/:id/ban', requireSecret, asyncHandler(async (req, res) => {
   const supabase = getClient();
 
   // 1. Try Supabase Auth ban (UUID users only)
-  if (supabase && isUUID(id) && banned) {
-    const { error } = await supabase.auth.admin.updateUserById(id, {
-      ban_duration: '876000h',
-    }).catch(() => ({}));
-    if (!error) { /* auth ban set */ }
-  }
-  if (supabase && isUUID(id) && !banned) {
-    const { error } = await supabase.auth.admin.updateUserById(id, {
-      ban_duration: 'none',
-    }).catch(() => ({}));
-    if (!error) { /* auth ban removed */ }
-  }
+  try {
+    if (supabase && isUUID(id) && banned) {
+      await supabase.auth.admin.updateUserById(id, { ban_duration: '876000h' });
+    }
+    if (supabase && isUUID(id) && !banned) {
+      await supabase.auth.admin.updateUserById(id, { ban_duration: 'none' });
+    }
+  } catch { /* supabase admin API unavailable or user has no auth record */ }
 
   // 2. Store in Supabase Data API banned_users table (by email — works for ALL users)
   let supabaseOk = false;
@@ -173,20 +178,20 @@ router.patch('/users/:id/ban', requireSecret, asyncHandler(async (req, res) => {
   }
 
   // 3. Always persist to SQLite as fallback
-  persistBanToSQLite(id, lcEmail, banned, reason);
+  await persistBanToSQLite(id, lcEmail, banned, reason).catch(() => {});
 
   return successResponse(res, { success: true, source: supabaseOk ? 'supabase' : 'sqlite' });
 }));
 
-function persistBanToSQLite(userId, email, banned, reason) {
+async function persistBanToSQLite(userId, email, banned, reason) {
   if (banned) {
-    db.run(
+    await runDB(
       'INSERT OR REPLACE INTO banned_users (user_id, email, reason, banned_at, status) VALUES (?, ?, ?, ?, ?)',
       [userId, email, reason || '', new Date().toISOString(), 'active']
     );
   } else {
-    if (userId) db.run('DELETE FROM banned_users WHERE user_id = ?', [userId]);
-    if (email)  db.run('DELETE FROM banned_users WHERE email = ?', [email]);
+    if (userId) await runDB('DELETE FROM banned_users WHERE user_id = ?', [userId]).catch(() => {});
+    if (email)  await runDB('DELETE FROM banned_users WHERE email = ?', [email]).catch(() => {});
   }
 }
 
@@ -197,12 +202,21 @@ router.post('/unban', requireSecret, asyncHandler(async (req, res) => {
   const lcEmail = email.toLowerCase().trim();
 
   // 1. Clear SQLite by email
-  db.run('DELETE FROM banned_users WHERE email = ?', [lcEmail]);
+  try {
+    await runDB('DELETE FROM banned_users WHERE email = ?', [lcEmail]);
+    console.log(`[unban] SQLite cleared for ${lcEmail}`);
+  } catch (e) {
+    console.warn('[unban] SQLite error:', e.message);
+  }
+
+  const supabase = getClient();
 
   // 2. Clear Supabase banned_users table by email
-  const supabase = getClient();
   if (supabase) {
-    try { await supabase.from('banned_users').delete().eq('email', lcEmail); } catch { /* table may not exist */ }
+    try {
+      await supabase.from('banned_users').delete().eq('email', lcEmail);
+      console.log(`[unban] Supabase table cleared for ${lcEmail}`);
+    } catch { /* table may not exist */ }
   }
 
   // 3. Find user in Supabase Auth and lift ban_duration
@@ -212,10 +226,15 @@ router.post('/unban', requireSecret, asyncHandler(async (req, res) => {
       if (data?.users) {
         const u = data.users.find(x => x.email?.toLowerCase() === lcEmail);
         if (u && u.banned_until && new Date(u.banned_until) > new Date()) {
-          await supabase.auth.admin.updateUserById(u.id, { ban_duration: 'none' }).catch(() => {});
+          await supabase.auth.admin.updateUserById(u.id, { ban_duration: 'none' });
+          console.log(`[unban] Auth ban lifted for ${u.id}`);
+        } else {
+          console.log(`[unban] No active Supabase Auth ban for ${lcEmail}`);
         }
       }
-    } catch { /* ignore */ }
+    } catch (e) {
+      console.warn('[unban] Supabase Auth error:', e?.message);
+    }
   }
 
   successResponse(res, { success: true, message: `Ban lifted for ${lcEmail}` });
@@ -224,7 +243,12 @@ router.post('/unban', requireSecret, asyncHandler(async (req, res) => {
 // POST /api/admin/unban-all — clear every ban from every storage layer
 router.post('/unban-all', requireSecret, asyncHandler(async (req, res) => {
   // 1. Clear SQLite banned_users
-  db.run('DELETE FROM banned_users', []);
+  try {
+    await runDB('DELETE FROM banned_users', []);
+    console.log('[unban-all] SQLite cleared');
+  } catch (e) {
+    console.warn('[unban-all] SQLite error:', e.message);
+  }
 
   // 2. Clear Supabase banned_users table
   const supabase = getClient();
@@ -255,8 +279,12 @@ router.delete('/users/:id', requireSecret, asyncHandler(async (req, res) => {
   const supabase = getClient();
   if (!supabase) return errorResponse(res, 'Supabase not configured', 503);
   if (!isUUID(id)) return errorResponse(res, 'Cannot delete demo/local users from Supabase', 400);
-  const { error } = await supabase.auth.admin.deleteUser(id);
-  if (error) return errorResponse(res, error.message, 500);
+  try {
+    const { error } = await supabase.auth.admin.deleteUser(id);
+    if (error) return errorResponse(res, error.message, 500);
+  } catch (e) {
+    return errorResponse(res, 'Supabase admin API unavailable', 500);
+  }
   successResponse(res, { success: true });
 }));
 
@@ -268,11 +296,12 @@ router.patch('/users/:id/role', requireSecret, asyncHandler(async (req, res) => 
   // Try Supabase first (only for UUIDs)
   const supabase = getClient();
   if (supabase && isUUID(id)) {
-    const { error } = await supabase.auth.admin.updateUserById(id, {
-      user_metadata: { role },
-    });
-    if (!error) return successResponse(res, { success: true });
-    // Fall through to SQLite
+    try {
+      const { error } = await supabase.auth.admin.updateUserById(id, {
+        user_metadata: { role },
+      });
+      if (!error) return successResponse(res, { success: true });
+    } catch { /* fall through to SQLite */ }
   }
 
   db.run(
@@ -293,11 +322,12 @@ router.patch('/users/:id/plan', requireSecret, asyncHandler(async (req, res) => 
   // Try Supabase first (only for UUIDs)
   const supabase = getClient();
   if (supabase && isUUID(id)) {
-    const { error } = await supabase.auth.admin.updateUserById(id, {
-      user_metadata: { plan },
-    });
-    if (!error) return successResponse(res, { success: true });
-    // Fall through to SQLite
+    try {
+      const { error } = await supabase.auth.admin.updateUserById(id, {
+        user_metadata: { plan },
+      });
+      if (!error) return successResponse(res, { success: true });
+    } catch { /* fall through to SQLite */ }
   }
 
   db.run(
@@ -326,18 +356,20 @@ router.patch('/users/:id/profile', requireSecret, asyncHandler(async (req, res) 
     if (profile.subject !== undefined) metaFields.subject = profile.subject;
     if (profile.displayName !== undefined) metaFields.displayName = profile.displayName;
     if (Object.keys(metaFields).length > 0) {
-      const { error } = await supabase.auth.admin.updateUserById(id, { user_metadata: metaFields });
-      if (!error) {
-        db.run(
-          'INSERT OR REPLACE INTO user_profiles (user_id, data, updated_at) VALUES (?, ?, ?)',
-          [id, JSON.stringify(profile), new Date().toISOString()],
-          function (err) {
-            if (err) return errorResponse(res, 'Database error', 500);
-            successResponse(res, { success: true, source: 'supabase' });
-          }
-        );
-        return;
-      }
+      try {
+        const { error } = await supabase.auth.admin.updateUserById(id, { user_metadata: metaFields });
+        if (!error) {
+          db.run(
+            'INSERT OR REPLACE INTO user_profiles (user_id, data, updated_at) VALUES (?, ?, ?)',
+            [id, JSON.stringify(profile), new Date().toISOString()],
+            function (err) {
+              if (err) return errorResponse(res, 'Database error', 500);
+              successResponse(res, { success: true, source: 'supabase' });
+            }
+          );
+          return;
+        }
+      } catch { /* fall through to SQLite */ }
     }
   }
 

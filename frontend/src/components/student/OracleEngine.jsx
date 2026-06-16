@@ -84,7 +84,7 @@ export default function OracleEngine() {
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
-            <span style={{ fontSize: '1.3rem' }}>🔮</span>
+            <span style={{ fontSize: '1.3rem' }}>🏆</span>
             <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text)', fontFamily: "'Instrument Serif',serif" }}>Exam Generator</h1>
           </div>
           <p style={{ color: 'var(--text3)', fontSize: '.88rem', marginTop: '.25rem' }}>AI-powered exam predictions based on 15 years of PYQ analysis</p>

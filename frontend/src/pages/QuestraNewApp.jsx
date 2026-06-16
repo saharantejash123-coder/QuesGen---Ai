@@ -102,7 +102,7 @@ function HomePage({setPage}){
   const stats=[{n:"4,28,500+",l:"Questions indexed"},{n:"15 yrs",l:"PYQ coverage"},{n:"7+",l:"Boards covered"},{n:"< 10s",l:"Paper generated"}];
   const modules=[
     {icon:"🗄️",name:"Vault-15",desc:"15-year indexed PYQ archive across 7+ boards with intelligent tagging and trend metadata.",color:VIOLET},
-    {icon:"🔮",name:"Exam Generator",desc:"AI predicts upcoming exam topics with Confidence Scores based on 15-year pattern analysis.",color:BLUE},
+    {icon:"🏆",name:"Exam Generator",desc:"AI predicts upcoming exam topics with Confidence Scores based on 15-year pattern analysis.",color:BLUE},
     {icon:"🔄",name:"LogicGen",desc:"Rebuilds PYQs with fresh variables — forces structural mastery, not rote memory.",color:AMBER},
     {icon:"🧠",name:"Adaptive Testing",desc:"Dynamic AI-generated tests that adapt to your weak areas in real-time.",color:TEAL},
     {icon:"✍️",name:"Script-Lab",desc:"AI reads your handwriting and gives tiny, achievable improvement nudges — one at a time.",color:"#D97706"},
@@ -592,7 +592,7 @@ function ScriptLabPage(){
                         <text x={tip.zone[0]+tip.zone[2]/2} y={tip.zone[1]-5} textAnchor="middle" fill="#D97706" fontSize="8" fontFamily="DM Sans" fontWeight="700">↑ Focus area</text>
                       </svg>
                     </div>
-                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:".6rem",marginTop:".8rem"}}>
+                    <div className="r2-sm" style={{marginTop:".8rem"}}>
                       {[["Legibility","74%","#10B981"],["Consistency","61%","#F59E0B"],["Spacing","48%","#EF4444"],["Pressure","82%","#10B981"]].map(([k,v,c],i)=>(
                         <div key={i} style={{background:"rgba(255,255,255,.025)",border:"1px solid rgba(255,255,255,.06)",borderRadius:9,padding:".7rem"}}>
                           <div style={{fontSize:".68rem",color:"#475569",fontWeight:600,marginBottom:".35rem"}}>{k}</div>
@@ -667,7 +667,7 @@ function FeaturesPage({setPage}){
   const [sel,setSel]=useState(0);
   const sf=[
     {icon:"🗄️",name:"Vault-15",color:VIOLET,desc:"The largest tagged PYQ archive ever built for Indian boards — 4,28,500+ questions from 2010–2025, each carrying Difficulty, Bloom's Taxonomy, Historical Frequency, and AI Confidence metadata tags.",detail:["4,28,500+ questions fully indexed","7+ boards, Class 9–12","4-Vector metadata per question","Year-wise trend heatmaps","Edge-Sync offline under 1 MB"]},
-    {icon:"🔮",name:"Exam Generator",color:BLUE,desc:"Runs cyclical time-series analysis on Vault-15 and monitors official board circular releases. Generates a Confidence Score for every syllabus topic — explicit probability percentages tied to the upcoming exam cycle.",detail:["15-year historical trend analysis","Monitors board sample papers & circulars","Per-topic Confidence Scores (e.g. 89%)","Updates after each official board communication","Covers all 7+ boards simultaneously"]},
+    {icon:"🏆",name:"Exam Generator",color:BLUE,desc:"Runs cyclical time-series analysis on Vault-15 and monitors official board circular releases. Generates a Confidence Score for every syllabus topic — explicit probability percentages tied to the upcoming exam cycle.",detail:["15-year historical trend analysis","Monitors board sample papers & circulars","Per-topic Confidence Scores (e.g. 89%)","Updates after each official board communication","Covers all 7+ boards simultaneously"]},
     {icon:"🔄",name:"LogicGen",color:AMBER,desc:"Strips any PYQ down to its core logic structure, then rebuilds it — same concept, completely new numbers, names, coordinates, or scenarios. Forces genuine structural understanding over static answer memorisation.",detail:["Infinite unique variants per question","Replaces integers, entities, and scenarios","Paired Oracle predictions for probability","Export as PDF for offline practice","Works for maths, science, and humanities"]},
     {icon:"🧠",name:"Adaptive Testing",color:TEAL,desc:"Generate dynamic, AI-powered tests on the fly. Questions adapt to your specific weak areas and provide detailed explanations to help you master every topic.",detail:["Unlimited AI-generated questions","Adapts to your weak areas","Instant AI explanations","Performance history tracking","Continuous skill mastery"]},
     {icon:"✍️",name:"Script-Lab",color:"#D97706",desc:"Addresses the critical loss of presentation marks in Indian exams. Upload handwritten mock answers. AI evaluates kerning, baseline alignment, paragraph structure, and whitespace — returning one focused micro-improvement at a time.",detail:["Analyses kerning & baseline drift","Evaluates whitespace & paragraph hierarchy","One targeted improvement per session","Tracks progress across sessions","Works with any language script"]},
@@ -719,7 +719,7 @@ function FeaturesPage({setPage}){
               </div>
               <p style={{fontSize:".95rem",color:"#94A3B8",lineHeight:1.75,marginBottom:"1.8rem"}}>{cur.desc}</p>
               <div style={{fontSize:".68rem",fontWeight:700,color:"#475569",letterSpacing:"1px",textTransform:"uppercase",marginBottom:".8rem"}}>Key Capabilities</div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:".55rem",marginBottom:"1.5rem"}}>
+              <div className="r2-sm" style={{gap:".55rem",marginBottom:"1.5rem"}}>
                 {cur.detail.map((d,i)=>(
                   <div key={i} style={{display:"flex",gap:".55rem",alignItems:"flex-start"}}>
                     <span style={{color:cur.color,fontWeight:700,flexShrink:0,marginTop:".1rem",fontSize:".85rem"}}>✓</span>
@@ -862,7 +862,7 @@ function LogicGenPage(){
                 </div>
                 {prediction&&(
                   <div style={{background:"rgba(217,119,6,.06)",border:"1px solid rgba(217,119,6,.2)",borderRadius:12,padding:"1.1rem",display:"flex",gap:".8rem",alignItems:"flex-start"}}>
-                    <span style={{fontSize:"1.2rem",flexShrink:0}}>🔮</span>
+                    <span style={{fontSize:"1.2rem",flexShrink:0}}>🏆</span>
                     <p style={{fontSize:".83rem",color:"#FCD34D",lineHeight:1.6}}>{prediction}</p>
                   </div>
                 )}
@@ -966,7 +966,7 @@ function Footer({setPage}){
   return(
     <footer style={{background:"#060810",borderTop:"1px solid rgba(255,255,255,.04)",padding:"3.5rem 5% 1.8rem"}}>
       <div style={{maxWidth:1200,margin:"0 auto"}}>
-        <div style={{display:"grid",gridTemplateColumns:"1.8fr 1fr 1fr 1fr",gap:"2rem",marginBottom:"2.5rem"}}>
+        <div className="r4-sm" style={{marginBottom:"2.5rem"}}>
           <div>
             <button onClick={()=>{setPage("home");window.scrollTo(0,0);}} style={{background:"none",border:"none",cursor:"pointer",display:"flex",alignItems:"center",gap:".45rem",marginBottom:".9rem"}}>
               <div style={{width:26,height:26,background:"linear-gradient(135deg,#2354F4,#60A5FA)",borderRadius:7,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,color:"#fff",fontWeight:700}}>Q</div>

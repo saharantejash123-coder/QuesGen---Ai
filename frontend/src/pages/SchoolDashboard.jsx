@@ -999,7 +999,7 @@ function SettingsTab({ user }) {
                 onBlur={e => e.target.style.borderColor = 'var(--border)'}
               />
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+            <div className="r2">
               <div>
                 <label style={labelStyle}>Phone</label>
                 <input value={phone} onChange={e => setPhone(e.target.value)} style={fieldStyle}
