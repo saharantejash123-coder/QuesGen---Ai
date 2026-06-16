@@ -334,36 +334,22 @@ function HomePage({ setPage }) {
           >
             <div style={{
               position: "relative",
-              width: "min(400px,36vw)", height: "min(400px,36vw)",
+              width: "min(320px,28vw)", height: "min(320px,28vw)",
               display: "flex", alignItems: "center", justifyContent: "center",
             }}>
-              {/* Subtle glow */}
-              <div style={{
-                position: "absolute", inset: "-12%",
-                borderRadius: "50%",
-                background: "radial-gradient(circle, rgba(35,84,244,0.10) 0%, transparent 70%)",
-                pointerEvents: "none",
-              }} />
-              {/* Transparent circle with blue stroke + actual logo colors */}
               <motion.div
-                animate={{ y: [-10, 10, -10] }}
+                animate={{ y: [-8, 8, -8] }}
                 transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
-                style={{
-                  width: "100%", height: "100%",
-                  borderRadius: "50%",
-                  background: "transparent",
-                  border: "2.5px solid rgba(35,84,244,0.5)",
-                  boxShadow: "0 8px 40px rgba(35,84,244,0.14)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                }}
+                style={{ width: "100%", height: "100%" }}
               >
                 <img
                   src="/logo.png"
                   alt="QuesGen AI"
                   style={{
-                    width: "75%", height: "75%",
+                    width: "100%", height: "100%",
                     objectFit: "contain",
                     userSelect: "none",
+                    display: "block",
                   }}
                 />
               </motion.div>
