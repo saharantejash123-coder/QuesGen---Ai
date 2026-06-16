@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Brain, BookOpen, Trophy, Sparkles, FileText, Calculator,
-  Lightbulb, Target, Zap, Star, ArrowRight, ChevronRight,
+  Brain, BookOpen, Trophy, FileText,
+  Lightbulb, Target, Zap, ArrowRight, ChevronRight,
   Check, Users, TrendingUp, Shield, Globe,
 } from 'lucide-react';
 
@@ -13,7 +13,6 @@ import StaggerContainer from '../../components/animations/StaggerContainer';
 import HoverCard from '../../components/animations/HoverCard';
 import TextAnimator from '../../components/animations/TextAnimator';
 import NumberCounter from '../../components/animations/NumberCounter';
-import FloatingElement from '../../components/animations/FloatingElement';
 import ParallaxSection from '../../components/animations/ParallaxSection';
 import { easings, staggerContainerVariants, staggerChildVariants } from '../../utils/animationConfig';
 import { useIsMobile } from '../../hooks/useIsMobile';
@@ -191,7 +190,8 @@ function HomePage({ setPage }) {
           display: 'flex', flexDirection: 'row',
           background: 'var(--bg2)',
           border: '1px solid var(--border)',
-          borderRadius: 18, overflow: 'hidden',
+          borderRadius: 18, overflowX: 'auto', overflowY: 'hidden',
+          scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch',
         }}
       >
         {stats.map((s, i) => (
@@ -233,89 +233,6 @@ function HomePage({ setPage }) {
       padding: "9rem 5% 5rem",
       position: "relative", overflow: "hidden",
     }}>
-      {/* Large ambient glow — centered */}
-      <div style={{
-        position: "absolute", top: "50%", left: "50%",
-        transform: "translate(-50%,-50%)",
-        width: "min(900px,80vw)", height: "min(900px,80vw)",
-        background: "radial-gradient(ellipse, rgba(35,84,244,.08) 0%, rgba(124,58,237,.05) 40%, transparent 70%)",
-        borderRadius: "50%", filter: "blur(80px)", pointerEvents: "none",
-      }} />
-
-      {/* Background orbs — wider spread on big screens */}
-      <FloatingElement duration={8} distance={30} delay={0} direction="diagonal">
-        <div style={{
-          position: "absolute", top: "8%", left: "5%",
-          width: "clamp(320px,35vw,600px)", height: "clamp(320px,35vw,600px)",
-          background: "radial-gradient(circle,rgba(35,84,244,.13),transparent 65%)",
-          borderRadius: "50%", filter: "blur(50px)", pointerEvents: "none",
-        }} />
-      </FloatingElement>
-      <FloatingElement duration={10} distance={25} delay={0.5} direction="diagonal">
-        <div style={{
-          position: "absolute", bottom: "5%", right: "3%",
-          width: "clamp(280px,30vw,520px)", height: "clamp(280px,30vw,520px)",
-          background: "radial-gradient(circle,rgba(124,58,237,.09),transparent 65%)",
-          borderRadius: "50%", filter: "blur(50px)", pointerEvents: "none",
-        }} />
-      </FloatingElement>
-      <FloatingElement duration={12} distance={20} delay={1} direction="diagonal">
-        <div style={{
-          position: "absolute", top: "55%", left: "60%",
-          width: "clamp(200px,22vw,400px)", height: "clamp(200px,22vw,400px)",
-          background: "radial-gradient(circle,rgba(8,145,178,.07),transparent 65%)",
-          borderRadius: "50%", filter: "blur(50px)", pointerEvents: "none",
-        }} />
-      </FloatingElement>
-
-      {/* Floating icon bubbles — wider coverage for ultrawide */}
-      {[
-        { Icon: Brain,      color: BLUE,   top: "14%",   left:  "6%",   size: 22, dur: 7,   delay: 0,    label: "Oracle AI"  },
-        { Icon: Trophy,     color: AMBER,  top: "10%",   right: "8%",   size: 20, dur: 9,   delay: 1.2,  label: "Top Ranks"  },
-        { Icon: BookOpen,   color: TEAL,   top: "38%",   left:  "2.5%", size: 20, dur: 8.5, delay: 0.6,  label: "15yr PYQs"  },
-        { Icon: Sparkles,   color: VIOLET, top: "30%",   right: "3%",   size: 20, dur: 7.5, delay: 2,    label: "AI Magic"   },
-        { Icon: Calculator, color: GREEN,  bottom:"28%", left:  "5%",   size: 18, dur: 10,  delay: 1.5,  label: "Maths"      },
-        { Icon: FileText,   color: BLUE,   bottom:"22%", right: "6%",   size: 18, dur: 8,   delay: 0.9,  label: "Papers"     },
-        { Icon: Lightbulb,  color: AMBER,  top: "60%",   left:  "1.5%", size: 17, dur: 9.5, delay: 3,    label: "Clarity"    },
-        { Icon: Target,     color: TEAL,   top: "55%",   right: "2%",   size: 17, dur: 8,   delay: 2.5,  label: "Focus"      },
-        { Icon: Zap,        color: VIOLET, bottom:"40%", right: "8%",   size: 16, dur: 6.5, delay: 1.8,  label: "Fast"       },
-        { Icon: Star,       color: GREEN,  top: "22%",   left:  "14%",  size: 16, dur: 11,  delay: 0.4,  label: "Excellence" },
-
-        // Extra far-edge icons for ultrawide screens
-        { Icon: Shield,     color: VIOLET, top: "45%",   left:  "0.8%", size: 16, dur: 9,   delay: 0.7,  label: "Secure"    },
-        { Icon: Globe,      color: TEAL,   top: "18%",   right: "1.5%", size: 16, dur: 8.5, delay: 1.4,  label: "Global"    },
-      ].map(({ Icon, color, size, dur, delay, label, ...pos }, i) => (
-        <motion.div
-          key={i}
-          style={{ position: "absolute", pointerEvents: "none", zIndex: 0, ...pos }}
-          initial={{ opacity: 0, scale: 0.5 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: delay * 0.4 + 0.3, duration: 0.6, type: "spring", stiffness: 180, damping: 20 }}
-        >
-            <motion.div
-              animate={{ y: [0, -14, 0], rotate: [0, i % 2 === 0 ? 8 : -8, 0] }}
-              transition={{ duration: dur, repeat: Infinity, ease: "easeInOut", delay }}
-              style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "clamp(4px,0.5vw,8px)" }}
-            >
-              <div style={{
-                width: `clamp(${size + 22}px,${4.5}vw,${size + 42}px)`,
-                height: `clamp(${size + 22}px,${4.5}vw,${size + 42}px)`,
-                borderRadius: "50%",
-                background: `${color}12`, border: `1.5px solid ${color}25`,
-                backdropFilter: "blur(10px)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                boxShadow: `0 4px 24px ${color}18, 0 0 40px ${color}08`,
-              }}>
-                <Icon size={size} color={color} strokeWidth={1.8} />
-              </div>
-              <span style={{
-                fontSize: "clamp(8px,0.7vw,11px)", fontWeight: 700, color: color,
-                opacity: 0.8, letterSpacing: "0.8px", textTransform: "uppercase",
-                textShadow: `0 0 16px ${color}50`,
-              }}>{label}</span>
-            </motion.div>
-          </motion.div>
-        ))}
 
       {/* Grid parallax */}
       <ParallaxSection speed={0.2} style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
@@ -618,7 +535,6 @@ function HomePage({ setPage }) {
           { Icon: Users,     color: BLUE,   label: "Students" },
           { Icon: Shield,    color: VIOLET, label: "Trusted"  },
           { Icon: TrendingUp,color: GREEN,  label: "Results"  },
-          { Icon: Globe,     color: TEAL,   label: "Offline"  },
         ].map(({ Icon, color, label }, i) => (
           <motion.div
             key={i}
@@ -660,15 +576,7 @@ function HomePage({ setPage }) {
         <em style={{ color: '#60A5FA' }}>From village to Kota.</em>
       </motion.h2>
 
-      <motion.p
-        style={{ color: 'var(--text3)', fontSize: '0.9rem', lineHeight: 1.75, marginBottom: '1.6rem' }}
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true }}
-        transition={{ delay: 0.15, duration: 0.6 }}
-      >
-        Full platform works offline in under 1 MB. Because rural Rajasthan deserves the same preparation quality as the best coaching centres.
-      </motion.p>
+
 
       <motion.div
         style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}
@@ -735,7 +643,6 @@ function HomePage({ setPage }) {
             { Icon: Users,     color: BLUE,   label: "Students" },
             { Icon: Shield,    color: VIOLET, label: "Trusted"  },
             { Icon: TrendingUp,color: GREEN,  label: "Results"  },
-            { Icon: Globe,     color: TEAL,   label: "Offline"  },
           ].map(({ Icon, color, label }, i) => (
             <motion.div key={i} style={{ textAlign: "center" }} whileHover={{ y: -6, scale: 1.08 }} transition={{ duration: 0.25 }}>
               <div style={{
@@ -771,13 +678,7 @@ function HomePage({ setPage }) {
           </motion.em>
         </motion.h2>
 
-        <motion.p
-          style={{ color: "var(--text3)", fontSize: "clamp(1.05rem,1.3vw,1.15rem)", lineHeight: 1.8, maxWidth: 600, margin: "0 auto 3rem" }}
-          initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}
-          transition={{ delay: 0.3, duration: 0.6 }} viewport={{ once: true }}
-        >
-          Full platform works offline in under 1 MB. Because rural Rajasthan deserves the same preparation quality as the best coaching centres.
-        </motion.p>
+
 
         <motion.div
           className="fr" style={{ justifyContent: "center", gap: "clamp(0.9rem,1.5vw,1.5rem)" }}
@@ -832,7 +733,7 @@ function HomePage({ setPage }) {
                 { icon: "📦", t: "12,500+ Papers",   d: "Every board, every class, 2010–2025 — fully archived"     },
                 { icon: "🏷️", t: "Complete Papers",  d: "Original format · All sections · Full instructions"        },
                 { icon: "📊", t: "Answer Keys",       d: "Verified answer keys for papers from 2015 onwards"         },
-                { icon: "🔌", t: "Edge-Sync Offline", d: "Full archive synced under 1 MB for rural access"           },
+
               ].map((item, i) => (
                 <motion.div key={i} variants={staggerChildVariants} style={{ display: "flex", gap: "1rem", alignItems: "flex-start" }}>
                   <motion.div
