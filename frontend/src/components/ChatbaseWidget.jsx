@@ -1,13 +1,24 @@
 import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import { useIsMobile } from '../hooks/useIsMobile';
 
 const CHATBOT_ID = '8reY9mRYpNkJdMgGdCZAr';
 
+const HIDE_ON = [
+  '/login', '/register',
+  '/privacy', '/privacy-policy',
+  '/terms', '/terms-conditions',
+  '/cookie-policy', '/banned',
+];
+
 export default function ChatbaseWidget() {
   const [open, setOpen] = useState(false);
   const isMobile = useIsMobile();
+  const { pathname } = useLocation();
+
+  if (HIDE_ON.includes(pathname)) return null;
 
   /* ── Load ChatBase script, hide their default button ── */
   useEffect(() => {

@@ -334,46 +334,35 @@ function HomePage({ setPage }) {
           >
             <div style={{
               position: "relative",
-              width: "min(480px,42vw)", height: "min(480px,42vw)",
+              width: "min(400px,36vw)", height: "min(400px,36vw)",
               display: "flex", alignItems: "center", justifyContent: "center",
             }}>
-              {/* Glow behind the circle */}
+              {/* Subtle glow */}
               <div style={{
-                position: "absolute", inset: "-15%",
+                position: "absolute", inset: "-12%",
                 borderRadius: "50%",
-                background: "radial-gradient(circle, rgba(35,84,244,0.18) 0%, transparent 70%)",
+                background: "radial-gradient(circle, rgba(35,84,244,0.10) 0%, transparent 70%)",
                 pointerEvents: "none",
               }} />
-              {/* Floating blue circle with logo */}
+              {/* Transparent circle with blue stroke + actual logo colors */}
               <motion.div
                 animate={{ y: [-10, 10, -10] }}
                 transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
                 style={{
                   width: "100%", height: "100%",
                   borderRadius: "50%",
-                  background: "linear-gradient(145deg, #1a40d4 0%, #2354F4 50%, #4a6fff 100%)",
-                  boxShadow:
-                    "0 32px 100px rgba(35,84,244,0.42)," +
-                    "0 8px 32px rgba(35,84,244,0.22)," +
-                    "inset 0 1px 0 rgba(255,255,255,0.15)",
+                  background: "transparent",
+                  border: "2.5px solid rgba(35,84,244,0.5)",
+                  boxShadow: "0 8px 40px rgba(35,84,244,0.14)",
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  position: "relative",
                 }}
               >
-                <div style={{
-                  position: "absolute", top: "8%", left: "15%", right: "15%", height: "35%",
-                  borderRadius: "50%",
-                  background: "radial-gradient(ellipse, rgba(255,255,255,0.14) 0%, transparent 70%)",
-                  pointerEvents: "none",
-                }} />
                 <img
                   src="/logo.png"
                   alt="QuesGen AI"
                   style={{
-                    width: "62%", height: "62%",
+                    width: "75%", height: "75%",
                     objectFit: "contain",
-                    filter: "brightness(0) invert(1)",
-                    position: "relative", zIndex: 1,
                     userSelect: "none",
                   }}
                 />
