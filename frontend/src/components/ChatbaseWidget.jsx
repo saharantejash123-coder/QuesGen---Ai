@@ -13,10 +13,10 @@ export default function ChatbaseWidget() {
   useEffect(() => {
     window.chatbaseConfig = { chatbotId: CHATBOT_ID };
 
-    if (!document.getElementById('chatbase-embed')) {
+    if (!document.getElementById(CHATBOT_ID)) {
       const script = document.createElement('script');
       script.src = 'https://www.chatbase.co/embed.min.js';
-      script.id = 'chatbase-embed';
+      script.id = CHATBOT_ID;
       script.defer = true;
       document.body.appendChild(script);
     }
