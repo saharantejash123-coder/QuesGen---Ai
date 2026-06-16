@@ -57,7 +57,7 @@ export default function NumberCounter({
         ease: easings.smooth,
       }}
     >
-      {displayValue}{suffix}
+      {displayValue.toLocaleString()}{suffix}
     </motion.span>
   );
 }

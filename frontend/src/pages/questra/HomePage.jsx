@@ -357,25 +357,39 @@ function HomePage({ setPage }) {
           </motion.div>
         </div>
 
-        {/* Stats row — full width below the grid */}
+        {/* Stats row — single responsive row with dividers */}
         <StaggerContainer
           style={{
-            display: "flex", gap: "clamp(2rem,6vw,6rem)",
-            marginTop: "clamp(4rem,6vw,7rem)", flexWrap: "wrap", justifyContent: "center",
+            display: "grid",
+            gridTemplateColumns: "repeat(4, 1fr)",
+            gap: "0",
+            marginTop: "clamp(3rem,5vw,5rem)",
+            border: "1px solid var(--border)",
+            borderRadius: 16,
+            overflow: "hidden",
           }}
           containerVariants={staggerContainerVariants}
           childVariants={staggerChildVariants}
         >
           {stats.map((s, i) => (
-            <motion.div key={i} style={{ textAlign: "center" }} whileHover={{ scale: 1.08, y: -5 }} transition={{ duration: 0.3 }}>
+            <motion.div
+              key={i}
+              whileHover={{ background: "var(--bg2)" }}
+              transition={{ duration: 0.2 }}
+              style={{
+                textAlign: "center",
+                padding: "clamp(1.2rem,2.5vw,2rem) clamp(0.5rem,1vw,1rem)",
+                borderRight: i < stats.length - 1 ? "1px solid var(--border)" : "none",
+              }}
+            >
               <div style={{
                 fontFamily: "'Instrument Serif',serif",
-                fontSize: "clamp(1.6rem,4.5vw,2.8rem)",
-                color: "var(--text)", letterSpacing: "-1.5px",
+                fontSize: "clamp(1.4rem,3vw,2.4rem)",
+                color: "var(--text)", letterSpacing: "-1px", lineHeight: 1,
               }}>
                 <NumberCounter value={parseInt(s.n)} suffix={s.n.includes('+') ? '+' : ''} duration={2.5} delay={i * 0.15} />
               </div>
-              <div style={{ fontSize: "clamp(0.72rem,0.85vw,0.85rem)", color: "var(--text2)", marginTop: ".3rem", letterSpacing: ".8px", textTransform: "uppercase", fontWeight: 600 }}>
+              <div style={{ fontSize: "clamp(0.68rem,0.8vw,0.82rem)", color: "var(--text3)", marginTop: ".45rem", letterSpacing: ".6px", textTransform: "uppercase", fontWeight: 600 }}>
                 {s.l}
               </div>
             </motion.div>
