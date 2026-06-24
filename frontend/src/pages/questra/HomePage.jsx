@@ -971,7 +971,7 @@ function HomePage({ setPage }) {
           <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 'clamp(1.5rem,3vw,2.5rem)' }}>
             {[
               { name: 'Tejash', about: 'Founder & Developer',    img: '/team.jpg' },
-              { name: 'Shiva',  about: 'Co-Founder & Developer', img: '/team.jpg' },
+              { name: 'Tejash',  about: 'Founder & Developer', img: '/team.jpg' },
             ].map((m) => (
               <ProfileCard key={m.name} name={m.name} about={m.about} img={m.img} linkedin="#" github="#" />
             ))}
