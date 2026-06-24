@@ -17,10 +17,11 @@ export default function ChatbaseWidget() {
   const [open, setOpen] = useState(false);
   const isMobile = useIsMobile();
   const { pathname } = useLocation();
-
-  if (HIDE_ON.includes(pathname)) return null;
+  const hidden = HIDE_ON.includes(pathname);
 
   /* ── Load ChatBase script, hide their default button ── */
+  // NOTE: every hook must run on every render — never early-return before hooks,
+  // or React throws "rendered fewer hooks than expected" and blanks the page.
   useEffect(() => {
     window.chatbaseConfig = { chatbotId: CHATBOT_ID };
 
@@ -55,6 +56,9 @@ export default function ChatbaseWidget() {
   const bottom = isMobile
     ? 'calc(env(safe-area-inset-bottom, 0px) + 88px)'
     : '24px';
+
+  // Safe to bail now — all hooks above have already run unconditionally.
+  if (hidden) return null;
 
   return (
     <>

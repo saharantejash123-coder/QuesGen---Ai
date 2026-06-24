@@ -19,10 +19,7 @@ export default function TextAnimator({
   className = '',
   style = {},
 }) {
-  if (prefersReducedMotion()) {
-    return <div className={className} style={style}>{text}</div>;
-  }
-
+  // Hooks must run on every render \u2014 keep useMemo above any early return.
   const items = useMemo(() => {
     if (mode === 'letters') {
       return text.split('').map((char, i) => ({
@@ -38,6 +35,10 @@ export default function TextAnimator({
       }));
     }
   }, [text, mode]);
+
+  if (prefersReducedMotion()) {
+    return <div className={className} style={style}>{text}</div>;
+  }
 
   const containerVariants = {
     hidden: { opacity: 0 },

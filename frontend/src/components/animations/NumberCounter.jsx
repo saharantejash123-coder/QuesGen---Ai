@@ -18,12 +18,11 @@ export default function NumberCounter({
   delay = 0,
 }) {
   const [displayValue, setDisplayValue] = useState(0);
+  const reduced = prefersReducedMotion();
 
-  if (prefersReducedMotion()) {
-    return <span>{value}{suffix}</span>;
-  }
-
+  // Hooks must run on every render — keep this above any early return.
   useEffect(() => {
+    if (reduced) return;
     let startTime;
     const startValue = 0;
 
@@ -45,7 +44,11 @@ export default function NumberCounter({
     }, delay * 1000);
 
     return () => clearTimeout(timeoutId);
-  }, [value, duration, delay]);
+  }, [value, duration, delay, reduced]);
+
+  if (reduced) {
+    return <span>{value}{suffix}</span>;
+  }
 
   return (
     <motion.span
