@@ -11,10 +11,11 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { apiUpdateProfile } from '../services/adminService';
+import { validateSchoolCode, createSchoolRequest, getPendingRequestsByUser } from '../services/schoolService';
 
 /* ─── constants ─── */
 const BOARDS    = ['CBSE','RBSE','ICSE','UP Board','Maharashtra','Bihar','MP Board','Karnataka'];
-const CLASSES   = ['Class 6','Class 7','Class 8','Class 9','Class 10','Class 11','Class 12'];
+const CLASSES   = ['Class 10','Class 12'];
 const SUBJECTS  = ['Physics','Chemistry','Mathematics','Biology','English','Hindi','Social Science','Accountancy','Economics','Business Studies'];
 const GOALS     = ['Just exploring','Regular practice (1-2h/day)','Serious prep (3-4h/day)','Exam warrior (5h+/day)'];
 
@@ -122,6 +123,159 @@ function StatCard({ icon: Icon, label, value, accent }) {
         <div style={fs('1.3rem',800,'var(--text)')}>{value}</div>
         <div style={fs('0.72rem',500,'var(--text3)')}>{label}</div>
       </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════
+   UID DISPLAY FIELD
+══════════════════════════════════════════ */
+function UIDField({ uid }) {
+  const [copied, setCopied] = useState(false);
+  const copy = () => {
+    if (!uid) return;
+    navigator.clipboard?.writeText(uid).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); });
+  };
+  return (
+    <div style={{ display:'flex', flexDirection:'column', gap:'0.4rem' }}>
+      <label style={{ fontSize:'0.75rem', fontWeight:700, color:'var(--text3)', textTransform:'uppercase', letterSpacing:'0.5px' }}>
+        Your Unique ID (UID)
+      </label>
+      <div style={{ display:'flex', alignItems:'center', gap:'0.65rem', padding:'0.7rem 1rem', borderRadius:12, border:'1px solid var(--border)', background:'var(--bg3)' }}>
+        {uid ? (
+          <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'1rem', fontWeight:800, color:'var(--text)', letterSpacing:'0.08em', flex:1 }}>
+            {uid}
+          </span>
+        ) : (
+          <span style={{ fontSize:'0.85rem', color:'var(--text3)', flex:1, fontStyle:'italic' }}>
+            Not assigned — log out and log back in to generate one
+          </span>
+        )}
+        {uid && (
+          <button onClick={copy}
+            style={{ padding:'0.3rem 0.65rem', borderRadius:8, border:'1px solid var(--border)', background: copied ? 'rgba(5,150,105,0.1)' : 'var(--bg2)', color: copied ? '#059669' : 'var(--text2)', fontSize:'0.72rem', fontWeight:700, cursor:'pointer', fontFamily:"'DM Sans',sans-serif", transition:'all 0.2s', flexShrink:0 }}>
+            {copied ? 'Copied!' : 'Copy'}
+          </button>
+        )}
+      </div>
+      <span style={{ fontSize:'0.72rem', fontWeight:400, color:'var(--text3)' }}>
+        Your immutable 10-digit platform identifier. Share it with schools so they can find and add you.
+      </span>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════
+   SCHOOL SECTION (for teachers & students)
+══════════════════════════════════════════ */
+function SchoolSection({ userProp, role, currentSchool }) {
+  const [codeInput, setCodeInput]   = useState('');
+  const [nameInput, setNameInput]   = useState('');
+  const [msg, setMsg]               = useState('');
+  const [err, setErr]               = useState('');
+  const [pending, setPending]       = useState(() => getPendingRequestsByUser(userProp?.email || ''));
+
+  const refresh = () => setPending(getPendingRequestsByUser(userProp?.email || ''));
+
+  const handleJoinByCode = () => {
+    setMsg(''); setErr('');
+    if (!codeInput.trim()) { setErr('Enter a school code.'); return; }
+    const result = validateSchoolCode(codeInput.trim());
+    if (!result) { setErr('Invalid code. Please check with your school admin.'); return; }
+    const res = createSchoolRequest({
+      type: role,
+      userEmail: userProp?.email || '',
+      userName: `${userProp?.firstName || ''} ${userProp?.lastName || ''}`.trim(),
+      userUID: userProp?.uid || '',
+      schoolName: result.schoolName,
+      message: 'Requested via profile page (code)',
+    });
+    if (!res.success) { setErr(res.error || 'Could not send request.'); return; }
+    setMsg(`Join request sent to ${result.schoolName}. Awaiting approval.`);
+    setCodeInput('');
+    refresh();
+  };
+
+  const handleJoinByName = () => {
+    setMsg(''); setErr('');
+    if (!nameInput.trim()) { setErr('Enter a school name.'); return; }
+    const res = createSchoolRequest({
+      type: role,
+      userEmail: userProp?.email || '',
+      userName: `${userProp?.firstName || ''} ${userProp?.lastName || ''}`.trim(),
+      userUID: userProp?.uid || '',
+      schoolName: nameInput.trim(),
+      message: 'Requested via profile page (name)',
+    });
+    if (!res.success) { setErr(res.error || 'Could not send request.'); return; }
+    setMsg(`Join request sent to "${nameInput.trim()}". Awaiting approval.`);
+    setNameInput('');
+    refresh();
+  };
+
+  const inputSt = { width:'100%', padding:'0.7rem 1rem', borderRadius:12, border:'1px solid var(--border)', background:'var(--bg2)', color:'var(--text)', fontSize:'0.88rem', fontFamily:"'DM Sans',sans-serif", outline:'none', boxSizing:'border-box', transition:'border-color 0.2s' };
+
+  return (
+    <div style={{ display:'flex', flexDirection:'column', gap:'1.4rem' }}>
+      <div>
+        <h3 style={{ fontSize:'1.05rem', fontWeight:700, color:'var(--text)' }}>School Association</h3>
+        <p style={{ fontSize:'0.82rem', color:'var(--text3)', marginTop:'0.25rem' }}>Join a school to access class-based features and assignments.</p>
+      </div>
+
+      {/* Current school */}
+      <div style={{ padding:'1rem 1.25rem', borderRadius:14, background:'var(--bg3)', border:'1px solid var(--border)', display:'flex', alignItems:'center', gap:'1rem' }}>
+        <Building2 size={22} color={currentSchool ? '#059669' : 'var(--text3)'} />
+        <div>
+          <div style={{ fontSize:'0.72rem', fontWeight:700, color:'var(--text3)', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:'0.2rem' }}>Current School</div>
+          <div style={{ fontSize:'0.95rem', fontWeight:700, color:'var(--text)' }}>{currentSchool || 'Not associated with any school'}</div>
+          {userProp?.uid && <div style={{ fontSize:'0.72rem', color:'var(--text3)', marginTop:'0.15rem', fontFamily:"'JetBrains Mono',monospace" }}>Your UID: {userProp.uid}</div>}
+        </div>
+      </div>
+
+      {/* Pending requests */}
+      {pending.length > 0 && (
+        <div style={{ padding:'1rem 1.25rem', borderRadius:14, background:'rgba(245,158,11,0.06)', border:'1px solid rgba(245,158,11,0.2)' }}>
+          <div style={{ fontSize:'0.8rem', fontWeight:700, color:'#D97706', marginBottom:'0.65rem' }}>Pending Requests</div>
+          <div style={{ display:'flex', flexDirection:'column', gap:'0.5rem' }}>
+            {pending.map(r => (
+              <div key={r.id} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'0.5rem', flexWrap:'wrap' }}>
+                <div>
+                  <span style={{ fontSize:'0.85rem', fontWeight:600, color:'var(--text)' }}>{r.schoolName}</span>
+                  <span style={{ fontSize:'0.72rem', color:'var(--text3)', marginLeft:8 }}>Sent {new Date(r.createdAt).toLocaleDateString()}</span>
+                </div>
+                <span style={{ padding:'0.2rem 0.55rem', borderRadius:6, background:'rgba(245,158,11,0.1)', color:'#D97706', fontSize:'0.7rem', fontWeight:700 }}>Pending</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Join by code */}
+      <div style={{ padding:'1.2rem 1.25rem', borderRadius:14, background:'var(--card-bg)', border:'1px solid var(--border)', display:'flex', flexDirection:'column', gap:'0.85rem' }}>
+        <div style={{ fontSize:'0.88rem', fontWeight:700, color:'var(--text)' }}>Join with School Code</div>
+        <p style={{ fontSize:'0.78rem', color:'var(--text3)', marginTop:0 }}>Enter the 6-character code shared by your school admin.</p>
+        <div style={{ display:'flex', gap:'0.6rem', flexWrap:'wrap' }}>
+          <input value={codeInput} onChange={e=>setCodeInput(e.target.value.toUpperCase())} placeholder="e.g. AB3XY7" maxLength={8}
+            style={{ ...inputSt, flex:1, minWidth:120, fontFamily:"'JetBrains Mono',monospace", letterSpacing:'0.1em' }}
+            onFocus={e=>e.target.style.borderColor='#2354F4'} onBlur={e=>e.target.style.borderColor='var(--border)'} />
+          <button onClick={handleJoinByCode} style={{ padding:'0.7rem 1.1rem', borderRadius:12, border:'none', background:'linear-gradient(135deg,#2354F4,#7c3aed)', color:'#fff', fontWeight:700, fontSize:'0.85rem', cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>Send Request</button>
+        </div>
+      </div>
+
+      {/* Join by name */}
+      <div style={{ padding:'1.2rem 1.25rem', borderRadius:14, background:'var(--card-bg)', border:'1px solid var(--border)', display:'flex', flexDirection:'column', gap:'0.85rem' }}>
+        <div style={{ fontSize:'0.88rem', fontWeight:700, color:'var(--text)' }}>Join by School Name</div>
+        <p style={{ fontSize:'0.78rem', color:'var(--text3)', marginTop:0 }}>If you don't have a code, type the exact school name.</p>
+        <div style={{ display:'flex', gap:'0.6rem', flexWrap:'wrap' }}>
+          <input value={nameInput} onChange={e=>setNameInput(e.target.value)} placeholder="e.g. Demo School"
+            style={{ ...inputSt, flex:1, minWidth:140 }}
+            onFocus={e=>e.target.style.borderColor='#2354F4'} onBlur={e=>e.target.style.borderColor='var(--border)'} />
+          <button onClick={handleJoinByName} style={{ padding:'0.7rem 1.1rem', borderRadius:12, border:'none', background:'linear-gradient(135deg,#059669,#0891b2)', color:'#fff', fontWeight:700, fontSize:'0.85rem', cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>Send Request</button>
+        </div>
+      </div>
+
+      {msg && <div style={{ padding:'0.75rem 1rem', borderRadius:12, background:'rgba(5,150,105,0.08)', border:'1px solid rgba(5,150,105,0.2)', color:'#059669', fontSize:'0.85rem', fontWeight:600 }}>{msg}</div>}
+      {err && <div style={{ padding:'0.75rem 1rem', borderRadius:12, background:'rgba(239,68,68,0.08)', border:'1px solid rgba(239,68,68,0.2)', color:'#ef4444', fontSize:'0.85rem', fontWeight:600 }}>{err}</div>}
     </div>
   );
 }
@@ -259,6 +413,7 @@ export default function ProfilePage({ user: userProp, onUpdate, role = 'student'
   const sidebarSections = [
     { id:'personal',    label:'Personal Info',     icon: User           },
     { id:'academic',    label:'Academic Settings', icon: GraduationCap  },
+    ...(role === 'teacher' || role === 'student' ? [{ id:'school', label:'School Association', icon: Building2 }] : []),
     { id:'preferences', label:'Preferences',       icon: Settings       },
     { id:'security',    label:'Security & Privacy',icon: Shield         },
     { id:'danger',      label:'Danger Zone',       icon: AlertTriangle  },
@@ -290,6 +445,7 @@ export default function ProfilePage({ user: userProp, onUpdate, role = 'student'
         hint="This is shown in your papers and reports." />
       <Field label="Email Address" value={userProp?.email || ''} onChange={()=>{}} disabled
         hint="Email cannot be changed. Contact support to update." />
+      <UIDField uid={userProp?.uid} />
       <Field label="Phone Number" value={form.phone} onChange={setF('phone')} type="tel" />
       <Field label="Bio / About You" value={form.bio} onChange={setF('bio')} textarea
         hint="A short intro about yourself (shown on your profile)." />
@@ -722,10 +878,16 @@ export default function ProfilePage({ user: userProp, onUpdate, role = 'student'
     </div>
   );
 
+  const renderSchool = () => {
+    const currentSchool = userProp?.schoolName || '';
+    return <SchoolSection userProp={userProp} role={role} currentSchool={currentSchool} />;
+  };
+
   const renderSection = () => {
     switch(section) {
       case 'personal':    return renderPersonal();
       case 'academic':    return renderAcademic();
+      case 'school':      return renderSchool();
       case 'preferences': return renderPreferences();
       case 'security':    return renderSecurity();
       case 'danger':      return renderDanger();
@@ -733,7 +895,7 @@ export default function ProfilePage({ user: userProp, onUpdate, role = 'student'
     }
   };
 
-  const showSave = section !== 'security' && section !== 'danger';
+  const showSave = section !== 'security' && section !== 'danger' && section !== 'school';
 
   /* ═══ RENDER ═══ */
   return (
@@ -806,8 +968,11 @@ export default function ProfilePage({ user: userProp, onUpdate, role = 'student'
                   {role?.charAt(0).toUpperCase()+role?.slice(1)}
                 </span>
               </div>
-              <div style={{ ...fs('0.82rem',400,'var(--text3)'), marginTop:'0.25rem' }}>
-                {userProp?.email}
+              <div style={{ ...row, gap:'0.6rem', marginTop:'0.25rem', flexWrap:'wrap' }}>
+                <span style={fs('0.82rem',400,'var(--text3)')}>{userProp?.email}</span>
+                <span style={{ fontFamily:"'JetBrains Mono',monospace", fontSize:'0.72rem', fontWeight:700, color: userProp?.uid ? 'var(--text3)' : '#F59E0B', background:'var(--bg3)', border:`1px solid ${userProp?.uid ? 'var(--border)' : 'rgba(245,158,11,0.3)'}`, borderRadius:6, padding:'0.1rem 0.45rem', letterSpacing:'0.05em' }}>
+                  {userProp?.uid ? `UID ${userProp.uid}` : 'UID not assigned'}
+                </span>
               </div>
               {form.bio && (
                 <div style={{ ...fs('0.85rem',400,'var(--text2)'), marginTop:'0.4rem', maxWidth:480, lineHeight:1.6 }}>

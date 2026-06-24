@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
-import { loginWithGoogleToken, saveSession } from '../services/authService';
+import { loginWithGoogleToken, saveSession, ensureUID } from '../services/authService';
 
 export default function GoogleCallback() {
   const navigate = useNavigate();
@@ -26,7 +26,10 @@ export default function GoogleCallback() {
           if (user._banned) { navigate('/banned', { replace: true }); return; }
           go(user.role);
         })
-        .catch(() => navigate('/login?error=auth_failed'));
+        .catch((err) => {
+          try { sessionStorage.setItem('questra_login_error', err?.message || 'Google sign-in failed. Please try again.'); } catch { /* ignore */ }
+          navigate('/login', { replace: true });
+        });
       return;
     }
 
@@ -38,7 +41,7 @@ export default function GoogleCallback() {
     if (token && user) {
       try {
         localStorage.setItem('questra_token', token);
-        localStorage.setItem('questra_user', JSON.stringify(JSON.parse(user)));
+        localStorage.setItem('questra_user', JSON.stringify(ensureUID(JSON.parse(user))));
         go(JSON.parse(user).role);
       } catch {
         navigate('/login?error=auth_failed');

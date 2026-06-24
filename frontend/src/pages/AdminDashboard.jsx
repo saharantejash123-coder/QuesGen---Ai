@@ -42,7 +42,8 @@ export default function AdminDashboard() {
 
   const handleLogout = () => {
     localStorage.removeItem('questra_user')
-    navigate('/login')
+    localStorage.removeItem('questra_token')
+    window.location.replace('/login')
   }
 
   const ActiveComponent = tabComponents[activeTab]

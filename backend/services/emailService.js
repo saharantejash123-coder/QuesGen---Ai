@@ -110,18 +110,20 @@ function buildEmailHTML(otp) {
 }
 
 // ─── Send via Brevo ───────────────────────────────────────────────────────────
+// Real email only — never returns a demo code. Throws if the email could not be
+// delivered so the caller can surface a proper error.
 async function sendOTPEmail(toEmail, otp) {
   const apiKey = process.env.BREVO_API_KEY;
 
   if (!apiKey || apiKey === 'your-brevo-api-key-here') {
-    console.warn('[OTP] BREVO_API_KEY not set — returning demo OTP');
-    return { sent: false, demoOtp: otp };
+    throw new Error('Email service is not configured. Set BREVO_API_KEY on the server.');
   }
 
   const senderEmail = process.env.SMTP_FROM || 'ai.quesgen@gmail.com';
 
+  let result;
   try {
-    const result = await brevoRequest(
+    result = await brevoRequest(
       {
         sender:      { name: 'QuesGen AI', email: senderEmail },
         to:          [{ email: toEmail }],
@@ -131,22 +133,20 @@ async function sendOTPEmail(toEmail, otp) {
       },
       apiKey
     );
-
-    if (result.status >= 200 && result.status < 300) {
-      console.log(`[OTP] Email sent to ${toEmail} via Brevo`);
-      return { sent: true };
-    }
-
-    // Brevo returned an error (e.g. sender not verified)
-    const errMsg = result.body?.message || JSON.stringify(result.body);
-    console.error(`[OTP] Brevo error ${result.status}: ${errMsg}`);
-    // Still return demoOtp so registration isn't blocked
-    return { sent: false, demoOtp: otp, brevoError: errMsg };
-
   } catch (err) {
     console.error('[OTP] Brevo request failed:', err.message);
-    return { sent: false, demoOtp: otp };
+    throw new Error('Could not reach the email service. Please try again.');
   }
+
+  if (result.status >= 200 && result.status < 300) {
+    console.log(`[OTP] Email sent to ${toEmail} via Brevo`);
+    return { sent: true };
+  }
+
+  // Brevo returned an error (e.g. sender not verified, out of credits)
+  const errMsg = result.body?.message || JSON.stringify(result.body);
+  console.error(`[OTP] Brevo error ${result.status}: ${errMsg}`);
+  throw new Error(`Email delivery failed: ${errMsg}`);
 }
 
 module.exports = { storeOTP, checkOTP, sendOTPEmail };

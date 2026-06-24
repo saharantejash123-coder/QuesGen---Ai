@@ -4,6 +4,11 @@ import { ArrowRight, Loader2, BookOpen, Brain, Target, TrendingUp } from 'lucide
 import { useLanguage } from '../context/LanguageContext';
 import { login, saveSession, getSession } from '../services/authService';
 import { getActiveBan, syncBanFromBackend } from '../services/adminService';
+import { LOGIN_NOTICE_KEY } from '../hooks/useRequireAuth';
+import ForgotPasswordModal from '../components/ForgotPasswordModal';
+
+/* sessionStorage key Google sign-in failures are passed through */
+const LOGIN_ERROR_KEY = 'questra_login_error';
 
 const GOOGLE_CLIENT_ID = '462752093792-7qe3v01bs6a25v8ldsttt9cenvg1mtg1.apps.googleusercontent.com';
 
@@ -38,7 +43,9 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [forgotOpen, setForgotOpen] = useState(false);
   const navigate = useNavigate();
 
   const redirect = (role) => {
@@ -54,6 +61,16 @@ export default function LoginPage() {
     const session = getSession();
     if (session?.role) redirect(session.role);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* Picked up a "login first to use X" notice from a gated feature */
+  useEffect(() => {
+    try {
+      const msg = sessionStorage.getItem(LOGIN_NOTICE_KEY);
+      if (msg) { setNotice(msg); sessionStorage.removeItem(LOGIN_NOTICE_KEY); }
+      const errMsg = sessionStorage.getItem(LOGIN_ERROR_KEY);
+      if (errMsg) { setError(errMsg); sessionStorage.removeItem(LOGIN_ERROR_KEY); }
+    } catch { /* ignore */ }
+  }, []);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -75,6 +92,8 @@ export default function LoginPage() {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', background: '#000' }}>
+
+      <ForgotPasswordModal open={forgotOpen} onClose={() => setForgotOpen(false)} initialEmail={email} />
 
       {/* ── Left brand panel (desktop only) ── */}
       <div className="auth-brand-panel" style={{
@@ -161,6 +180,14 @@ export default function LoginPage() {
             </p>
           </div>
 
+          {/* Login-required notice from a gated feature */}
+          {notice && (
+            <div style={{ marginBottom: '1.25rem', padding: '0.75rem 1rem', borderRadius: 12, background: 'rgba(35,84,244,0.1)', border: '1px solid rgba(129,140,248,0.35)', color: '#a5b4fc', fontSize: '0.83rem', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+              <Brain size={16} style={{ flexShrink: 0 }} />
+              {notice}
+            </div>
+          )}
+
           {/* Error */}
           {error && (
             <div style={{ marginBottom: '1.25rem', padding: '0.75rem 1rem', borderRadius: 12, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171', fontSize: '0.83rem', textAlign: 'center' }}>
@@ -185,7 +212,7 @@ export default function LoginPage() {
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                 <label style={{ fontSize: '0.78rem', fontWeight: 600, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Password</label>
-                <a href="#" style={{ fontSize: '0.75rem', color: '#818cf8', textDecoration: 'none' }}>Forgot?</a>
+                <button type="button" onClick={() => setForgotOpen(true)} style={{ fontSize: '0.75rem', color: '#818cf8', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: "'DM Sans', sans-serif" }}>Forgot?</button>
               </div>
               <input
                 type="password" required value={password} onChange={e => setPassword(e.target.value)}

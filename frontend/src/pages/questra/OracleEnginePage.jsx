@@ -4,6 +4,8 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 
 import { generatePaperAsync } from '../../data/oracleData';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { CLASS_OPTIONS, STREAMS, hasStream, subjectsFor } from '../../data/academics';
+import { useRequireAuth } from '../../hooks/useRequireAuth';
 
 // Languages for subjects (excluding Hindi, Sanskrit, English which are language subjects themselves)
 const SUBJECT_LANGUAGES = {
@@ -21,8 +23,10 @@ const EXCLUDED_TRANSLATION_SUBJECTS = ['Hindi', 'English', 'Sanskrit'];
 export default function OracleEnginePage({ setPage }) {
   const { dark } = useTheme();
   const { t } = useLanguage();
+  const requireLogin = useRequireAuth();
   const [board, setBoard] = useState('CBSE');
   const [cls, setCls] = useState('Class 10');
+  const [stream, setStream] = useState('Science');
   const [subject, setSubject] = useState('Science');
   const [language, setLanguage] = useState('English');
   const [examType, setExamType] = useState('Annual Exam');
@@ -42,7 +46,20 @@ export default function OracleEnginePage({ setPage }) {
     }
   };
 
+  // Keep subject valid when class or stream changes (Class 10 = no stream; Class 12 = streams).
+  const handleClassChange = (newCls) => {
+    setCls(newCls);
+    const opts = subjectsFor(newCls, stream);
+    if (!opts.includes(subject)) handleSubjectChange(opts[0]);
+  };
+  const handleStreamChange = (newStream) => {
+    setStream(newStream);
+    const opts = subjectsFor(cls, newStream);
+    if (!opts.includes(subject)) handleSubjectChange(opts[0]);
+  };
+
   const handleGenerate = async () => {
+    if (!requireLogin('Exam Generator')) return;
     setStep(2);
     setApiError('');
     try {
@@ -192,27 +209,22 @@ ${sectionsHTML}
               <div className="r2" style={{ gap: '1rem' }}>
                 <div>
                   <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', marginBottom: '0.5rem', display: 'block' }}>{t('oracle.selectClass')}</label>
-                  <select value={cls} onChange={(e) => setCls(e.target.value)}>
-                    <option value="Class 9">Class 9</option>
-                    <option value="Class 10">Class 10</option>
-                    <option value="Class 11">Class 11</option>
-                    <option value="Class 12">Class 12</option>
+                  <select value={cls} onChange={(e) => handleClassChange(e.target.value)}>
+                    {CLASS_OPTIONS.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
+                {hasStream(cls) && (
+                  <div>
+                    <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', marginBottom: '0.5rem', display: 'block' }}>Stream</label>
+                    <select value={stream} onChange={(e) => handleStreamChange(e.target.value)}>
+                      {STREAMS.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </div>
+                )}
                 <div>
                   <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', marginBottom: '0.5rem', display: 'block' }}>{t('oracle.selectSubject')}</label>
                   <select value={subject} onChange={(e) => handleSubjectChange(e.target.value)}>
-                    <option value="Mathematics">Mathematics</option>
-                    <option value="Science">Science</option>
-                    <option value="Physics">Physics</option>
-                    <option value="Chemistry">Chemistry</option>
-                    <option value="Biology">Biology</option>
-                    <option value="English">English</option>
-                    <option value="Social Science">Social Science</option>
-                    <option value="Hindi">Hindi</option>
-                    <option value="Accountancy">Accountancy</option>
-                    <option value="Business Studies">Business Studies</option>
-                    <option value="Economics">Economics</option>
+                    {subjectsFor(cls, stream).map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
               </div>

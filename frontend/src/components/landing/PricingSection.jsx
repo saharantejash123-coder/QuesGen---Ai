@@ -72,19 +72,13 @@ export default function PricingSection() {
   const { t } = useLanguage();
 
   return (
-    <section id="pricing" style={{ padding: '5.5rem 0', background: 'var(--bg3)' }}>
+    <section id="pricing" style={{ padding: 'clamp(3.5rem, 7vw, 5.5rem) 0', background: 'var(--bg3)' }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 2xl:px-16">
 
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-          <span style={{
-            display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
-            padding: '0.3rem 0.9rem', borderRadius: 100,
-            background: 'rgba(35,84,244,0.08)', border: '1px solid rgba(35,84,244,0.18)',
-            fontSize: '0.75rem', fontWeight: 700, color: '#2354F4',
-            letterSpacing: '0.05em', textTransform: 'uppercase',
-            marginBottom: '1rem',
-          }}>
+          <span className="lp-eyebrow" style={{ marginBottom: '1rem' }}>
+            <span className="lp-dot" />
             Pricing
           </span>
           <h2 className="st" style={{ marginBottom: '0.75rem', marginTop: '0.75rem' }}>
@@ -144,20 +138,27 @@ export default function PricingSection() {
 
         {/* Cards */}
         <div style={{
-          display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
+          display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
           gap: '1.25rem', maxWidth: 980, margin: '0 auto',
-        }} className="pricing-grid">
+        }} className="pricing-grid lp-grid-safe">
           {plans.map((plan, idx) => (
             <motion.div
               key={plan.name}
+              className={plan.popular ? 'lp-spot' : 'lp-glass lp-gborder lp-spot'}
               initial={{ opacity: 0, y: 28 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-60px' }}
               transition={{ delay: idx * 0.1, type: 'spring', stiffness: 190, damping: 22 }}
+              whileHover={{ y: -5, transition: { duration: 0.2 } }}
+              onMouseMove={e => {
+                const r = e.currentTarget.getBoundingClientRect();
+                e.currentTarget.style.setProperty('--mx', `${e.clientX - r.left}px`);
+                e.currentTarget.style.setProperty('--my', `${e.clientY - r.top}px`);
+              }}
               style={{
                 background: plan.popular
-                  ? 'linear-gradient(145deg, var(--card-bg) 0%, var(--card-bg) 100%)'
-                  : 'var(--card-bg)',
+                  ? 'linear-gradient(160deg, rgba(35,84,244,0.07), var(--card-bg) 55%)'
+                  : undefined,
                 border: plan.popular
                   ? '2px solid #2354F4'
                   : '1px solid var(--border)',
@@ -166,11 +167,21 @@ export default function PricingSection() {
                 position: 'relative',
                 overflow: 'hidden',
                 boxShadow: plan.popular
-                  ? '0 8px 40px rgba(35,84,244,0.18), 0 2px 8px rgba(0,0,0,0.08)'
-                  : '0 2px 12px rgba(0,0,0,0.04)',
-                transform: plan.popular ? 'scale(1.025)' : 'scale(1)',
+                  ? '0 18px 50px rgba(35,84,244,0.22), 0 2px 8px rgba(0,0,0,0.08)'
+                  : '0 4px 18px rgba(0,0,0,0.05)',
+                transform: plan.popular ? 'scale(1.03)' : 'scale(1)',
+                ['--spot']: plan.accentBg.replace('0.08', '0.16'),
               }}
             >
+              {/* Glow aura — popular only */}
+              {plan.popular && (
+                <div aria-hidden style={{
+                  position: 'absolute', top: '-30%', left: '50%', transform: 'translateX(-50%)',
+                  width: '120%', height: '60%', borderRadius: '50%',
+                  background: 'radial-gradient(ellipse, rgba(35,84,244,0.16) 0%, transparent 70%)',
+                  pointerEvents: 'none', zIndex: -1,
+                }} />
+              )}
               {/* Top accent bar */}
               {plan.popular && (
                 <div style={{
@@ -195,8 +206,10 @@ export default function PricingSection() {
               {/* Plan header */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', marginBottom: '1.25rem' }}>
                 <div style={{
-                  width: 42, height: 42, borderRadius: 11,
-                  background: plan.accentBg,
+                  width: 44, height: 44, borderRadius: 12,
+                  background: `linear-gradient(145deg, ${plan.accentBg}, transparent)`,
+                  border: `1px solid ${plan.accentColor}22`,
+                  boxShadow: `inset 0 1px 0 rgba(255,255,255,0.12)`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
                   <plan.icon size={18} color={plan.accentColor} />
@@ -221,9 +234,14 @@ export default function PricingSection() {
                     style={{ display: 'flex', alignItems: 'baseline', gap: '0.2rem' }}
                   >
                     <span style={{
-                      fontSize: 'clamp(1.8rem, 3vw, 2.2rem)',
-                      fontWeight: 800, color: 'var(--text)',
-                      letterSpacing: '-0.02em', lineHeight: 1,
+                      fontSize: 'clamp(1.9rem, 3vw, 2.35rem)',
+                      fontWeight: 800,
+                      letterSpacing: '-0.03em', lineHeight: 1,
+                      ...(plan.popular ? {
+                        background: 'linear-gradient(135deg, #2354F4, #7C3AED)',
+                        WebkitBackgroundClip: 'text', backgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                      } : { color: 'var(--text)' }),
                     }}>
                       {annual ? plan.price.annual : plan.price.monthly}
                     </span>

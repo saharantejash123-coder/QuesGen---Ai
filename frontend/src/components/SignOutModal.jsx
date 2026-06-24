@@ -20,6 +20,15 @@ export default function SignOutModal({ isOpen, onConfirm, onCancel, userName }) 
               WebkitBackdropFilter: 'blur(8px)',
             }}
           />
+          {/* Centering wrapper — flexbox is safe with framer-motion, transform: translate conflicts */}
+          <div
+            style={{
+              position: 'fixed', inset: 0, zIndex: 9001,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              padding: '1rem',
+              pointerEvents: 'none',
+            }}
+          >
           <motion.div
             key="modal"
             initial={{ opacity: 0, scale: 0.9, y: 24 }}
@@ -27,15 +36,15 @@ export default function SignOutModal({ isOpen, onConfirm, onCancel, userName }) 
             exit={{ opacity: 0, scale: 0.9, y: 24 }}
             transition={{ type: 'spring', stiffness: 400, damping: 30 }}
             style={{
-              position: 'fixed', top: '50%', left: '50%',
-              transform: 'translate(-50%, -50%)',
-              zIndex: 9001,
               background: 'var(--card-bg)',
               border: '1px solid var(--border)',
               borderRadius: 24,
               padding: '2rem 2rem 1.75rem',
-              width: 'min(420px, calc(100vw - 2rem))',
+              width: '100%',
+              maxWidth: 420,
               boxShadow: '0 40px 100px rgba(0,0,0,0.28), 0 8px 30px rgba(0,0,0,0.12)',
+              position: 'relative',
+              pointerEvents: 'auto',
             }}
           >
             <button
@@ -114,6 +123,7 @@ export default function SignOutModal({ isOpen, onConfirm, onCancel, userName }) 
               </button>
             </div>
           </motion.div>
+          </div>
         </>
       )}
     </AnimatePresence>

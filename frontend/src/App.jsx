@@ -8,7 +8,6 @@ import BanGate from './components/BanGate';
 import { AnimatePresence, motion } from 'framer-motion';
 
 import QuestraShell from './pages/questra/QuestraShell';
-import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import GoogleCallback from './pages/GoogleCallback';
@@ -21,6 +20,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import SchoolDashboard from './pages/SchoolDashboard';
 import BannedPage from './pages/BannedPage';
 import ChatbaseWidget from './components/ChatbaseWidget';
+import { Toaster } from './components/Toast';
 
 function AnimatedRoutes() {
   const location = useLocation();
@@ -41,7 +41,6 @@ function AnimatedRoutes() {
           <Route path="/" element={<QuestraShell />} />
 
           {/* Legacy routes */}
-          <Route path="/classic" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/auth/google/callback" element={<GoogleCallback />} />
@@ -102,6 +101,7 @@ export default function App() {
           <BrowserRouter>
             <AnimatedRoutes />
             <ChatbaseWidget />
+            <Toaster />
           </BrowserRouter>
         </LanguageProvider>
       </ThemeProvider>

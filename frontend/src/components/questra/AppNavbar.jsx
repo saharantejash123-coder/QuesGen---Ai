@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Shuffle, PenTool, Layers, Eye, BarChart2,
   TrendingUp, Settings, Users, ChevronRight, ChevronDown,
   GraduationCap, Building2, Calendar, User,
-  Trophy, Menu,
+  Trophy, Menu, ClipboardList,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../../context/ThemeContext';
@@ -66,9 +66,10 @@ const roleConfigs = {
       { id: 'pricing',   l: 'Pricing'          },
     ],
     moreTabs: [
-      { id: 'logicgen',  l: 'LogicGen'   },
-      { id: 'vault15',   l: 'Vault-15'   },
-      { id: 'scriptlab', l: 'Script-Lab' },
+      { id: 'mytests',   l: 'My Tests'  },
+      { id: 'logicgen',  l: 'LogicGen'  },
+      { id: 'vault15',   l: 'Vault-15'  },
+      { id: 'scriptlab', l: 'Script-Lab'},
     ],
     showAuth: false,
     showTabs: true,
@@ -79,6 +80,7 @@ const roleConfigs = {
   teacher: {
     tabs: [
       { id: 'studio',   l: 'Studio-Q'       },
+      { id: 'classes',  l: 'My Classes'     },
       { id: 'varitest', l: 'Vari-Test'      },
       { id: 'vision',   l: 'Vision-Grade'   },
       { id: 'bridge',   l: 'Bridge-Reports' },
@@ -105,13 +107,14 @@ const roleConfigs = {
   },
   school: {
     tabs: [
-      { id: 'overview',  l: 'Dashboard' },
-      { id: 'students',  l: 'Students'  },
-      { id: 'teachers',  l: 'Teachers'  },
-      { id: 'classes',   l: 'Classes'   },
-      { id: 'exams',     l: 'Exams'     },
-      { id: 'reports',   l: 'Reports'   },
-      { id: 'settings',  l: 'Settings'  },
+      { id: 'overview',     l: 'Dashboard'    },
+      { id: 'students',     l: 'Students'     },
+      { id: 'teachers',     l: 'Teachers'     },
+      { id: 'classes',      l: 'Classes'      },
+      { id: 'exams',        l: 'Exams'        },
+      { id: 'testresults',  l: 'Test Results' },
+      { id: 'reports',      l: 'Reports'      },
+      { id: 'settings',     l: 'Settings'     },
     ],
     showAuth: false,
     showTabs: true,
@@ -135,15 +138,15 @@ const mobileNavMap = {
   ],
   student: [
     { id: 'overview', label: 'Home',     Icon: LayoutDashboard, isMore: false },
-    { id: 'oracle',   label: 'Exam Gen', Icon: Trophy,           isMore: false },
+    { id: 'vault15',  label: 'Vault-15', Icon: Archive,         isMore: false },
+    { id: 'oracle',   label: 'Exam Gen', Icon: Trophy,          isMore: false },
     { id: 'adaptive', label: 'Adaptive', Icon: Brain,           isMore: false },
-    { id: 'vault15',  label: 'Vault',    Icon: Archive,         isMore: false },
     { id: '__more',   label: 'More',     Icon: MoreHorizontal,  isMore: true  },
   ],
   teacher: [
     { id: 'studio',   label: 'Studio',  Icon: PenTool,        isMore: false },
-    { id: 'varitest', label: 'VariTest', Icon: Layers,         isMore: false },
-    { id: 'vision',   label: 'Vision',  Icon: Eye,            isMore: false },
+    { id: 'classes',  label: 'Classes', Icon: Users,          isMore: false },
+    { id: 'varitest', label: 'VariTest', Icon: Layers,        isMore: false },
     { id: 'bridge',   label: 'Reports', Icon: BarChart2,      isMore: false },
     { id: '__more',   label: 'More',    Icon: MoreHorizontal, isMore: true  },
   ],
@@ -172,10 +175,11 @@ const moreSheetMap = {
     { id: 'scriptlab', label: 'Script-Lab', desc: 'AI handwriting coach',   emoji: '✍️' },
   ],
   student: [
-    { id: 'scriptlab', label: 'Script-Lab', desc: 'AI handwriting coach',  emoji: '✍️' },
-    { id: 'logicgen',  label: 'LogicGen',   desc: 'PYQ variable rebuilder', emoji: '🔄' },
-    { id: 'features',  label: 'Features',   desc: 'All student features',   emoji: '✨' },
-    { id: 'pricing',   label: 'Pricing',    desc: 'Plans & pricing',        emoji: '💳' },
+    { id: 'mytests',   label: 'My Tests',   desc: 'Assigned tests & results',  emoji: '📋' },
+    { id: 'scriptlab', label: 'Script-Lab', desc: 'AI handwriting coach',      emoji: '✍️' },
+    { id: 'logicgen',  label: 'LogicGen',   desc: 'PYQ variable rebuilder',    emoji: '🔄' },
+    { id: 'features',  label: 'Features',   desc: 'All student features',      emoji: '✨' },
+    { id: 'pricing',   label: 'Pricing',    desc: 'Plans & pricing',           emoji: '💳' },
   ],
   teacher: [],
   admin: [

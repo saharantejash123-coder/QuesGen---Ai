@@ -13,9 +13,10 @@ import StaggerContainer from '../../components/animations/StaggerContainer';
 import HoverCard from '../../components/animations/HoverCard';
 import TextAnimator from '../../components/animations/TextAnimator';
 import NumberCounter from '../../components/animations/NumberCounter';
-import ParallaxSection from '../../components/animations/ParallaxSection';
 import { easings, staggerContainerVariants, staggerChildVariants } from '../../utils/animationConfig';
 import { useIsMobile } from '../../hooks/useIsMobile';
+import ModuleSwiper from '../../components/landing/ModuleSwiper';
+import ProfileCard from '../../components/landing/ProfileCard';
 
 function HomePage({ setPage }) {
   const isMobile = useIsMobile();
@@ -72,13 +73,6 @@ function HomePage({ setPage }) {
         width: '220px', height: '220px',
         background: 'radial-gradient(circle, rgba(35,84,244,.15), transparent 65%)',
         borderRadius: '50%', filter: 'blur(40px)', pointerEvents: 'none',
-      }} />
-
-      {/* Grid overlay */}
-      <div style={{
-        position: 'absolute', inset: 0, pointerEvents: 'none',
-        backgroundImage: 'linear-gradient(var(--nav-border) 1px,transparent 1px),linear-gradient(90deg,var(--nav-border) 1px,transparent 1px)',
-        backgroundSize: '40px 40px', opacity: 0.5,
       }} />
 
       {/* Content */}
@@ -229,14 +223,12 @@ function HomePage({ setPage }) {
       padding: "9rem 5% 5rem",
       position: "relative", overflow: "hidden",
     }}>
-      {/* Subtle grid background */}
-      <ParallaxSection speed={0.2} style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
-        <div style={{
-          backgroundImage: "linear-gradient(var(--nav-border) 1px,transparent 1px),linear-gradient(90deg,var(--nav-border) 1px,transparent 1px)",
-          backgroundSize: "56px 56px", width: "100%", height: "100%",
-        }} />
-      </ParallaxSection>
-
+      {/* Flashy drifting aurora */}
+      <div aria-hidden style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden" }}>
+        <div className="lp-aurora" style={{ position: "absolute", top: "-15%", right: "-8%", width: 700, height: 700, borderRadius: "50%", background: "radial-gradient(circle, rgba(35,84,244,0.16) 0%, transparent 68%)", filter: "blur(10px)" }} />
+        <div className="lp-aurora" style={{ position: "absolute", bottom: "-12%", left: "-8%", width: 540, height: 540, borderRadius: "50%", background: "radial-gradient(circle, rgba(124,58,237,0.14) 0%, transparent 68%)", filter: "blur(10px)", animationDelay: "-7s", animationDuration: "22s" }} />
+        <div className="lp-aurora" style={{ position: "absolute", top: "28%", left: "42%", width: 420, height: 420, borderRadius: "50%", background: "radial-gradient(circle, rgba(8,145,178,0.10) 0%, transparent 70%)", filter: "blur(12px)", animationDelay: "-12s", animationDuration: "26s" }} />
+      </div>
       {/* Two-column hero */}
       <div style={{ position: "relative", zIndex: 1, width: "100%", maxWidth: 1360, margin: "0 auto" }}>
         <div style={{
@@ -309,18 +301,17 @@ function HomePage({ setPage }) {
             <motion.div
               initial={{ opacity: 0 }} animate={{ opacity: 1 }}
               transition={{ delay: 0.9, duration: 0.6 }}
-              style={{
-                display: "flex", alignItems: "center", flexWrap: "wrap",
-                gap: "clamp(0.5rem,1vw,0.9rem)", marginTop: "2rem",
-                fontSize: "clamp(0.75rem,0.85vw,0.88rem)", color: "var(--text3)", fontWeight: 600,
-                letterSpacing: "0.5px",
-              }}
+              style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "0.6rem", marginTop: "2rem" }}
             >
               {["12,500+ Papers", "15 Years", "7+ Boards", "AI-Powered"].map((item, i) => (
-                <React.Fragment key={i}>
-                  <span>{item}</span>
-                  {i < 3 && <span style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--text3)", opacity: 0.4, display: "inline-block" }} />}
-                </React.Fragment>
+                <motion.span
+                  key={i}
+                  className="lp-glass"
+                  whileHover={{ y: -2 }}
+                  style={{ padding: "0.42rem 0.95rem", borderRadius: 100, fontSize: "clamp(0.72rem,0.8vw,0.82rem)", fontWeight: 700, color: "var(--text2)", letterSpacing: "0.2px" }}
+                >
+                  {item}
+                </motion.span>
               ))}
             </motion.div>
           </motion.div>
@@ -334,13 +325,24 @@ function HomePage({ setPage }) {
           >
             <div style={{
               position: "relative",
-              width: "min(320px,28vw)", height: "min(320px,28vw)",
+              width: "min(380px,32vw)", height: "min(380px,32vw)",
               display: "flex", alignItems: "center", justifyContent: "center",
             }}>
+              {/* radial glow */}
+              <div style={{ position: "absolute", inset: "-10%", borderRadius: "50%", background: "radial-gradient(circle, rgba(35,84,244,0.22) 0%, rgba(124,58,237,0.10) 45%, transparent 70%)", pointerEvents: "none" }} />
+              {/* rotating conic light-sweep ring */}
+              <div style={{ position: "absolute", inset: "-4%", borderRadius: "50%", background: "conic-gradient(from 0deg, transparent 0deg 210deg, rgba(35,84,244,0.5) 300deg, rgba(124,58,237,0.65) 345deg, transparent 360deg)", WebkitMask: "radial-gradient(circle, transparent 62%, #000 63%)", mask: "radial-gradient(circle, transparent 62%, #000 63%)", animation: "lp-orbit 14s linear infinite", pointerEvents: "none" }} />
+              {/* dashed counter-rotating ring */}
+              <div style={{ position: "absolute", inset: "5%", borderRadius: "50%", border: "1.5px dashed rgba(124,58,237,0.25)", animation: "lp-orbit-rev 32s linear infinite", pointerEvents: "none" }} />
+              {/* orbiting accent dot */}
+              <div style={{ position: "absolute", inset: "-4%", animation: "lp-orbit 9s linear infinite", pointerEvents: "none" }}>
+                <div style={{ position: "absolute", top: "-1.5%", left: "50%", transform: "translateX(-50%)", width: 14, height: 14, borderRadius: "50%", background: "linear-gradient(135deg,#2354F4,#7C3AED)", boxShadow: "0 0 18px rgba(35,84,244,0.9)" }} />
+              </div>
+              {/* floating logo */}
               <motion.div
                 animate={{ y: [-8, 8, -8] }}
                 transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
-                style={{ width: "100%", height: "100%" }}
+                style={{ width: "78%", height: "78%", position: "relative", zIndex: 1 }}
               >
                 <img
                   src="/logo.png"
@@ -350,6 +352,7 @@ function HomePage({ setPage }) {
                     objectFit: "contain",
                     userSelect: "none",
                     display: "block",
+                    filter: "drop-shadow(0 14px 34px rgba(35,84,244,0.35))",
                   }}
                 />
               </motion.div>
@@ -385,7 +388,9 @@ function HomePage({ setPage }) {
               <div style={{
                 fontFamily: "'Instrument Serif',serif",
                 fontSize: "clamp(1.4rem,3vw,2.4rem)",
-                color: "var(--text)", letterSpacing: "-1px", lineHeight: 1,
+                letterSpacing: "-1px", lineHeight: 1,
+                background: "linear-gradient(135deg, var(--text), #2354F4)",
+                WebkitBackgroundClip: "text", backgroundClip: "text", WebkitTextFillColor: "transparent",
               }}>
                 <NumberCounter value={parseInt(s.n)} suffix={s.n.includes('+') ? '+' : ''} duration={2.5} delay={i * 0.15} />
               </div>
@@ -883,7 +888,18 @@ function HomePage({ setPage }) {
       RENDER
   ════════════════════════════════════════════ */
   return (
-    <div className="page-enter">
+    <div className="page-enter" style={{ position: 'relative' }}>
+
+      {/* Full-page grid — big screens only, spans the entire landing page behind every section */}
+      {!isMobile && (
+        <div aria-hidden style={{
+          position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none',
+          backgroundImage: 'linear-gradient(var(--nav-border) 1px,transparent 1px),linear-gradient(90deg,var(--nav-border) 1px,transparent 1px)',
+          backgroundSize: '56px 56px',
+        }} />
+      )}
+
+      <div style={{ position: 'relative', zIndex: 1 }}>
 
       {/* Hero — completely different on mobile vs desktop */}
       {isMobile ? <MobileHero /> : <DesktopHero />}
@@ -929,13 +945,44 @@ function HomePage({ setPage }) {
             </motion.div>
           </ScrollReveal>
 
-          {isMobile ? <MobileModuleCarousel /> : <DesktopModuleGrid />}
+          <ModuleSwiper
+            items={modules.map((m, i) => ({
+              Icon: moduleIcons[i],
+              name: m.name,
+              desc: m.desc,
+              color: m.color,
+              badge: (m.name === 'Vault-15' || m.name === 'Script-Lab') ? 'NEW' : null,
+              onOpen: ['Vault-15', 'Exam Generator', 'LogicGen', 'Adaptive Testing', 'Script-Lab'].includes(m.name) ? handleModuleClick : null,
+            }))}
+          />
+        </div>
+      </section>
+
+      {/* Team — morphing profile cards */}
+      <section style={{ padding: isMobile ? '3.5rem 1.3rem' : 'clamp(5rem,7vw,8rem) 5%', background: 'transparent' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: 'clamp(2.5rem,3vw,3.5rem)' }}>
+            <span className="lp-eyebrow" style={{ marginBottom: '1rem' }}><span className="lp-dot" /> Our Team</span>
+            <h2 className="st">The minds behind <span className="text-gradient">QuesGen</span></h2>
+            <p className="ss" style={{ margin: '.8rem auto 0' }}>
+              A focused team of engineers, designers, and researchers — hover a card to meet them.
+            </p>
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 'clamp(1.5rem,3vw,2.5rem)' }}>
+            {[
+              { name: 'Tejash', about: 'Founder & Developer',    img: '/team.jpg' },
+              { name: 'Shiva',  about: 'Co-Founder & Developer', img: '/team.jpg' },
+            ].map((m) => (
+              <ProfileCard key={m.name} name={m.name} about={m.about} img={m.img} linkedin="#" github="#" />
+            ))}
+          </div>
         </div>
       </section>
 
       {/* CTA Section — completely different on mobile */}
       {isMobile ? <MobileCtaSection /> : <DesktopCtaSection />}
 
+      </div>
     </div>
   );
 }

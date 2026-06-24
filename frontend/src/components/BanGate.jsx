@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { getSession } from '../services/authService';
 import { syncBanFromBackend, getActiveBan } from '../services/adminService';
 
-const SKIP_PATHS = ['/login', '/register', '/banned', '/', '/classic', '/privacy', '/terms'];
+const SKIP_PATHS = ['/login', '/register', '/banned', '/', '/privacy', '/terms'];
 const POLL_INTERVAL_MS = 20000; // check backend every 20 seconds for instant cross-device enforcement
 
 export default function BanGate({ children }) {

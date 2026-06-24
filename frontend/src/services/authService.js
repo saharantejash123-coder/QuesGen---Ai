@@ -1,5 +1,6 @@
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? '';
 import { logRegistration } from './adminService';
+import { generateUID } from './schoolService';
 
 // ─── Demo accounts — always available, no server needed ───────────────────────
 const DEMO_USERS = [
@@ -9,32 +10,75 @@ const DEMO_USERS = [
   { id: 'school_demo',  email: 'school@questra.com',  password: 'school123',         role: 'school',  firstName: 'Demo', lastName: 'School'  },
 ];
 
+// ─── Per-UID account store ────────────────────────────────────────────────────
+// Every account's full record is also stored individually under its UID, so an
+// account can be looked up / persisted on its own (`questra_account_<uid>`),
+// alongside the `questra_registered` index used elsewhere in the app.
+const ACCOUNT_PREFIX = 'questra_account_';
+
+function saveAccountByUid(user) {
+  if (!user || !user.uid) return;
+  try { localStorage.setItem(ACCOUNT_PREFIX + user.uid, JSON.stringify(user)); }
+  catch { /* storage full / unavailable — index still holds the record */ }
+}
+
+export function getAccountByUid(uid) {
+  if (!uid) return null;
+  try { return JSON.parse(localStorage.getItem(ACCOUNT_PREFIX + uid)); }
+  catch { return null; }
+}
+
 // ─── Local registered accounts (localStorage) ─────────────────────────────────
 function getRegistered() {
   try { return JSON.parse(localStorage.getItem('questra_registered') || '[]'); }
   catch { return []; }
 }
+// Writing the index also mirrors each record into its own per-UID slot so the
+// two stores never drift apart.
 function saveRegistered(users) {
   localStorage.setItem('questra_registered', JSON.stringify(users));
+  users.forEach(saveAccountByUid);
+}
+
+// One-time reconciliation: give every legacy account a UID and mirror it into
+// the per-UID store. Idempotent — accounts that already have a UID are untouched.
+function migrateAccountsToUidStore() {
+  try {
+    const registered = getRegistered();
+    if (registered.length === 0) return;
+    let changed = false;
+    const updated = registered.map((u) => {
+      if (u.uid) { saveAccountByUid(u); return u; }
+      changed = true;
+      const withUid = { ...u, uid: generateUID() };
+      saveAccountByUid(withUid);
+      return withUid;
+    });
+    if (changed) localStorage.setItem('questra_registered', JSON.stringify(updated));
+  } catch { /* best-effort */ }
 }
 
 // ─── OTP helpers ──────────────────────────────────────────────────────────────
-// Returns { sent: bool, demoOtp: string|null }
-// sent=true  → real email was dispatched, demoOtp is null
-// sent=false → SMTP not configured, demoOtp holds the code to display
+// Dispatches a real OTP email via the backend. Throws if the email could not be
+// sent — there is no demo-code fallback, the code only ever arrives by email.
 export async function sendOTP(email) {
   const backend = BACKEND_URL;
-  const res = await fetch(`${backend}/api/auth/send-otp`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: email.trim().toLowerCase() }),
-    signal: AbortSignal.timeout(30000), // 30s — Render cold starts can take ~20s
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'Failed to send OTP');
-  if (data.data?.sent) return { sent: true, demoOtp: null };
-  // Backend reachable but Brevo not configured on server
-  return { sent: false, demoOtp: data.data?.demoOtp || null };
+  let res;
+  try {
+    res = await fetch(`${backend}/api/auth/send-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email.trim().toLowerCase() }),
+      signal: AbortSignal.timeout(30000), // 30s — Render cold starts can take ~20s
+    });
+  } catch {
+    throw new Error('Could not reach the email server. Check your connection and try again.');
+  }
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.data?.sent) {
+    throw new Error(data.error || data.message || 'Could not send the OTP email. Please try again.');
+  }
+  return { sent: true };
 }
 
 export async function verifyOTP(email, enteredOtp) {
@@ -75,8 +119,11 @@ export async function login(email, password) {
   const demo = DEMO_USERS.find((u) => u.email === lEmail);
   if (demo) {
     if (demo.password !== password) throw new Error('Incorrect password.');
-    const { password: _, ...user } = demo;
-    // Check localStorage ban (synchronous, works same-browser)
+    const { password: _, ...demoBase } = demo;
+    // Pick up any enrichment saved by initializeDemoAccounts (uid, schoolName, etc.)
+    const registered = getRegistered();
+    const enriched = registered.find(u => u.email === lEmail);
+    const user = enriched ? { ...demoBase, ...(({ password: __, ...rest }) => rest)(enriched) } : demoBase;
     const localBan = getLocalBan(lEmail);
     if (localBan) return { ...user, _banned: true, _banReason: localBan.reason || '' };
     return user;
@@ -156,59 +203,35 @@ function persistBanLocal(email, banResult) {
 }
 
 // ─── Google Login with JWT Token ──────────────────────────────────────────────
+// Google is a LOGIN method only — it never creates accounts. The email must
+// already exist in the local register (created via the registration form) or be
+// a demo account. Unknown Google emails are rejected and told to register first.
 export async function loginWithGoogleToken(googleToken) {
-  await new Promise((r) => setTimeout(r, 700));
+  await new Promise((r) => setTimeout(r, 500));
   if (!googleToken) throw new Error('Google token is required');
 
-  try {
-    const backend = BACKEND_URL;
-    const res = await fetch(`${backend}/api/auth/google-verify`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ idToken: googleToken }),
-      signal: AbortSignal.timeout(5000),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      const userData = data.data || data.user || data;
-      if (userData.user || userData.email) {
-        const user = userData.user || userData;
-        return { ...user, role: (user.role || 'student').toLowerCase(), loginMethod: 'google' };
-      }
-    }
-    if (res.status === 403) {
-      const bd = await res.json();
-      if (bd.banned) {
-        const email = bd.email || decodeJWT(googleToken)?.email?.toLowerCase() || '';
-        persistBanLocal(email, bd);
-        return { email, role: 'student', firstName: email.split('@')[0], lastName: '', loginMethod: 'google', _banned: true, _banReason: bd.reason || '' };
-      }
-    }
-  } catch (err) {
-    console.warn('Backend Google verify failed, using local decode:', err);
-  }
-
-  // Fallback: decode JWT locally
   const decoded = decodeJWT(googleToken);
-  if (decoded && decoded.email) {
-    const registered = getRegistered();
-    const found = registered.find((u) => u.email === decoded.email.toLowerCase());
-    if (found) {
-      const { password: _, ...user } = found;
-      return { ...user, loginMethod: 'google' };
-    }
-    // Google sign-ins create an account automatically (Google already verified identity)
-    return {
-      id: 'google_' + Date.now(),
-      email: decoded.email.toLowerCase(),
-      firstName: decoded.given_name || decoded.email.split('@')[0],
-      lastName: decoded.family_name || '',
-      role: 'student',
-      loginMethod: 'google',
-    };
+  const email = (decoded?.email || '').toLowerCase();
+  if (!email) throw new Error('Could not read your Google account email. Please try again.');
+
+  // Banned emails are blocked regardless of how they sign in
+  const localBan = getLocalBan(email);
+
+  // Gate: only emails registered through the form (or demo accounts) may sign in
+  const registered = getRegistered();
+  const found = registered.find((u) => u.email === email);
+  const demo = DEMO_USERS.find((u) => u.email === email);
+
+  if (!found && !demo) {
+    throw new Error('No QuesGen account is registered with this Google email. Please create an account first.');
   }
 
-  throw new Error('Unable to authenticate with Google. Please try again.');
+  const source = found || demo;
+  const { password: _omit, ...base } = source;
+  const user = ensureUID({ ...base, role: (base.role || 'student').toLowerCase(), loginMethod: 'google' });
+
+  if (localBan) return { ...user, _banned: true, _banReason: localBan.reason || '' };
+  return user;
 }
 
 // ─── JWT Decoder ──────────────────────────────────────────────────────────────
@@ -224,7 +247,7 @@ function decodeJWT(token) {
 }
 
 // ─── Register (saves locally + tries backend) ─────────────────────────────────
-export async function register({ email, password, firstName, lastName, role = 'student', schoolName, phone, subject, registrationNumber }) {
+export async function register({ email, password, firstName, lastName, role = 'student', schoolName, phone, subject, registrationNumber, className }) {
   await new Promise((r) => setTimeout(r, 700));
 
   const lEmail = email.trim().toLowerCase();
@@ -240,6 +263,7 @@ export async function register({ email, password, firstName, lastName, role = 's
 
   const user = {
     id: 'user_' + Date.now(),
+    uid: generateUID(),
     email: lEmail,
     password,
     firstName,
@@ -249,6 +273,7 @@ export async function register({ email, password, firstName, lastName, role = 's
     phone: phone || '',
     subject: subject || '',
     registrationNumber: registrationNumber || '',
+    className: className || '',
     createdAt: new Date().toISOString(),
   };
 
@@ -271,18 +296,117 @@ export async function register({ email, password, firstName, lastName, role = 's
   return publicUser;
 }
 
+// ─── UID backfill ─────────────────────────────────────────────────────────────
+// Guarantees every session has a stable 10-digit UID. Older accounts (created
+// before the UID feature) and demo / Google logins arrive without one, so we
+// generate it here and persist it to questra_registered so it stays put and
+// schools can look the user up by UID.
+export function ensureUID(user) {
+  if (!user || user.uid) return user;
+  const uid = generateUID();
+  try {
+    const registered = getRegistered();
+    const email = (user.email || '').toLowerCase();
+    const idx = registered.findIndex((u) => (u.email || '').toLowerCase() === email);
+    if (idx >= 0) {
+      registered[idx] = { ...registered[idx], uid };
+      saveRegistered(registered);
+    } else if (email) {
+      // Demo / Google account not in the registered list yet — add a light record
+      registered.push({
+        id: user.id || 'user_' + Date.now(), email, uid,
+        role: user.role || 'student', firstName: user.firstName || '', lastName: user.lastName || '',
+      });
+      saveRegistered(registered);
+    }
+  } catch { /* ignore — still return the uid below */ }
+  return { ...user, uid };
+}
+
 // ─── Session helpers ──────────────────────────────────────────────────────────
 export function saveSession(user) {
-  localStorage.setItem('questra_user', JSON.stringify(user));
-  localStorage.setItem('questra_token', 'local_session_' + user.id);
+  const u = ensureUID(user);
+  localStorage.setItem('questra_user', JSON.stringify(u));
+  localStorage.setItem('questra_token', 'local_session_' + u.id);
 }
 
 export function getSession() {
-  try { return JSON.parse(localStorage.getItem('questra_user')); }
-  catch { return null; }
+  try {
+    const u = JSON.parse(localStorage.getItem('questra_user'));
+    if (u && !u.uid) {
+      const fixed = ensureUID(u);
+      localStorage.setItem('questra_user', JSON.stringify(fixed));
+      return fixed;
+    }
+    return u;
+  } catch { return null; }
 }
 
 export function clearSession() {
   localStorage.removeItem('questra_user');
   localStorage.removeItem('questra_token');
 }
+
+// ─── Forgot / reset password ──────────────────────────────────────────────────
+// 'demo' | true | false
+export function accountExists(email) {
+  const lEmail = (email || '').trim().toLowerCase();
+  if (!lEmail) return false;
+  if (DEMO_USERS.some((u) => u.email === lEmail)) return 'demo';
+  return getRegistered().some((u) => u.email === lEmail);
+}
+
+/**
+ * Step 1 of reset: confirm the account exists and email a real OTP.
+ * Throws if the account is unknown or the email could not be sent — no demo code.
+ */
+export async function requestPasswordResetOTP(email) {
+  const lEmail = (email || '').trim().toLowerCase();
+  const exists = accountExists(lEmail);
+  if (exists === 'demo') throw new Error('Demo accounts use a fixed password and cannot be reset.');
+  if (!exists) throw new Error('No account found with this email. Please check the address or register.');
+
+  await sendOTP(lEmail); // sends a real email or throws
+  return { sent: true };
+}
+
+/** Step 2 of reset: verify the emailed OTP (backend) and set the new password. */
+export async function confirmPasswordResetOTP(email, enteredOtp, newPassword) {
+  const lEmail = (email || '').trim().toLowerCase();
+  if (!newPassword || newPassword.length < 6) throw new Error('Password must be at least 6 characters.');
+
+  await verifyOTP(lEmail, enteredOtp); // throws on mismatch / expiry
+  await resetPassword(lEmail, newPassword);
+  return true;
+}
+
+/** Persist a new password for an account (index + per-UID store + best-effort backend). */
+export async function resetPassword(email, newPassword) {
+  await new Promise((r) => setTimeout(r, 300));
+  const lEmail = (email || '').trim().toLowerCase();
+  if (!newPassword || newPassword.length < 6) throw new Error('Password must be at least 6 characters.');
+  if (DEMO_USERS.some((u) => u.email === lEmail)) throw new Error('Demo accounts use a fixed password and cannot be reset.');
+
+  const registered = getRegistered();
+  const idx = registered.findIndex((u) => u.email === lEmail);
+  if (idx < 0) throw new Error('No account found with this email.');
+
+  registered[idx] = { ...registered[idx], password: newPassword };
+  saveRegistered(registered); // also mirrors into the per-UID store
+
+  try {
+    if (BACKEND_URL) {
+      await fetch(`${BACKEND_URL}/api/auth/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: lEmail, password: newPassword }),
+        signal: AbortSignal.timeout(3000),
+      });
+    }
+  } catch { /* backend offline — local update is the source of truth */ }
+
+  return true;
+}
+
+// Reconcile legacy accounts into the per-UID store on load.
+migrateAccountsToUidStore();

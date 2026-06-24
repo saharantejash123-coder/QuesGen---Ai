@@ -24,8 +24,18 @@ function getBlueprint(subject) {
 }
 
 // ─── Main export ──────────────────────────────────────────────────────────────
-export const generatePaperAsync = async (board, cls, subject) => {
-  const blueprint = getBlueprint(subject);
+export const generatePaperAsync = async (board, cls, subject, options = {}) => {
+  const base = getBlueprint(subject);
+
+  // Teacher overrides: custom question count → single all-MCQ section
+  const blueprint = { ...base };
+  const nq = options.numQuestions ? parseInt(options.numQuestions, 10) : 0;
+  const tm = options.timeMinutes  ? parseInt(options.timeMinutes, 10)  : 0;
+  if (nq > 0) {
+    blueprint.sections  = [{ id: 'A', name: 'Section A: Multiple Choice Questions', marksPerQuestion: 1, count: nq, type: 'MCQ' }];
+    blueprint.totalMarks = nq;
+  }
+  if (tm > 0) blueprint.timeMinutes = tm;
 
   if (!GEMINI_API_KEY) {
     throw new Error('No API key found. Please set VITE_GEMINI_API_KEY in your .env file.');

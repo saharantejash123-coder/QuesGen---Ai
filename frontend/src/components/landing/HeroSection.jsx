@@ -42,27 +42,37 @@ export default function HeroSection() {
         position: 'relative',
       }}
     >
-      {/* ── Soft background glows ── */}
+      {/* ── Drifting aurora background ── */}
       <div aria-hidden style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
-        <div style={{
-          position: 'absolute', top: '-5%', right: '-6%',
-          width: 660, height: 660, borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(35,84,244,0.09) 0%, transparent 70%)',
+        <div className="lp-aurora" style={{
+          position: 'absolute', top: '-12%', right: '-8%',
+          width: 720, height: 720, borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(35,84,244,0.16) 0%, transparent 68%)',
+          filter: 'blur(8px)',
         }} />
-        <div style={{
-          position: 'absolute', bottom: '8%', left: '-6%',
-          width: 440, height: 440, borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(124,58,237,0.07) 0%, transparent 70%)',
+        <div className="lp-aurora" style={{
+          position: 'absolute', bottom: '-6%', left: '-8%',
+          width: 520, height: 520, borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(124,58,237,0.14) 0%, transparent 68%)',
+          filter: 'blur(8px)', animationDelay: '-6s', animationDuration: '22s',
         }} />
-        {/* dot grid */}
+        <div className="lp-aurora" style={{
+          position: 'absolute', top: '30%', left: '40%',
+          width: 420, height: 420, borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(14,165,233,0.10) 0%, transparent 70%)',
+          filter: 'blur(10px)', animationDelay: '-11s', animationDuration: '26s',
+        }} />
+        {/* fine dot grid */}
         <div style={{
           position: 'absolute', inset: 0,
-          backgroundImage: 'radial-gradient(circle, rgba(35,84,244,0.045) 1px, transparent 1px)',
-          backgroundSize: '36px 36px',
+          backgroundImage: 'radial-gradient(circle, rgba(35,84,244,0.05) 1px, transparent 1px)',
+          backgroundSize: '34px 34px',
+          maskImage: 'radial-gradient(ellipse 80% 70% at 50% 40%, #000 30%, transparent 100%)',
+          WebkitMaskImage: 'radial-gradient(ellipse 80% 70% at 50% 40%, #000 30%, transparent 100%)',
         }} />
       </div>
 
-      <div style={{ maxWidth: 1360, margin: '0 auto', padding: '4rem 2rem 5rem', width: '100%' }}>
+      <div style={{ maxWidth: 1360, margin: '0 auto', padding: 'clamp(2.5rem,5vw,4rem) clamp(1.1rem,4vw,2rem) clamp(3rem,6vw,5rem)', width: '100%' }}>
         <div className="hero-layout">
 
           {/* ════════════════════════════════
@@ -76,14 +86,23 @@ export default function HeroSection() {
           >
             {/* Badge pill — mirrors Verdora's "Farmers' To Fresh Picks, Secure Delivered" */}
             <motion.div variants={item}>
-              <span style={{
-                display: 'inline-flex', alignItems: 'center', gap: '0.45rem',
-                padding: '0.42rem 1.1rem', borderRadius: 100,
-                background: 'rgba(35,84,244,0.08)',
-                border: '1px solid rgba(35,84,244,0.2)',
+              <span className="lp-glass" style={{
+                display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
+                padding: '0.45rem 1.1rem 0.45rem 0.85rem', borderRadius: 100,
+                border: '1px solid rgba(35,84,244,0.22)',
                 fontSize: '0.82rem', fontWeight: 600, color: '#2354F4',
                 marginBottom: '1.5rem',
+                boxShadow: '0 6px 20px rgba(35,84,244,0.12)',
               }}>
+                {/* live pulse dot */}
+                <span style={{ position: 'relative', display: 'flex', width: 8, height: 8 }}>
+                  <motion.span
+                    animate={reduce ? {} : { scale: [1, 2.2], opacity: [0.6, 0] }}
+                    transition={{ duration: 1.8, repeat: Infinity, ease: 'easeOut' }}
+                    style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: '#2354F4' }}
+                  />
+                  <span style={{ position: 'relative', width: 8, height: 8, borderRadius: '50%', background: '#2354F4' }} />
+                </span>
                 <motion.span
                   animate={reduce ? {} : { rotate: [0, 15, -15, 0] }}
                   transition={{ duration: 3.2, repeat: Infinity }}
@@ -98,16 +117,17 @@ export default function HeroSection() {
             {/* ── Headline ── */}
             <motion.h1 variants={item} style={{
               fontFamily: "'DM Sans', sans-serif",
-              fontSize: 'clamp(2.8rem, 5.5vw, 5rem)',
+              fontSize: 'clamp(2.15rem, 6vw, 5rem)',
               fontWeight: 900,
-              lineHeight: 1.03,
+              lineHeight: 1.04,
               letterSpacing: '-0.04em',
               color: 'var(--text)',
               marginBottom: '1.35rem',
+              overflowWrap: 'break-word',
             }}>
               Smart Questions,
               <br />
-              <span className="text-gradient">
+              <span className="lp-shine">
                 Direct from AI.
               </span>
             </motion.h1>
@@ -212,6 +232,41 @@ export default function HeroSection() {
                 )
               ))}
             </motion.div>
+
+            {/* ── Social proof — avatar stack + rating ── */}
+            <motion.div variants={item} style={{
+              display: 'flex', alignItems: 'center', gap: '0.85rem',
+              marginTop: '1.8rem', flexWrap: 'wrap',
+            }}>
+              <div style={{ display: 'flex' }}>
+                {[
+                  ['#2354F4', '#4a6fff', 'AS'],
+                  ['#7C3AED', '#a855f7', 'RK'],
+                  ['#059669', '#34d399', 'PM'],
+                  ['#D97706', '#f59e0b', 'SN'],
+                ].map(([c1, c2, ini], i) => (
+                  <div key={i} style={{
+                    width: 36, height: 36, borderRadius: '50%',
+                    background: `linear-gradient(135deg, ${c1}, ${c2})`,
+                    border: '2px solid var(--bg)',
+                    marginLeft: i === 0 ? 0 : -12,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '0.62rem', fontWeight: 800, color: '#fff',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
+                  }}>{ini}</div>
+                ))}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <div style={{ display: 'flex', gap: 1, color: '#F59E0B' }}>
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <svg key={i} width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14l-5-4.87 6.91-1.01L12 2z"/></svg>
+                  ))}
+                </div>
+                <span style={{ fontSize: '0.78rem', color: 'var(--text2)', fontWeight: 500 }}>
+                  Loved by <strong style={{ color: 'var(--text)' }}>2,50,000+</strong> students & teachers
+                </span>
+              </div>
+            </motion.div>
           </motion.div>
 
           {/* ════════════════════════════════
@@ -235,9 +290,41 @@ export default function HeroSection() {
               <div style={{
                 position: 'absolute', inset: '-12%',
                 borderRadius: '50%',
-                background: 'radial-gradient(circle, rgba(35,84,244,0.18) 0%, transparent 70%)',
+                background: 'radial-gradient(circle, rgba(35,84,244,0.20) 0%, transparent 70%)',
                 pointerEvents: 'none',
               }} />
+
+              {/* Rotating conic light sweep ring */}
+              <div style={{
+                position: 'absolute', inset: '-7%', borderRadius: '50%',
+                background: 'conic-gradient(from 0deg, transparent 0deg 210deg, rgba(35,84,244,0.45) 300deg, rgba(124,58,237,0.6) 345deg, transparent 360deg)',
+                WebkitMask: 'radial-gradient(circle, transparent 59%, #000 60%)',
+                mask: 'radial-gradient(circle, transparent 59%, #000 60%)',
+                animation: reduce ? 'none' : 'lp-orbit 14s linear infinite',
+                pointerEvents: 'none',
+              }} />
+
+              {/* Dashed counter-rotating ring */}
+              <div style={{
+                position: 'absolute', inset: '1%', borderRadius: '50%',
+                border: '1.5px dashed rgba(124,58,237,0.22)',
+                animation: reduce ? 'none' : 'lp-orbit-rev 32s linear infinite',
+                pointerEvents: 'none',
+              }} />
+
+              {/* Orbiting accent dot */}
+              <div style={{
+                position: 'absolute', inset: '-7%',
+                animation: reduce ? 'none' : 'lp-orbit 9s linear infinite',
+                pointerEvents: 'none',
+              }}>
+                <div style={{
+                  position: 'absolute', top: '-1.5%', left: '50%', transform: 'translateX(-50%)',
+                  width: 13, height: 13, borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #2354F4, #7C3AED)',
+                  boxShadow: '0 0 16px rgba(35,84,244,0.85)',
+                }} />
+              </div>
 
               {/* Circular logo — solid blue, Verdora-style */}
               <motion.div
@@ -284,14 +371,15 @@ export default function HeroSection() {
         .hero-layout {
           display: grid;
           grid-template-columns: 1fr 1fr;
-          gap: 4rem;
+          gap: clamp(2rem, 4vw, 4rem);
           align-items: center;
         }
-        .hero-text { text-align: left; }
+        .hero-text { text-align: left; min-width: 0; }
         .hero-image {
           display: flex;
           align-items: center;
           justify-content: center;
+          min-width: 0;
         }
         @media (min-width: 1280px) {
           .hero-layout {
@@ -309,7 +397,7 @@ export default function HeroSection() {
         }
         @media (max-width: 540px) {
           .hero-layout { gap: 1.8rem !important; }
-          .hero-image { max-width: 300px !important; }
+          .hero-image { max-width: 260px !important; }
         }
       `}</style>
     </section>

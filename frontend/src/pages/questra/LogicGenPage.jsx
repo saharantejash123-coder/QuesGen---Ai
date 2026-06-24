@@ -7,8 +7,10 @@ import AnimatedGrid, { AnimatedListItem } from '../../components/animations/Anim
 import LoadingSpinner from '../../components/animations/LoadingSpinner';
 import FAQItem from '../../components/questra/FAQItem';
 import { easings } from '../../utils/animationConfig';
+import { useRequireAuth } from '../../hooks/useRequireAuth';
 
 function LogicGenPage(){
+  const requireLogin = useRequireAuth();
   const [cls,setCls]=useState("Class 10 — CBSE");
   const [chapter,setChapter]=useState("light");
   const [diff,setDiff]=useState("medium");
@@ -51,6 +53,7 @@ function LogicGenPage(){
     humanEye:`Exam Generator: ${ri(65,85)}% probability. Defects of vision and scattering of light are combined in ${ri(10,13)} of the last 15 papers.`,
   };
   const generate=()=>{
+    if (!requireLogin('LogicGen')) return;
     setLoading(true);setQuestions([]);setPrediction(null);
     setTimeout(()=>{
       setQuestions(qBank[chapter].map((fn,i)=>({id:i,text:fn(),highlight:i===2})));

@@ -6,12 +6,13 @@ import {
 } from 'lucide-react';
 import { generateAdaptiveQuestionsWithLLM } from '../../services/llmService';
 import { GEMINI_API_KEY } from '../../data/oracleData';
+import { CLASS_OPTIONS, STREAMS, hasStream, subjectsFor } from '../../data/academics';
+import { useRequireAuth } from '../../hooks/useRequireAuth';
 
 
 /* ── CONFIG ── */
 const boards   = ['CBSE','RBSE','ICSE','UP Board','Maharashtra','Bihar','MP Board','Karnataka'];
-const allClasses = ['Class 9','Class 10','Class 11','Class 12'];
-const subjects = ['Physics','Chemistry','Mathematics','Biology','English','Hindi','Social Science'];
+const allClasses = CLASS_OPTIONS;  // Class 10 & Class 12 only
 const chaptersMap = {
   English:         ['Tenses','Vocabulary','Literature','Grammar','Comprehension'],
   Mathematics:     ['Algebra','Geometry','Trigonometry','Statistics','Number Systems','Coordinate Geometry'],
@@ -120,10 +121,15 @@ const saveData = (key, val) => {
    MAIN COMPONENT
 ══════════════════════════════════════════════════════════════ */
 const AdaptiveTesting = () => {
+  const requireLogin = useRequireAuth();
   const [board, setBoard]   = useState('CBSE');
   const [cls, setCls]       = useState('Class 10');
-  const [subj, setSubj]     = useState('Physics');
+  const [stream, setStream] = useState('Science');
+  const [subj, setSubj]     = useState('Science');
   const [chapter, setChapter] = useState('All Chapters');
+
+  const changeClass = (v) => { setCls(v); const opts = subjectsFor(v, stream); if (!opts.includes(subj)) { setSubj(opts[0]); setChapter('All Chapters'); } };
+  const changeStream = (v) => { setStream(v); const opts = subjectsFor(cls, v); if (!opts.includes(subj)) { setSubj(opts[0]); setChapter('All Chapters'); } };
   const [numQuestions, setNumQuestions] = useState(10);
   const [timeLimit, setTimeLimit]       = useState(10);
 
@@ -164,6 +170,7 @@ const AdaptiveTesting = () => {
      GENERATE TEST via Gemini API
   ───────────────────────────────────────────────── */
   const generateTest = useCallback(async () => {
+    if (!requireLogin('Adaptive Testing')) return;
     setError('');
     setPhase('loading');
     setLoadStage(0);
@@ -205,7 +212,7 @@ const AdaptiveTesting = () => {
       setError(e.message || 'Failed to generate test. Please try again.');
       setPhase('setup');
     }
-  }, [board, cls, subj, chapter, numQuestions, timeLimit, weakAreas]);
+  }, [board, cls, subj, chapter, numQuestions, timeLimit, weakAreas, requireLogin]);
 
   /* ─────────────────────────────────────────────────
      LOAD MORE questions on the same topic (mid-test)
@@ -323,8 +330,9 @@ const AdaptiveTesting = () => {
             <div className="r2" style={{ gap:'1rem',marginBottom:'1.5rem' }}>
               {[
                 { l:'Board',        v:board,        fn:setBoard,                       opts:boards },
-                { l:'Class',        v:cls,          fn:setCls,                         opts:allClasses },
-                { l:'Subject',      v:subj,         fn:v=>{ setSubj(v); setChapter('All Chapters'); }, opts:subjects },
+                { l:'Class',        v:cls,          fn:changeClass,                    opts:allClasses },
+                ...(hasStream(cls) ? [{ l:'Stream', v:stream, fn:changeStream, opts:STREAMS }] : []),
+                { l:'Subject',      v:subj,         fn:v=>{ setSubj(v); setChapter('All Chapters'); }, opts:subjectsFor(cls,stream) },
                 { l:'Chapter',      v:chapter,      fn:setChapter,                     opts:['All Chapters',...(chaptersMap[subj]||[])] },
                 { l:'Questions',    v:numQuestions, fn:v=>setNumQuestions(Number(v)),  opts:[5,10,15,20] },
                 { l:'Time (min)',   v:timeLimit,    fn:v=>setTimeLimit(Number(v)),     opts:[5,10,15,20,30,60] },

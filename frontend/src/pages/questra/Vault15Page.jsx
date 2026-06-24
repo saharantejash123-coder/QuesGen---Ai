@@ -5,19 +5,71 @@ import ScrollReveal from '../../components/animations/ScrollReveal';
 import AnimatedGrid, { AnimatedListItem } from '../../components/animations/AnimatedGrid';
 import StaggerContainer from '../../components/animations/StaggerContainer';
 import { staggerContainerVariants, staggerChildVariants, easings } from '../../utils/animationConfig';
+import { useRequireAuth } from '../../hooks/useRequireAuth';
 
 
 
 
 
-/* ── mock paper catalogue (2010-2025) ── */
-const boards = ["CBSE","RBSE","ICSE","UP Board","Maharashtra","Bihar","MP Board","Karnataka"];
-const classes = ["Class 9","Class 10","Class 11","Class 12"];
-const subjects = ["Physics","Chemistry","Mathematics","Biology","English","Hindi","Social Science"];
-const years = Array.from({length:16},(_,i)=>2025-i);  // 2025 down to 2010
+/* ── paper catalogue — CBSE & RBSE, last 5 years ── */
+const boards = ["CBSE","RBSE"];
+
+/* ── ACTUAL previous-year question papers — both from official government sites ──
+   CBSE → cbse.gov.in board papers portal. RBSE → rajeduboard.rajasthan.gov.in PDFs. */
+const BOARD_SOURCES = {
+  "CBSE": { url: "https://www.cbse.gov.in/cbsenew/question-paper.html", label: "CBSE — Official Board Previous Year Papers" },
+  "RBSE": { url: "https://rajeduboard.rajasthan.gov.in/books/index.htm", label: "RBSE — Official Board Old Question Papers" },
+};
+
+/* RBSE — direct official government PDFs (rajeduboard.rajasthan.gov.in).
+   Subject file codes verified from each year's official index. Codes are stable
+   2022–2025; 2021 Class 10 uses suffixed names; 2023 Class 12 Maths is SS-15-DD. */
+const RBSE_SEC = { "Science": "S-07", "Mathematics": "S-09", "Social Science": "S-08", "English": "S-02", "Hindi": "S-01" };
+const RBSE_SEC_2021 = { "Science": "S-07-Science", "Mathematics": "S-09-Mathematics", "Social Science": "S-08-Social-Science", "English": "S-02-English", "Hindi": "S-01-Hindi" };
+const RBSE_SRS = { "Physics": "SS-40", "Chemistry": "SS-41", "Biology": "SS-42", "Mathematics": "SS-15", "English": "SS-02", "Hindi": "SS-01" };
+
+function rbseGovPdf(cls, subj, year) {
+  const root = `https://rajeduboard.rajasthan.gov.in/books/PAPERS-${year}`;
+  if (cls === "Class 10") {
+    const map = year === 2021 ? RBSE_SEC_2021 : RBSE_SEC;
+    if (map[subj]) return `${root}/Sec/${map[subj]}.pdf`;
+  } else if (cls === "Class 12") {
+    if (subj === "Mathematics" && year === 2023) return `${root}/SRS/SS-15-DD.pdf`;
+    if (RBSE_SRS[subj]) return `${root}/SRS/${RBSE_SRS[subj]}.pdf`;
+  }
+  return `${root}/index.htm`; // Class 9/11 or any gap → official year index (always loads)
+}
+
+/* Class 9 & 11 are NOT board-exam classes — no official papers exist (schools set their own).
+   These verified archives host real compiled papers so students still get something to practise. */
+const CLASS_9_11 = {
+  "CBSE": { "Class 9": "https://www.studiestoday.com/question-papers/9/class-ix.html",
+            "Class 11": "https://www.cbseboardonline.com/cbse-class-11.html" },
+  "RBSE": { "Class 9": "https://rbse.solutions/rbse-question-paper-class-9/",
+            "Class 11": "https://rbse.solutions/rbse-question-paper-class-11/" },
+};
+
+/* Resolve the actual-paper link for a selection. */
+function paperLink(board, cls, subj, year) {
+  if (cls === "Class 9" || cls === "Class 11") return CLASS_9_11[board]?.[cls] || BOARD_SOURCES[board]?.url;
+  if (board === "RBSE") return rbseGovPdf(cls, subj, year);
+  return BOARD_SOURCES[board]?.url; // CBSE → official cbse.gov.in papers portal
+}
+
+/* Labels for the modal banner + button, per source type. */
+function sourceMeta(board, cls) {
+  if (cls === "Class 9" || cls === "Class 11")
+    return { icon: "📝", heading: "Question Papers (school-level)", note: "Class 9 & 11 are not board exams — opens real compiled papers", btn: "🔗 Open Papers" };
+  if (board === "RBSE")
+    return { icon: "🏛️", heading: "Official Govt Question Paper", note: "rajeduboard.rajasthan.gov.in", btn: "📥 Open Official Govt Paper" };
+  return { icon: "🏛️", heading: "Official CBSE Question Papers", note: "cbse.gov.in — pick year, class & subject", btn: "🏛️ Open Official CBSE Papers" };
+}
+const classes = CLASS_OPTIONS;  // Class 10 & Class 12 only
+const years = Array.from({length:5},(_,i)=>2025-i);  // 2025 down to 2021 (last 5 years)
 
 import { englishPYQ2025 } from '../../data/pyq/english-10-2025';
 import { englishRBSCPYQ2025 } from '../../data/pyq/english-10-rbse-2025';
+import { CLASS_OPTIONS, STREAMS, hasStream, subjectsFor, defaultSubject } from '../../data/academics';
 
 const generatePapers = (board,cls,subj) => {
   if (board === "CBSE" && cls === "Class 10" && subj === "English") {
@@ -98,14 +150,32 @@ const generatePapers = (board,cls,subj) => {
 function Vault15Page(){
   const [board,setBoard]=useState("CBSE");
   const [cls,setCls]=useState("Class 10");
-  const [subj,setSubj]=useState("Physics");
+  const [stream,setStream]=useState("Science");
+  const [subj,setSubj]=useState("Science");
   const [searched,setSearched]=useState(false);
   const [loading,setLoading]=useState(false);
   const [papers,setPapers]=useState([]);
   const [viewPaper,setViewPaper]=useState(null);
   const [activeSet,setActiveSet]=useState("Set 1");
+  const requireLogin = useRequireAuth();
+
+  /* Class 10 = no stream (common subjects); Class 12 = subjects by stream. */
+  const subjOpts = subjectsFor(cls, stream);
+
+  /* Keep the subject valid whenever the class or stream changes. */
+  const changeClass = (c) => {
+    setCls(c);
+    const opts = subjectsFor(c, stream);
+    if (!opts.includes(subj)) setSubj(opts[0]);
+  };
+  const changeStream = (s) => {
+    setStream(s);
+    const opts = subjectsFor(cls, s);
+    if (!opts.includes(subj)) setSubj(opts[0]);
+  };
 
   const search=()=>{
+    if (!requireLogin('Vault-15')) return;
     setLoading(true);setSearched(false);setPapers([]);
     setTimeout(()=>{
       setPapers(generatePapers(board,cls,subj));
@@ -123,16 +193,16 @@ function Vault15Page(){
         <div className="g2" style={{gap:"3rem",alignItems:"flex-start"}}>
           <ScrollReveal>
             <div>
-              <h1 className="st">15 years of real<br/><em>exam papers, archived.</em></h1>
-              <p className="ss" style={{marginTop:".8rem"}}>Browse the largest indexed collection of original board examination papers from 2010–2025. Every paper is preserved in its original format — complete with all sections, instructions, and marking schemes.</p>
+              <h1 className="st">5 years of real<br/><em>CBSE & RBSE papers.</em></h1>
+              <p className="ss" style={{marginTop:".8rem"}}>Browse actual previous-year board examination papers for CBSE and RBSE, covering 2021–2025. Every paper links straight to its verified archive — genuine past exams with marking schemes and solutions.</p>
             </div>
           </ScrollReveal>
           <AnimatedGrid containerVariants={staggerContainerVariants} itemVariants={staggerChildVariants}>
             {[
-              {n:"12,500+",l:"Papers",c:"#7C3AED"},
-              {n:"5",l:"Boards",c:"#2354F4"},
-              {n:"15 yrs",l:"Coverage",c:"#0891B2"},
-              {n:"100%",l:"Original",c:"#D97706"},
+              {n:"2",l:"Boards",c:"#7C3AED"},
+              {n:"4",l:"Classes",c:"#2354F4"},
+              {n:"5 yrs",l:"Coverage",c:"#0891B2"},
+              {n:"100%",l:"Actual PYQ",c:"#D97706"},
             ].map((s,i)=>(
               <div key={i} style={{background:"var(--card-bg)",border:"1px solid var(--border)",borderRadius:12,padding:"1rem .8rem",textAlign:"center"}}>
                 <div style={{fontFamily:"'Instrument Serif',serif",fontSize:"clamp(1.2rem,3vw,1.6rem)",color:"var(--text)",letterSpacing:"-.5px"}}>{s.n}</div>
@@ -150,7 +220,7 @@ function Vault15Page(){
           <div style={{background:"rgba(124,58,237,.06)",borderBottom:"1px solid rgba(124,58,237,.12)",padding:"1.2rem 1.8rem",display:"flex",alignItems:"center",gap:".8rem",flexWrap:"wrap"}}>
             <span style={{fontSize:"1.2rem"}}>🗄️</span>
             <span style={{fontWeight:700,color:"#7C3AED",fontSize:".9rem"}}>Paper Archive Browser</span>
-            <span style={{marginLeft:"auto",fontSize:".72rem",color:"var(--text3)",fontFamily:"'JetBrains Mono',monospace"}}>12,500+ papers indexed</span>
+            <span style={{marginLeft:"auto",fontSize:".72rem",color:"var(--text3)",fontFamily:"'JetBrains Mono',monospace"}}>CBSE & RBSE · 2021–2025</span>
           </div>
 
           <div style={{padding:"1.8rem"}}>
@@ -158,8 +228,9 @@ function Vault15Page(){
             <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:"1rem",marginBottom:"1.5rem"}}>
               {[
                 {label:"Board",val:board,set:setBoard,opts:boards},
-                {label:"Class",val:cls,set:setCls,opts:classes},
-                {label:"Subject",val:subj,set:setSubj,opts:subjects},
+                {label:"Class",val:cls,set:changeClass,opts:classes},
+                ...(hasStream(cls) ? [{label:"Stream",val:stream,set:changeStream,opts:STREAMS}] : []),
+                {label:"Subject",val:subj,set:setSubj,opts:subjOpts},
               ].map(f=>(
                 <div key={f.label}>
                   <label style={{fontSize:".68rem",fontWeight:700,color:"var(--text3)",letterSpacing:".5px",display:"block",marginBottom:".35rem",textTransform:"uppercase"}}>{f.label}</label>
@@ -189,7 +260,7 @@ function Vault15Page(){
                 <div style={{display:"flex",gap:"1rem",flexWrap:"wrap",alignItems:"center",padding:"1rem",background:"rgba(124,58,237,.06)",border:"1px solid rgba(124,58,237,.15)",borderRadius:12,marginBottom:"1.2rem"}}>
                   <span style={{fontSize:".8rem",fontWeight:700,color:"#7C3AED"}}>📄 {papers.length} papers found</span>
                   <span style={{color:"var(--border)"}}>|</span>
-                  <span style={{fontSize:".78rem",color:"var(--text3)"}}>{board} · {cls} · {subj} · 2010–2025</span>
+                  <span style={{fontSize:".78rem",color:"var(--text3)"}}>{board} · {cls} · {subj} · 2021–2025</span>
                 </div>
 
                 {/* Paper Cards Grid */}
@@ -234,7 +305,7 @@ function Vault15Page(){
             {!loading&&!searched&&(
               <div style={{textAlign:"center",padding:"3rem 1rem",border:"1px dashed var(--border)",borderRadius:14}}>
                 <div style={{fontSize:"2.5rem",marginBottom:".8rem"}}>🗄️</div>
-                <p style={{color:"var(--text3)",fontSize:".88rem"}}>Select your Board, Class, & Subject — then browse 15 years of original exam papers.</p>
+                <p style={{color:"var(--text3)",fontSize:".88rem"}}>Select your Board, Class, & Subject — then browse the last 5 years of actual exam papers.</p>
               </div>
             )}
           </div>
@@ -274,6 +345,27 @@ function Vault15Page(){
               ))}
             </div>
 
+            {/* Official Source Banner */}
+            {BOARD_SOURCES[viewPaper.board] && (
+              <a
+                href={paperLink(viewPaper.board, viewPaper.class, viewPaper.subject, viewPaper.year)}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{display:"flex",alignItems:"center",gap:".7rem",textDecoration:"none",background:"rgba(16,185,129,.08)",border:"1px solid rgba(16,185,129,.25)",borderRadius:12,padding:".8rem 1rem",marginBottom:"1.2rem"}}
+              >
+                <span style={{fontSize:"1.1rem"}}>{sourceMeta(viewPaper.board, viewPaper.class).icon}</span>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:".7rem",fontWeight:700,color:"#059669",textTransform:"uppercase",letterSpacing:".5px"}}>
+                    {sourceMeta(viewPaper.board, viewPaper.class).heading}
+                  </div>
+                  <div style={{fontSize:".82rem",fontWeight:600,color:"var(--text)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                    {viewPaper.board} {viewPaper.class} {viewPaper.subject} · {sourceMeta(viewPaper.board, viewPaper.class).note}
+                  </div>
+                </div>
+                <span style={{fontSize:".75rem",fontWeight:700,color:"#059669",flexShrink:0}}>Open paper →</span>
+              </a>
+            )}
+
             {/* Paper Set Tabs */}
             <div style={{marginBottom:"1.2rem"}}>
               <div style={{fontSize:".68rem",fontWeight:700,color:"var(--text3)",textTransform:"uppercase",letterSpacing:".5px",marginBottom:".5rem"}}>Available Sets</div>
@@ -306,7 +398,7 @@ function Vault15Page(){
 
             {/* Action Buttons */}
             <div style={{display:"flex",gap:".7rem",flexWrap:"wrap"}}>
-              <button 
+              <button
                 onClick={() => {
                   if (viewPaper.pdfUrl) {
                     const link = document.createElement("a");
@@ -316,13 +408,18 @@ function Vault15Page(){
                     link.click();
                     document.body.removeChild(link);
                   } else {
-                    alert("PDF not available for this mock paper.");
+                    const url = paperLink(viewPaper.board, viewPaper.class, viewPaper.subject, viewPaper.year);
+                    if (url) {
+                      window.open(url, "_blank", "noopener,noreferrer");
+                    } else {
+                      alert("Official source not available for this board.");
+                    }
                   }
                 }}
-                className="btn-p" 
+                className="btn-p"
                 style={{flex:1,justifyContent:"center",fontSize:".82rem",background:"linear-gradient(135deg,#7C3AED,#A78BFA)",boxShadow:"0 4px 16px rgba(124,58,237,.3)"}}
               >
-                📥 Download Paper PDF
+                {viewPaper.pdfUrl ? "📥 Download Paper PDF" : sourceMeta(viewPaper.board, viewPaper.class).btn}
               </button>
               {viewPaper.hasAnswerKey&&<button className="btn-g" style={{flex:1,justifyContent:"center",fontSize:".82rem"}}>📋 View Answer Key</button>}
               {viewPaper.hasSolution&&<button className="btn-g" style={{flex:1,justifyContent:"center",fontSize:".82rem"}}>📝 View Solutions</button>}

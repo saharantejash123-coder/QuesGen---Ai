@@ -4,6 +4,7 @@ import { ArrowRight, Loader2, GraduationCap, Users, Mail, RefreshCw, ShieldCheck
 import { GoogleLogin } from '@react-oauth/google';
 import { useLanguage } from '../context/LanguageContext';
 import { loginWithGoogleToken, saveSession, register, sendOTP, verifyOTP } from '../services/authService';
+import { validateSchoolCode, createSchoolRequest } from '../services/schoolService';
 
 const roleConfig = {
   student: { icon: <GraduationCap size={18} />, label: 'Student', color: '#7C3AED', bg: 'rgba(124,58,237,0.12)', border: 'rgba(124,58,237,0.35)' },
@@ -72,9 +73,32 @@ function RegistrationForm({ role, setRole, formData, setFormData, onSendOTP, isL
           <input type="password" required minLength={6} value={formData.confirmPassword} onChange={set('confirmPassword')} placeholder="Re-enter password" style={inputStyle} onFocus={focusStyle} onBlur={blurStyle} />
         </div>
         <div>
-          <label style={labelStyle}>School Name <span style={{ color: 'rgba(255,255,255,0.2)', fontWeight: 400 }}>(optional)</span></label>
+          <label style={labelStyle}>School Code <span style={{ color: 'rgba(255,255,255,0.2)', fontWeight: 400 }}>(recommended — get it from your school)</span></label>
+          <input type="text" value={formData.schoolCode} onChange={set('schoolCode')} placeholder="e.g. AB3XY7" style={{ ...inputStyle, fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.1em' }} onFocus={focusStyle} onBlur={blurStyle} />
+          <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.25)', marginTop: '0.35rem' }}>Entering a code sends a join request to the school for approval.</div>
+        </div>
+        <div>
+          <label style={labelStyle}>School Name <span style={{ color: 'rgba(255,255,255,0.2)', fontWeight: 400 }}>(if no code)</span></label>
           <input type="text" value={formData.schoolName} onChange={set('schoolName')} placeholder="e.g. DPS Jaipur" style={inputStyle} onFocus={focusStyle} onBlur={blurStyle} />
         </div>
+        {role === 'student' && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+            <div>
+              <label style={labelStyle}>Grade / Class</label>
+              <select value={formData.grade} onChange={set('grade')} style={inputStyle}>
+                <option value="">Select grade</option>
+                {['10','12'].map(g => <option key={g} value={g}>Class {g}</option>)}
+              </select>
+            </div>
+            <div>
+              <label style={labelStyle}>Section</label>
+              <select value={formData.section} onChange={set('section')} style={inputStyle}>
+                <option value="">Select section</option>
+                {['A','B','C','D','E'].map(s => <option key={s} value={s}>Section {s}</option>)}
+              </select>
+            </div>
+          </div>
+        )}
         {role === 'teacher' && (
           <div>
             <label style={labelStyle}>Phone Number</label>
@@ -117,7 +141,7 @@ function RegistrationForm({ role, setRole, formData, setFormData, onSendOTP, isL
 }
 
 // ─── Step 2: OTP Verification ──────────────────────────────────────────────────
-function OTPVerification({ email, demoOtp, onVerify, onResend, onBack, isLoading, error }) {
+function OTPVerification({ email, onVerify, onResend, onBack, isLoading, error }) {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const inputs = React.useRef([]);
 
@@ -163,14 +187,6 @@ function OTPVerification({ email, demoOtp, onVerify, onResend, onBack, isLoading
           <span style={{ color: '#818cf8', fontWeight: 600 }}>{email}</span>
         </p>
       </div>
-
-      {/* Demo OTP display */}
-      {demoOtp && (
-        <div style={{ padding: '0.85rem 1rem', borderRadius: 12, background: 'rgba(34,211,238,0.06)', border: '1px solid rgba(34,211,238,0.2)', textAlign: 'center' }}>
-          <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#22d3ee', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '0.3rem' }}>Demo Mode — Your OTP</div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#fff', letterSpacing: '0.35rem', fontFamily: 'monospace' }}>{demoOtp}</div>
-        </div>
-      )}
 
       {/* OTP input boxes */}
       <div>
@@ -248,8 +264,7 @@ export default function RegisterPage() {
 
   const [step, setStep]     = useState('form'); // 'form' | 'otp'
   const [role, setRole]     = useState('student');
-  const [formData, setFormData] = useState({ name: '', email: '', password: '', confirmPassword: '', schoolName: '', phone: '', registrationNumber: '', subject: '' });
-  const [demoOtp, setDemoOtp]   = useState('');
+  const [formData, setFormData] = useState({ name: '', email: '', password: '', confirmPassword: '', schoolName: '', schoolCode: '', phone: '', registrationNumber: '', subject: '', grade: '', section: '' });
   const [error, setError]       = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -271,8 +286,7 @@ export default function RegisterPage() {
 
     setIsLoading(true);
     try {
-      const result = await sendOTP(formData.email);
-      setDemoOtp(result.demoOtp || ''); // null when real email sent
+      await sendOTP(formData.email); // sends a real email or throws
       setStep('otp');
     } catch (err) {
       setError(err.message || 'Failed to send OTP. Please try again.');
@@ -289,17 +303,49 @@ export default function RegisterPage() {
       await verifyOTP(formData.email, enteredOtp);
 
       const nameParts = (formData.name || '').trim().split(/\s+/).filter(Boolean);
+      const className = (formData.grade && formData.section)
+        ? `${formData.grade}-${formData.section}`
+        : formData.grade || '';
+
+      // Resolve school from code (takes priority over name)
+      let resolvedSchool = formData.schoolName || '';
+      let useCodeFlow = false;
+      if (formData.schoolCode?.trim()) {
+        const codeResult = validateSchoolCode(formData.schoolCode.trim());
+        if (!codeResult) {
+          setError('Invalid school code. Please check and try again.');
+          setIsLoading(false);
+          return;
+        }
+        resolvedSchool = codeResult.schoolName;
+        useCodeFlow = true;
+      }
+
       const user = await register({
         email: formData.email,
         password: formData.password,
         role,
         firstName: role === 'school' ? formData.schoolName : (nameParts[0] || ''),
         lastName:  role === 'school' ? '' : (nameParts.slice(1).join(' ') || ''),
-        schoolName: formData.schoolName,
+        // If code flow: don't set schoolName yet — pending approval sets it
+        schoolName: useCodeFlow ? '' : resolvedSchool,
         phone: formData.phone,
         subject: formData.subject,
         registrationNumber: formData.registrationNumber,
+        className: role === 'student' ? className : '',
       });
+
+      // If user registered with a school code, create a pending join request
+      if (useCodeFlow && resolvedSchool && role !== 'school') {
+        createSchoolRequest({
+          type: role,
+          userEmail: user.email,
+          userName: `${user.firstName} ${user.lastName}`.trim(),
+          userUID: user.uid || '',
+          schoolName: resolvedSchool,
+          message: `Registered with school code`,
+        });
+      }
 
       saveSession(user);
       if (role === 'school') navigate('/school');
@@ -316,8 +362,7 @@ export default function RegisterPage() {
   const handleResend = async () => {
     setError('');
     try {
-      const result = await sendOTP(formData.email);
-      setDemoOtp(result.demoOtp || '');
+      await sendOTP(formData.email);
     } catch (err) {
       setError(err.message || 'Failed to resend OTP.');
     }
@@ -430,7 +475,6 @@ export default function RegisterPage() {
           {step === 'otp' && (
             <OTPVerification
               email={formData.email}
-              demoOtp={demoOtp}
               onVerify={handleVerifyOTP}
               onResend={handleResend}
               onBack={() => { setStep('form'); setError(''); }}

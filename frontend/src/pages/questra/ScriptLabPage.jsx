@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import { GEMINI_API_KEY } from '../../data/oracleData';
+import { useRequireAuth } from '../../hooks/useRequireAuth';
 
 /* ── Gemini Vision API call ── */
 const analyzeHandwriting = async (apiKey, base64Image, mimeType, sessionHistory = []) => {
@@ -120,6 +121,7 @@ export default function ScriptLabPage() {
   const [history, setHistory] = useState(loadHistory);
   const [sessionNum, setSessionNum] = useState(() => loadHistory().length + 1);
   const fileRef = useRef();
+  const requireLogin = useRequireAuth();
 
   // state is initialized lazily in useState, no need for effect
 
@@ -137,6 +139,7 @@ export default function ScriptLabPage() {
   /* ── Handle image upload and analyze ── */
   const handleFile = useCallback(async (file) => {
     if (!file || !file.type.startsWith('image/')) return;
+    if (!requireLogin('Script-Lab')) return;
     setError('');
 
     const url = URL.createObjectURL(file);
@@ -158,7 +161,7 @@ export default function ScriptLabPage() {
       setError(`❌ ${e.message}`);
       setPhase('upload');
     }
-  }, [history]);
+  }, [history, requireLogin]);
 
   /* ── Mark done and move to next session ── */
   const markDone = () => {

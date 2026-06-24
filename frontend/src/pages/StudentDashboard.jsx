@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import AppNavbar from '../components/questra/AppNavbar'
 import DashboardOverview from '../components/student/DashboardOverview'
+import MyTestsPage from '../components/student/MyTestsPage'
 import OracleEnginePage from './questra/OracleEnginePage'
 import LogicGen from '../components/student/LogicGen'
 import SnapSolve from '../components/student/SnapSolve'
@@ -14,6 +15,7 @@ import ProfilePage from './ProfilePage'
 
 const tabComponents = {
   overview: DashboardOverview,
+  mytests: MyTestsPage,
   oracle: OracleEnginePage,
   logicgen: LogicGen,
   snapsolve: SnapSolve,
@@ -48,7 +50,8 @@ export default function StudentDashboard() {
 
   const handleLogout = () => {
     localStorage.removeItem('questra_user')
-    navigate('/login')
+    localStorage.removeItem('questra_token')
+    window.location.replace('/login')
   }
 
   const handleUserUpdate = (updated) => {

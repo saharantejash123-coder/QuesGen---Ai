@@ -4,6 +4,8 @@
  * Production-ready with proper error handling
  */
 
+import { ensureUID } from './authService';
+
 class GoogleOAuthConfig {
   constructor() {
     this.clientId = import.meta.env.VITE_REACT_APP_GOOGLE_CLIENT_ID;
@@ -116,7 +118,7 @@ class GoogleOAuthConfig {
       // Store tokens and user info
       if (data.data?.token) {
         localStorage.setItem('auth_token', data.data.token);
-        localStorage.setItem('questra_user', JSON.stringify(data.data.user));
+        localStorage.setItem('questra_user', JSON.stringify(ensureUID(data.data.user)));
 
         if (data.data?.refreshToken) {
           localStorage.setItem('refresh_token', data.data.refreshToken);

@@ -289,13 +289,12 @@ router.post('/send-otp', asyncHandler(async (req, res) => {
   if (!email) return errorResponse(res, 'Email is required', 400);
 
   const otp = storeOTP(email);
-  const result = await sendOTPEmail(email.trim().toLowerCase(), otp);
-
-  if (result.sent) {
-    return successResponse(res, { sent: true, message: 'OTP sent to your email.' });
+  try {
+    await sendOTPEmail(email.trim().toLowerCase(), otp);
+  } catch (err) {
+    return errorResponse(res, err.message || 'Failed to send the verification email.', 502);
   }
-  // SMTP not configured — return OTP so frontend can display it (demo mode)
-  return successResponse(res, { sent: false, demoOtp: result.demoOtp, message: 'SMTP not configured. Use the displayed OTP.' });
+  return successResponse(res, { sent: true, message: 'OTP sent to your email.' });
 }));
 
 // ── Ban check — queries Supabase first, then SQLite ────────────────────────

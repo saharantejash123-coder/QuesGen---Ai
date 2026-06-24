@@ -470,3 +470,38 @@ Generate the complete paper now.`;
 
   throw new Error('AI is temporarily overloaded. Please try again in a moment.');
 };
+
+// ─────────────────────────────────────────────────────
+// TEST RESULT ANALYSIS: Brief AI feedback after MCQ test
+// ─────────────────────────────────────────────────────
+export const analyzeTestResultWithLLM = async ({ subject, paperType, score, total, percentage, wrongQuestions = [] }) => {
+  if (!API_KEY) return null;
+  const typeLabel = paperType === 'quick_quiz' ? 'Quick Quiz' : paperType === 'unit_test' ? 'Unit Test' : 'Exam';
+  const wrongText = wrongQuestions.length > 0
+    ? wrongQuestions.slice(0, 4).map((q, i) => `${i + 1}. ${q}`).join('\n')
+    : 'None (perfect score!)';
+
+  const prompt = `A student just completed a ${typeLabel} in ${subject} and scored ${score}/${total} (${percentage}%).
+
+Wrong questions:
+${wrongText}
+
+Write exactly 2-3 warm, concise sentences directly to the student ("You scored..."):
+• Sentence 1: Briefly acknowledge their result
+• Sentence 2: Point out the specific weak area from wrong questions (skip if perfect)
+• Sentence 3: One concrete, actionable tip to improve
+
+Keep it under 80 words. Be encouraging, specific, not generic.`;
+
+  for (const model of ['gemini-2.0-flash-lite', 'gemini-2.0-flash']) {
+    const { data } = await geminiPost(API_KEY, model, {
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { maxOutputTokens: 150, temperature: 0.6 },
+    }, 12000);
+    if (data) {
+      const text = extractText(data);
+      if (text?.trim()) return text.trim();
+    }
+  }
+  return null;
+};

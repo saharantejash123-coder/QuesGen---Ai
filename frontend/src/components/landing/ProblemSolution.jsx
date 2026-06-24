@@ -25,19 +25,13 @@ const cardVariant = {
 
 export default function ProblemSolution() {
   return (
-    <section style={{ padding: '5rem 0', background: 'var(--bg)' }}>
+    <section style={{ padding: 'clamp(3.5rem, 7vw, 5rem) 0', background: 'var(--bg)' }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 2xl:px-16">
 
         {/* Section header */}
         <div style={{ textAlign: 'center', marginBottom: '3.5rem' }}>
-          <span style={{
-            display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
-            padding: '0.3rem 0.9rem', borderRadius: 100,
-            background: 'rgba(35,84,244,0.08)', border: '1px solid rgba(35,84,244,0.18)',
-            fontSize: '0.75rem', fontWeight: 700, color: '#2354F4',
-            letterSpacing: '0.05em', textTransform: 'uppercase',
-            marginBottom: '1rem', display: 'inline-flex',
-          }}>
+          <span className="lp-eyebrow" style={{ marginBottom: '1rem' }}>
+            <span className="lp-dot" />
             Why QuesGen
           </span>
           <h2 className="st" style={{ marginBottom: '0.75rem', marginTop: '0.75rem' }}>
@@ -51,9 +45,9 @@ export default function ProblemSolution() {
 
         <div style={{
           display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
+          gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
           gap: '1.5rem',
-        }} className="ps-grid">
+        }} className="ps-grid lp-grid-safe">
 
           {/* ── Problems ── */}
           <motion.div
@@ -62,12 +56,13 @@ export default function ProblemSolution() {
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: '-60px' }}
+            whileHover={{ y: -4, transition: { duration: 0.2 } }}
             style={{
               background: 'var(--card-bg)',
               border: '1.5px solid rgba(239,68,68,0.18)',
               borderRadius: 20,
               padding: '1.75rem',
-              boxShadow: '0 4px 24px rgba(239,68,68,0.06)',
+              boxShadow: '0 8px 30px rgba(239,68,68,0.08)',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
@@ -106,12 +101,13 @@ export default function ProblemSolution() {
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: '-60px' }}
+            whileHover={{ y: -4, transition: { duration: 0.2 } }}
             style={{
               background: 'var(--card-bg)',
               border: '1.5px solid rgba(5,150,105,0.18)',
               borderRadius: 20,
               padding: '1.75rem',
-              boxShadow: '0 4px 24px rgba(5,150,105,0.07)',
+              boxShadow: '0 8px 30px rgba(5,150,105,0.10)',
               position: 'relative',
               overflow: 'hidden',
             }}

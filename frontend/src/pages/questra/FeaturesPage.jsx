@@ -5,6 +5,7 @@ import ScrollReveal from '../../components/animations/ScrollReveal';
 import StaggerContainer from '../../components/animations/StaggerContainer';
 import HoverCard from '../../components/animations/HoverCard';
 import FAQItem from '../../components/questra/FAQItem';
+import TiltCard from '../../components/landing/TiltCard';
 
 function FeaturesPage({setPage}){
   const [tab,setTab]=useState("student");
@@ -86,6 +87,32 @@ function FeaturesPage({setPage}){
               </div>
             </HoverCard>
           </ScrollReveal>
+        </div>
+      </section>
+
+      {/* 3D tilt card grid */}
+      <section style={{ padding: "1rem 5% 6rem", maxWidth: 1200, margin: "0 auto" }}>
+        <ScrollReveal>
+          <div style={{ textAlign: "center", marginBottom: "clamp(2.5rem,3vw,3.5rem)" }}>
+            <span className="lp-eyebrow" style={{ marginBottom: "1rem" }}><span className="lp-dot" /> {tab === "student" ? "Student Modules" : "Teacher Tools"}</span>
+            <h2 className="st">Explore in <span className="text-gradient">3D</span></h2>
+            <p className="ss" style={{ margin: ".7rem auto 0" }}>Hover any card to tip it forward — {features.length} modules at a glance.</p>
+          </div>
+        </ScrollReveal>
+        <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "clamp(1.5rem,3vw,2.4rem)" }}>
+          {features.map((f) => (
+            <TiltCard
+              key={f.name}
+              title={f.name}
+              text={f.desc.length > 92 ? f.desc.slice(0, 92).trimEnd() + "…" : f.desc}
+              emoji={f.icon}
+              actionLabel={({ "Vault-15": "Open Vault-15", "Script-Lab": "Try Script-Lab", "LogicGen": "Try LogicGen", "Exam Generator": "Open Generator", "Adaptive Testing": "Try it" })[f.name] || "View more"}
+              onAction={() => {
+                const map = { "Vault-15": "vault15", "Script-Lab": "scriptlab", "LogicGen": "logicgen", "Exam Generator": "oracle", "Adaptive Testing": "adaptive" };
+                if (map[f.name]) { setPage(map[f.name]); window.scrollTo(0, 0); }
+              }}
+            />
+          ))}
         </div>
       </section>
 
