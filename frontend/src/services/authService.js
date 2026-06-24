@@ -10,6 +10,24 @@ const DEMO_USERS = [
   { id: 'school_demo',  email: 'school@questra.com',  password: 'school123',         role: 'school',  firstName: 'Demo', lastName: 'School'  },
 ];
 
+// ─── Email canonicalization ───────────────────────────────────────────────────
+// Gmail ignores dots and "+tag" suffixes in the local part, so
+// "saharan.tejash123@gmail.com" and "saharantejash123@gmail.com" are the SAME
+// inbox. We canonicalize to one form so a single Gmail = a single account.
+// Non-Gmail domains keep their dots (they can be significant) — just trimmed/lowercased.
+export function canonicalEmail(email) {
+  const e = (email || '').trim().toLowerCase();
+  const at = e.lastIndexOf('@');
+  if (at < 0) return e;
+  let local = e.slice(0, at);
+  let domain = e.slice(at + 1);
+  if (domain === 'gmail.com' || domain === 'googlemail.com') {
+    local = local.split('+')[0].replace(/\./g, '');
+    domain = 'gmail.com';
+  }
+  return `${local}@${domain}`;
+}
+
 // ─── Per-UID account store ────────────────────────────────────────────────────
 // Every account's full record is also stored individually under its UID, so an
 // account can be looked up / persisted on its own (`questra_account_<uid>`),
@@ -40,6 +58,44 @@ function saveRegistered(users) {
   users.forEach(saveAccountByUid);
 }
 
+// Collapse accounts that share the same canonical email (e.g. Gmail dot variants)
+// into one, and rewrite every stored email to its canonical form. Idempotent.
+function canonicalizeAndDedupe() {
+  try {
+    const registered = getRegistered();
+    if (registered.length === 0) return;
+
+    const groups = new Map(); // canonical email -> [records]
+    for (const u of registered) {
+      const canon = canonicalEmail(u.email);
+      if (!groups.has(canon)) groups.set(canon, []);
+      groups.get(canon).push(u);
+    }
+
+    let changed = groups.size !== registered.length;
+    const result = [];
+    for (const [canon, recs] of groups) {
+      // Keep the most complete record: has a password > more fields > earliest.
+      recs.sort((a, b) => {
+        const ap = a.password ? 1 : 0, bp = b.password ? 1 : 0;
+        if (ap !== bp) return bp - ap;
+        const ak = Object.keys(a).length, bk = Object.keys(b).length;
+        if (ak !== bk) return bk - ak;
+        return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
+      });
+      const keep = { ...recs[0], email: canon };
+      if (keep.email !== recs[0].email) changed = true;
+      // Drop the per-UID records of the discarded duplicates.
+      recs.slice(1).forEach((d) => {
+        if (d.uid && d.uid !== keep.uid) { try { localStorage.removeItem(ACCOUNT_PREFIX + d.uid); } catch { /* ignore */ } }
+      });
+      result.push(keep);
+    }
+
+    if (changed) saveRegistered(result);
+  } catch { /* best-effort */ }
+}
+
 // One-time reconciliation: give every legacy account a UID and mirror it into
 // the per-UID store. Idempotent — accounts that already have a UID are untouched.
 function migrateAccountsToUidStore() {
@@ -68,7 +124,7 @@ export async function sendOTP(email) {
     res = await fetch(`${backend}/api/auth/send-otp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: email.trim().toLowerCase() }),
+      body: JSON.stringify({ email: canonicalEmail(email) }),
       signal: AbortSignal.timeout(30000), // 30s — Render cold starts can take ~20s
     });
   } catch {
@@ -86,7 +142,7 @@ export async function verifyOTP(email, enteredOtp) {
   const res = await fetch(`${backend}/api/auth/verify-otp`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: email.trim().toLowerCase(), otp: enteredOtp.trim() }),
+    body: JSON.stringify({ email: canonicalEmail(email), otp: enteredOtp.trim() }),
     signal: AbortSignal.timeout(30000),
   });
   const data = await res.json();
@@ -98,7 +154,7 @@ export async function verifyOTP(email, enteredOtp) {
 export async function login(email, password) {
   await new Promise((r) => setTimeout(r, 700));
 
-  const lEmail = email.trim().toLowerCase();
+  const lEmail = canonicalEmail(email);
 
   // 0. Check ban from backend (cross-device sync)
   if (BACKEND_URL) {
@@ -211,7 +267,7 @@ export async function loginWithGoogleToken(googleToken) {
   if (!googleToken) throw new Error('Google token is required');
 
   const decoded = decodeJWT(googleToken);
-  const email = (decoded?.email || '').toLowerCase();
+  const email = canonicalEmail(decoded?.email || '');
   if (!email) throw new Error('Could not read your Google account email. Please try again.');
 
   // Banned emails are blocked regardless of how they sign in
@@ -250,15 +306,15 @@ function decodeJWT(token) {
 export async function register({ email, password, firstName, lastName, role = 'student', schoolName, phone, subject, registrationNumber, className }) {
   await new Promise((r) => setTimeout(r, 700));
 
-  const lEmail = email.trim().toLowerCase();
+  const lEmail = canonicalEmail(email);
 
   if (DEMO_USERS.some((u) => u.email === lEmail)) {
     throw new Error('This email is reserved for demo use.');
   }
 
   const registered = getRegistered();
-  if (registered.some((u) => u.email === lEmail)) {
-    throw new Error('An account with this email already exists.');
+  if (registered.some((u) => canonicalEmail(u.email) === lEmail)) {
+    throw new Error('An account already exists for this email (Gmail ignores dots, so a.b@gmail = ab@gmail).');
   }
 
   const user = {
@@ -350,10 +406,10 @@ export function clearSession() {
 // ─── Forgot / reset password ──────────────────────────────────────────────────
 // 'demo' | true | false
 export function accountExists(email) {
-  const lEmail = (email || '').trim().toLowerCase();
+  const lEmail = canonicalEmail(email);
   if (!lEmail) return false;
   if (DEMO_USERS.some((u) => u.email === lEmail)) return 'demo';
-  return getRegistered().some((u) => u.email === lEmail);
+  return getRegistered().some((u) => canonicalEmail(u.email) === lEmail);
 }
 
 /**
@@ -361,7 +417,7 @@ export function accountExists(email) {
  * Throws if the account is unknown or the email could not be sent — no demo code.
  */
 export async function requestPasswordResetOTP(email) {
-  const lEmail = (email || '').trim().toLowerCase();
+  const lEmail = canonicalEmail(email);
   const exists = accountExists(lEmail);
   if (exists === 'demo') throw new Error('Demo accounts use a fixed password and cannot be reset.');
   if (!exists) throw new Error('No account found with this email. Please check the address or register.');
@@ -372,7 +428,7 @@ export async function requestPasswordResetOTP(email) {
 
 /** Step 2 of reset: verify the emailed OTP (backend) and set the new password. */
 export async function confirmPasswordResetOTP(email, enteredOtp, newPassword) {
-  const lEmail = (email || '').trim().toLowerCase();
+  const lEmail = canonicalEmail(email);
   if (!newPassword || newPassword.length < 6) throw new Error('Password must be at least 6 characters.');
 
   await verifyOTP(lEmail, enteredOtp); // throws on mismatch / expiry
@@ -383,12 +439,12 @@ export async function confirmPasswordResetOTP(email, enteredOtp, newPassword) {
 /** Persist a new password for an account (index + per-UID store + best-effort backend). */
 export async function resetPassword(email, newPassword) {
   await new Promise((r) => setTimeout(r, 300));
-  const lEmail = (email || '').trim().toLowerCase();
+  const lEmail = canonicalEmail(email);
   if (!newPassword || newPassword.length < 6) throw new Error('Password must be at least 6 characters.');
   if (DEMO_USERS.some((u) => u.email === lEmail)) throw new Error('Demo accounts use a fixed password and cannot be reset.');
 
   const registered = getRegistered();
-  const idx = registered.findIndex((u) => u.email === lEmail);
+  const idx = registered.findIndex((u) => canonicalEmail(u.email) === lEmail);
   if (idx < 0) throw new Error('No account found with this email.');
 
   registered[idx] = { ...registered[idx], password: newPassword };
@@ -408,5 +464,6 @@ export async function resetPassword(email, newPassword) {
   return true;
 }
 
-// Reconcile legacy accounts into the per-UID store on load.
+// On load: collapse Gmail dot-duplicate accounts, then reconcile into the per-UID store.
+canonicalizeAndDedupe();
 migrateAccountsToUidStore();

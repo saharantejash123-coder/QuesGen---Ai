@@ -216,6 +216,37 @@ export function validateSchoolCode(code) {
   return { normalizedName, schoolName: school ? resolveSchoolName(school) : normalizedName };
 }
 
+// ── School Directory (registered school accounts) ──────────────────────────────
+// Only real school accounts (role === 'school') are returned, so students/teachers
+// can only request to join schools that actually exist on the platform.
+export function getAllSchools() {
+  return get(KEYS.REGISTERED)
+    .filter(u => u.role === 'school')
+    .map(u => {
+      const name = resolveSchoolName(u);
+      return {
+        name,
+        code: name ? getOrCreateSchoolCode(name) : '',
+        email: u.email || '',
+        uid: u.uid || '',
+        city: u.city || u.location || u.address || '',
+        phone: u.phone || '',
+        studentCount: name ? getStudentsBySchool(name).length : 0,
+        teacherCount: name ? getTeachersBySchool(name).length : 0,
+      };
+    })
+    .filter(s => s.name)
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+// Search the directory by school name or code (empty query → full list).
+export function searchSchools(query) {
+  const all = getAllSchools();
+  const q = norm(query);
+  if (!q) return all;
+  return all.filter(s => norm(s.name).includes(q) || (s.code || '').toLowerCase().includes(q));
+}
+
 // ── School Join Requests ──────────────────────────────────────────────────────
 
 const REQUESTS_KEY = 'questra_school_requests';
@@ -288,6 +319,15 @@ export function rejectSchoolRequest(requestId) {
   if (idx < 0) return false;
   all[idx] = { ...all[idx], status: 'rejected', updatedAt: new Date().toISOString() };
   saveRequests(all);
+  return true;
+}
+
+// Student/teacher cancels their own still-pending join request.
+export function cancelSchoolRequest(requestId) {
+  const all = getRequests();
+  const req = all.find(r => r.id === requestId);
+  if (!req || req.status !== 'pending') return false;
+  saveRequests(all.filter(r => r.id !== requestId));
   return true;
 }
 

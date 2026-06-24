@@ -3,8 +3,9 @@ import { useNavigate, Link } from 'react-router-dom';
 import { ArrowRight, Loader2, GraduationCap, Users, Mail, RefreshCw, ShieldCheck } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
 import { useLanguage } from '../context/LanguageContext';
-import { loginWithGoogleToken, saveSession, register, sendOTP, verifyOTP } from '../services/authService';
+import { loginWithGoogleToken, saveSession, register, sendOTP, verifyOTP, accountExists } from '../services/authService';
 import { validateSchoolCode, createSchoolRequest } from '../services/schoolService';
+import SchoolPicker from '../components/SchoolPicker';
 
 const roleConfig = {
   student: { icon: <GraduationCap size={18} />, label: 'Student', color: '#7C3AED', bg: 'rgba(124,58,237,0.12)', border: 'rgba(124,58,237,0.35)' },
@@ -78,8 +79,9 @@ function RegistrationForm({ role, setRole, formData, setFormData, onSendOTP, isL
           <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.25)', marginTop: '0.35rem' }}>Entering a code sends a join request to the school for approval.</div>
         </div>
         <div>
-          <label style={labelStyle}>School Name <span style={{ color: 'rgba(255,255,255,0.2)', fontWeight: 400 }}>(if no code)</span></label>
-          <input type="text" value={formData.schoolName} onChange={set('schoolName')} placeholder="e.g. DPS Jaipur" style={inputStyle} onFocus={focusStyle} onBlur={blurStyle} />
+          <label style={labelStyle}>Find Your School <span style={{ color: 'rgba(255,255,255,0.2)', fontWeight: 400 }}>(if no code)</span></label>
+          <SchoolPicker dark selected={formData.selectedSchool} onSelect={(s) => setFormData(p => ({ ...p, selectedSchool: s }))} />
+          <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.25)', marginTop: '0.35rem' }}>Only schools registered on QuesGen appear. Selecting one sends a join request for approval.</div>
         </div>
         {role === 'student' && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
@@ -264,7 +266,7 @@ export default function RegisterPage() {
 
   const [step, setStep]     = useState('form'); // 'form' | 'otp'
   const [role, setRole]     = useState('student');
-  const [formData, setFormData] = useState({ name: '', email: '', password: '', confirmPassword: '', schoolName: '', schoolCode: '', phone: '', registrationNumber: '', subject: '', grade: '', section: '' });
+  const [formData, setFormData] = useState({ name: '', email: '', password: '', confirmPassword: '', schoolCode: '', selectedSchool: null, phone: '', registrationNumber: '', subject: '', grade: '', section: '' });
   const [error, setError]       = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -281,6 +283,11 @@ export default function RegisterPage() {
     }
     if (formData.password.length < 6) {
       setError('Password must be at least 6 characters.');
+      return;
+    }
+    // Gmail ignores dots/+tags, so block dot-variant duplicates before wasting an OTP
+    if (accountExists(formData.email)) {
+      setError('An account already exists for this email. Please sign in instead.');
       return;
     }
 
@@ -307,9 +314,10 @@ export default function RegisterPage() {
         ? `${formData.grade}-${formData.section}`
         : formData.grade || '';
 
-      // Resolve school from code (takes priority over name)
-      let resolvedSchool = formData.schoolName || '';
-      let useCodeFlow = false;
+      // Resolve the school to request — a code takes priority over the picker.
+      // Either way it becomes a *pending join request*; the school is assigned
+      // only once the school approves it (no free-typed, non-existent schools).
+      let targetSchool = '';
       if (formData.schoolCode?.trim()) {
         const codeResult = validateSchoolCode(formData.schoolCode.trim());
         if (!codeResult) {
@@ -317,33 +325,33 @@ export default function RegisterPage() {
           setIsLoading(false);
           return;
         }
-        resolvedSchool = codeResult.schoolName;
-        useCodeFlow = true;
+        targetSchool = codeResult.schoolName;
+      } else if (formData.selectedSchool?.name) {
+        targetSchool = formData.selectedSchool.name;
       }
 
       const user = await register({
         email: formData.email,
         password: formData.password,
         role,
-        firstName: role === 'school' ? formData.schoolName : (nameParts[0] || ''),
-        lastName:  role === 'school' ? '' : (nameParts.slice(1).join(' ') || ''),
-        // If code flow: don't set schoolName yet — pending approval sets it
-        schoolName: useCodeFlow ? '' : resolvedSchool,
+        firstName: nameParts[0] || '',
+        lastName:  nameParts.slice(1).join(' ') || '',
+        schoolName: '', // assigned only after the school approves the request
         phone: formData.phone,
         subject: formData.subject,
         registrationNumber: formData.registrationNumber,
         className: role === 'student' ? className : '',
       });
 
-      // If user registered with a school code, create a pending join request
-      if (useCodeFlow && resolvedSchool && role !== 'school') {
+      // Send a pending join request to the chosen school
+      if (targetSchool) {
         createSchoolRequest({
           type: role,
           userEmail: user.email,
           userName: `${user.firstName} ${user.lastName}`.trim(),
           userUID: user.uid || '',
-          schoolName: resolvedSchool,
-          message: `Registered with school code`,
+          schoolName: targetSchool,
+          message: formData.schoolCode?.trim() ? 'Registered with school code' : 'Registered via school search',
         });
       }
 

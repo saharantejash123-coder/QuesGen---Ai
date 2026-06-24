@@ -11,7 +11,8 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useIsMobile } from '../hooks/useIsMobile';
 import { apiUpdateProfile } from '../services/adminService';
-import { validateSchoolCode, createSchoolRequest, getPendingRequestsByUser } from '../services/schoolService';
+import { validateSchoolCode, createSchoolRequest, getPendingRequestsByUser, cancelSchoolRequest } from '../services/schoolService';
+import SchoolPicker from '../components/SchoolPicker';
 
 /* ─── constants ─── */
 const BOARDS    = ['CBSE','RBSE','ICSE','UP Board','Maharashtra','Bihar','MP Board','Karnataka'];
@@ -169,11 +170,11 @@ function UIDField({ uid }) {
    SCHOOL SECTION (for teachers & students)
 ══════════════════════════════════════════ */
 function SchoolSection({ userProp, role, currentSchool }) {
-  const [codeInput, setCodeInput]   = useState('');
-  const [nameInput, setNameInput]   = useState('');
-  const [msg, setMsg]               = useState('');
-  const [err, setErr]               = useState('');
-  const [pending, setPending]       = useState(() => getPendingRequestsByUser(userProp?.email || ''));
+  const [codeInput, setCodeInput]       = useState('');
+  const [selectedSchool, setSelectedSchool] = useState(null);
+  const [msg, setMsg]                   = useState('');
+  const [err, setErr]                   = useState('');
+  const [pending, setPending]           = useState(() => getPendingRequestsByUser(userProp?.email || ''));
 
   const refresh = () => setPending(getPendingRequestsByUser(userProp?.email || ''));
 
@@ -196,21 +197,27 @@ function SchoolSection({ userProp, role, currentSchool }) {
     refresh();
   };
 
-  const handleJoinByName = () => {
+  const handleJoinSelected = () => {
     setMsg(''); setErr('');
-    if (!nameInput.trim()) { setErr('Enter a school name.'); return; }
+    if (!selectedSchool) { setErr('Search and select your school first.'); return; }
     const res = createSchoolRequest({
       type: role,
       userEmail: userProp?.email || '',
       userName: `${userProp?.firstName || ''} ${userProp?.lastName || ''}`.trim(),
       userUID: userProp?.uid || '',
-      schoolName: nameInput.trim(),
-      message: 'Requested via profile page (name)',
+      schoolName: selectedSchool.name,
+      message: 'Requested via profile page (search)',
     });
     if (!res.success) { setErr(res.error || 'Could not send request.'); return; }
-    setMsg(`Join request sent to "${nameInput.trim()}". Awaiting approval.`);
-    setNameInput('');
+    setMsg(`Join request sent to ${selectedSchool.name}. Awaiting approval.`);
+    setSelectedSchool(null);
     refresh();
+  };
+
+  const handleCancel = (requestId) => {
+    setMsg(''); setErr('');
+    if (cancelSchoolRequest(requestId)) { setMsg('Pending request cancelled.'); refresh(); }
+    else setErr('Could not cancel that request.');
   };
 
   const inputSt = { width:'100%', padding:'0.7rem 1rem', borderRadius:12, border:'1px solid var(--border)', background:'var(--bg2)', color:'var(--text)', fontSize:'0.88rem', fontFamily:"'DM Sans',sans-serif", outline:'none', boxSizing:'border-box', transition:'border-color 0.2s' };
@@ -243,7 +250,13 @@ function SchoolSection({ userProp, role, currentSchool }) {
                   <span style={{ fontSize:'0.85rem', fontWeight:600, color:'var(--text)' }}>{r.schoolName}</span>
                   <span style={{ fontSize:'0.72rem', color:'var(--text3)', marginLeft:8 }}>Sent {new Date(r.createdAt).toLocaleDateString()}</span>
                 </div>
-                <span style={{ padding:'0.2rem 0.55rem', borderRadius:6, background:'rgba(245,158,11,0.1)', color:'#D97706', fontSize:'0.7rem', fontWeight:700 }}>Pending</span>
+                <div style={{ display:'flex', alignItems:'center', gap:'0.5rem' }}>
+                  <span style={{ padding:'0.2rem 0.55rem', borderRadius:6, background:'rgba(245,158,11,0.1)', color:'#D97706', fontSize:'0.7rem', fontWeight:700 }}>Pending</span>
+                  <button onClick={() => handleCancel(r.id)}
+                    style={{ display:'inline-flex', alignItems:'center', gap:'0.25rem', padding:'0.2rem 0.55rem', borderRadius:6, background:'rgba(239,68,68,0.08)', border:'1px solid rgba(239,68,68,0.25)', color:'#ef4444', fontSize:'0.7rem', fontWeight:700, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>
+                    <X size={12} /> Cancel
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -262,16 +275,16 @@ function SchoolSection({ userProp, role, currentSchool }) {
         </div>
       </div>
 
-      {/* Join by name */}
+      {/* Search & join a registered school */}
       <div style={{ padding:'1.2rem 1.25rem', borderRadius:14, background:'var(--card-bg)', border:'1px solid var(--border)', display:'flex', flexDirection:'column', gap:'0.85rem' }}>
-        <div style={{ fontSize:'0.88rem', fontWeight:700, color:'var(--text)' }}>Join by School Name</div>
-        <p style={{ fontSize:'0.78rem', color:'var(--text3)', marginTop:0 }}>If you don't have a code, type the exact school name.</p>
-        <div style={{ display:'flex', gap:'0.6rem', flexWrap:'wrap' }}>
-          <input value={nameInput} onChange={e=>setNameInput(e.target.value)} placeholder="e.g. Demo School"
-            style={{ ...inputSt, flex:1, minWidth:140 }}
-            onFocus={e=>e.target.style.borderColor='#2354F4'} onBlur={e=>e.target.style.borderColor='var(--border)'} />
-          <button onClick={handleJoinByName} style={{ padding:'0.7rem 1.1rem', borderRadius:12, border:'none', background:'linear-gradient(135deg,#059669,#0891b2)', color:'#fff', fontWeight:700, fontSize:'0.85rem', cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>Send Request</button>
-        </div>
+        <div style={{ fontSize:'0.88rem', fontWeight:700, color:'var(--text)' }}>Search for your school</div>
+        <p style={{ fontSize:'0.78rem', color:'var(--text3)', marginTop:0 }}>Find your school by name or code — only schools registered on QuesGen appear here.</p>
+        <SchoolPicker selected={selectedSchool} onSelect={setSelectedSchool} />
+        {selectedSchool && (
+          <button onClick={handleJoinSelected} style={{ alignSelf:'flex-start', padding:'0.7rem 1.3rem', borderRadius:12, border:'none', background:'linear-gradient(135deg,#059669,#0891b2)', color:'#fff', fontWeight:700, fontSize:'0.85rem', cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>
+            Send Join Request
+          </button>
+        )}
       </div>
 
       {msg && <div style={{ padding:'0.75rem 1rem', borderRadius:12, background:'rgba(5,150,105,0.08)', border:'1px solid rgba(5,150,105,0.2)', color:'#059669', fontSize:'0.85rem', fontWeight:600 }}>{msg}</div>}
