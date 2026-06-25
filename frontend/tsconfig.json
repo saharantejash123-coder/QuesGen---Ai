@@ -9,7 +9,9 @@
     "resolveJsonModule": true,
     "allowJs": true,
     "noEmit": true,
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "strict": true,
+    "forceConsistentCasingInFileNames": true
   },
   "include": ["src"],
   "exclude": ["node_modules"]
