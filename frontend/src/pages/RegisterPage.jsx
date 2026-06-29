@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowRight, Loader2, GraduationCap, Users, Mail, RefreshCw, ShieldCheck } from 'lucide-react';
-import { GoogleLogin } from '@react-oauth/google';
+import { ArrowRight, Loader2, GraduationCap, Users, Mail, RefreshCw, ShieldCheck, Building2 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
-import { loginWithGoogleToken, saveSession, register, sendOTP, verifyOTP, accountExists } from '../services/authService';
+import { saveSession, register, sendOTP, verifyOTP, accountExists } from '../services/authService';
 import { validateSchoolCode, createSchoolRequest } from '../services/schoolService';
 import SchoolPicker from '../components/SchoolPicker';
 
 const roleConfig = {
-  student: { icon: <GraduationCap size={18} />, label: 'Student', color: '#7C3AED', bg: 'rgba(124,58,237,0.12)', border: 'rgba(124,58,237,0.35)' },
-  teacher: { icon: <Users size={18} />,          label: 'Teacher', color: '#2354F4', bg: 'rgba(35,84,244,0.12)',  border: 'rgba(35,84,244,0.35)'  },
+  student: { icon: <GraduationCap size={18} />, label: 'Student',  color: '#7C3AED', bg: 'rgba(124,58,237,0.12)', border: 'rgba(124,58,237,0.35)' },
+  teacher: { icon: <Users size={18} />,          label: 'Teacher',  color: '#2354F4', bg: 'rgba(35,84,244,0.12)',  border: 'rgba(35,84,244,0.35)'  },
+  school:  { icon: <Building2 size={18} />,      label: 'School',   color: '#10b981', bg: 'rgba(16,185,129,0.12)', border: 'rgba(16,185,129,0.35)' },
 };
+
+const BOARDS = ['CBSE', 'ICSE', 'Maharashtra Board', 'UP Board', 'Rajasthan Board', 'MP Board', 'Bihar Board', 'Other'];
 
 const inputStyle = {
   width: '100%', padding: '0.85rem 1rem', borderRadius: 12,
@@ -36,7 +38,7 @@ function RegistrationForm({ role, setRole, formData, setFormData, onSendOTP, isL
       {/* Role selector */}
       <div style={{ marginBottom: '1.25rem' }}>
         <label style={labelStyle}>I am a</label>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
           {Object.entries(roleConfig).map(([key, rc]) => (
             <button
               key={key} type="button" onClick={() => setRole(key)}
@@ -50,15 +52,17 @@ function RegistrationForm({ role, setRole, formData, setFormData, onSendOTP, isL
               }}
             >
               <span style={{ color: role === key ? rc.color : 'rgba(255,255,255,0.3)' }}>{rc.icon}</span>
-              {key === 'school' ? 'School' : rc.label}
+              {rc.label}
             </button>
           ))}
         </div>
       </div>
 
       <form onSubmit={onSendOTP} style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+
+        {/* ── Common fields ── */}
         <div>
-          <label style={labelStyle}>Full Name</label>
+          <label style={labelStyle}>{role === 'school' ? 'Principal / Admin Name' : 'Full Name'}</label>
           <input type="text" required value={formData.name} onChange={set('name')} placeholder="John Doe" style={inputStyle} onFocus={focusStyle} onBlur={blurStyle} />
         </div>
         <div>
@@ -73,45 +77,92 @@ function RegistrationForm({ role, setRole, formData, setFormData, onSendOTP, isL
           <label style={labelStyle}>Confirm Password</label>
           <input type="password" required minLength={6} value={formData.confirmPassword} onChange={set('confirmPassword')} placeholder="Re-enter password" style={inputStyle} onFocus={focusStyle} onBlur={blurStyle} />
         </div>
-        <div>
-          <label style={labelStyle}>School Code <span style={{ color: 'rgba(255,255,255,0.2)', fontWeight: 400 }}>(recommended — get it from your school)</span></label>
-          <input type="text" value={formData.schoolCode} onChange={set('schoolCode')} placeholder="e.g. AB3XY7" style={{ ...inputStyle, fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.1em' }} onFocus={focusStyle} onBlur={blurStyle} />
-          <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.25)', marginTop: '0.35rem' }}>Entering a code sends a join request to the school for approval.</div>
-        </div>
-        <div>
-          <label style={labelStyle}>Find Your School <span style={{ color: 'rgba(255,255,255,0.2)', fontWeight: 400 }}>(if no code)</span></label>
-          <SchoolPicker dark selected={formData.selectedSchool} onSelect={(s) => setFormData(p => ({ ...p, selectedSchool: s }))} />
-          <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.25)', marginTop: '0.35rem' }}>Only schools registered on QuesGen appear. Selecting one sends a join request for approval.</div>
-        </div>
+
+        {/* ── School-specific fields ── */}
+        {role === 'school' && (
+          <>
+            <div>
+              <label style={labelStyle}>School Name</label>
+              <input type="text" required value={formData.schoolFullName} onChange={set('schoolFullName')} placeholder="e.g. Delhi Public School, Noida" style={inputStyle} onFocus={focusStyle} onBlur={blurStyle} />
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+              <div>
+                <label style={labelStyle}>City</label>
+                <input type="text" required value={formData.city} onChange={set('city')} placeholder="Mumbai" style={inputStyle} onFocus={focusStyle} onBlur={blurStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Phone</label>
+                <input type="tel" required value={formData.phone} onChange={set('phone')} placeholder="+91 98765 43210" style={inputStyle} onFocus={focusStyle} onBlur={blurStyle} />
+              </div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+              <div>
+                <label style={labelStyle}>Board</label>
+                <select required value={formData.board} onChange={set('board')} style={inputStyle}>
+                  <option value="">Select board</option>
+                  {BOARDS.map(b => <option key={b} value={b}>{b}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={labelStyle}>Affiliation No. <span style={{ color: 'rgba(255,255,255,0.2)', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(optional)</span></label>
+                <input type="text" value={formData.affiliationNumber} onChange={set('affiliationNumber')} placeholder="e.g. 2730102" style={{ ...inputStyle, fontFamily: "'JetBrains Mono', monospace" }} onFocus={focusStyle} onBlur={blurStyle} />
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* ── Student-specific fields ── */}
         {role === 'student' && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+          <>
             <div>
-              <label style={labelStyle}>Grade / Class</label>
-              <select value={formData.grade} onChange={set('grade')} style={inputStyle}>
-                <option value="">Select grade</option>
-                {['10','12'].map(g => <option key={g} value={g}>Class {g}</option>)}
-              </select>
+              <label style={labelStyle}>School Code <span style={{ color: 'rgba(255,255,255,0.2)', fontWeight: 400 }}>(recommended)</span></label>
+              <input type="text" value={formData.schoolCode} onChange={set('schoolCode')} placeholder="e.g. AB3XY7" style={{ ...inputStyle, fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.1em' }} onFocus={focusStyle} onBlur={blurStyle} />
+              <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.25)', marginTop: '0.35rem' }}>Get this code from your school admin.</div>
             </div>
             <div>
-              <label style={labelStyle}>Section</label>
-              <select value={formData.section} onChange={set('section')} style={inputStyle}>
-                <option value="">Select section</option>
-                {['A','B','C','D','E'].map(s => <option key={s} value={s}>Section {s}</option>)}
-              </select>
+              <label style={labelStyle}>Find Your School <span style={{ color: 'rgba(255,255,255,0.2)', fontWeight: 400 }}>(if no code)</span></label>
+              <SchoolPicker dark selected={formData.selectedSchool} onSelect={(s) => setFormData(p => ({ ...p, selectedSchool: s }))} />
             </div>
-          </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+              <div>
+                <label style={labelStyle}>Grade / Class</label>
+                <select value={formData.grade} onChange={set('grade')} style={inputStyle}>
+                  <option value="">Select grade</option>
+                  {['10', '12'].map(g => <option key={g} value={g}>Class {g}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={labelStyle}>Section</label>
+                <select value={formData.section} onChange={set('section')} style={inputStyle}>
+                  <option value="">Select section</option>
+                  {['A', 'B', 'C', 'D', 'E'].map(s => <option key={s} value={s}>Section {s}</option>)}
+                </select>
+              </div>
+            </div>
+          </>
         )}
+
+        {/* ── Teacher-specific fields ── */}
         {role === 'teacher' && (
-          <div>
-            <label style={labelStyle}>Phone Number</label>
-            <input type="tel" required value={formData.phone} onChange={set('phone')} placeholder="+91 98765 43210" style={inputStyle} onFocus={focusStyle} onBlur={blurStyle} />
-          </div>
-        )}
-        {role === 'teacher' && (
-          <div>
-            <label style={labelStyle}>Primary Subject</label>
-            <input type="text" required value={formData.subject} onChange={set('subject')} placeholder="e.g. Mathematics" style={inputStyle} onFocus={focusStyle} onBlur={blurStyle} />
-          </div>
+          <>
+            <div>
+              <label style={labelStyle}>School Code <span style={{ color: 'rgba(255,255,255,0.2)', fontWeight: 400 }}>(recommended)</span></label>
+              <input type="text" value={formData.schoolCode} onChange={set('schoolCode')} placeholder="e.g. AB3XY7" style={{ ...inputStyle, fontFamily: "'JetBrains Mono', monospace", letterSpacing: '0.1em' }} onFocus={focusStyle} onBlur={blurStyle} />
+              <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.25)', marginTop: '0.35rem' }}>Get this code from your school admin.</div>
+            </div>
+            <div>
+              <label style={labelStyle}>Find Your School <span style={{ color: 'rgba(255,255,255,0.2)', fontWeight: 400 }}>(if no code)</span></label>
+              <SchoolPicker dark selected={formData.selectedSchool} onSelect={(s) => setFormData(p => ({ ...p, selectedSchool: s }))} />
+            </div>
+            <div>
+              <label style={labelStyle}>Phone Number</label>
+              <input type="tel" required value={formData.phone} onChange={set('phone')} placeholder="+91 98765 43210" style={inputStyle} onFocus={focusStyle} onBlur={blurStyle} />
+            </div>
+            <div>
+              <label style={labelStyle}>Primary Subject</label>
+              <input type="text" required value={formData.subject} onChange={set('subject')} placeholder="e.g. Mathematics" style={inputStyle} onFocus={focusStyle} onBlur={blurStyle} />
+            </div>
+          </>
         )}
 
         <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'flex-start', padding: '0.2rem 0' }}>
@@ -156,29 +207,20 @@ function OTPVerification({ email, onVerify, onResend, onBack, isLoading, error }
   };
 
   const handleKeyDown = (i, e) => {
-    if (e.key === 'Backspace' && !otp[i] && i > 0) {
-      inputs.current[i - 1]?.focus();
-    }
-    if (e.key === 'Enter') {
-      const code = otp.join('');
-      if (code.length === 6) onVerify(code);
-    }
+    if (e.key === 'Backspace' && !otp[i] && i > 0) inputs.current[i - 1]?.focus();
+    if (e.key === 'Enter') { const code = otp.join(''); if (code.length === 6) onVerify(code); }
   };
 
   const handlePaste = (e) => {
     e.preventDefault();
     const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
-    if (pasted.length === 6) {
-      setOtp(pasted.split(''));
-      inputs.current[5]?.focus();
-    }
+    if (pasted.length === 6) { setOtp(pasted.split('')); inputs.current[5]?.focus(); }
   };
 
   const code = otp.join('');
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      {/* Icon */}
       <div style={{ textAlign: 'center' }}>
         <div style={{ width: 64, height: 64, borderRadius: 20, background: 'rgba(35,84,244,0.12)', border: '1px solid rgba(35,84,244,0.25)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem' }}>
           <ShieldCheck size={30} color="#818cf8" />
@@ -190,26 +232,20 @@ function OTPVerification({ email, onVerify, onResend, onBack, isLoading, error }
         </p>
       </div>
 
-      {/* OTP input boxes */}
       <div>
         <label style={{ ...labelStyle, textAlign: 'center', display: 'block', marginBottom: '0.75rem' }}>Enter 6-digit OTP</label>
         <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }} onPaste={handlePaste}>
           {otp.map((digit, i) => (
             <input
-              key={i}
-              ref={el => inputs.current[i] = el}
-              type="text"
-              inputMode="numeric"
-              maxLength={1}
-              value={digit}
+              key={i} ref={el => inputs.current[i] = el}
+              type="text" inputMode="numeric" maxLength={1} value={digit}
               onChange={e => handleChange(i, e.target.value)}
               onKeyDown={e => handleKeyDown(i, e)}
               style={{
                 width: 48, height: 56, textAlign: 'center', fontSize: '1.4rem', fontWeight: 700,
                 borderRadius: 12, border: `1.5px solid ${digit ? 'rgba(129,140,248,0.7)' : 'rgba(255,255,255,0.12)'}`,
                 background: digit ? 'rgba(129,140,248,0.08)' : 'rgba(255,255,255,0.04)',
-                color: '#fff', outline: 'none', fontFamily: 'monospace',
-                transition: 'all 0.15s', boxSizing: 'border-box',
+                color: '#fff', outline: 'none', fontFamily: 'monospace', transition: 'all 0.15s', boxSizing: 'border-box',
               }}
               onFocus={e => e.target.style.borderColor = 'rgba(129,140,248,0.8)'}
               onBlur={e => e.target.style.borderColor = digit ? 'rgba(129,140,248,0.7)' : 'rgba(255,255,255,0.12)'}
@@ -224,30 +260,18 @@ function OTPVerification({ email, onVerify, onResend, onBack, isLoading, error }
         </div>
       )}
 
-      {/* Verify button */}
       <button
-        type="button"
-        disabled={isLoading || code.length < 6}
-        onClick={() => onVerify(code)}
+        type="button" disabled={isLoading || code.length < 6} onClick={() => onVerify(code)}
         style={{ width: '100%', padding: '0.9rem', borderRadius: 12, border: 'none', background: isLoading || code.length < 6 ? 'rgba(255,255,255,0.06)' : 'linear-gradient(135deg, #2354F4, #7C3AED)', color: '#fff', fontWeight: 700, fontSize: '0.9rem', cursor: isLoading || code.length < 6 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', fontFamily: "'DM Sans', sans-serif", transition: 'all 0.2s' }}
       >
-        {isLoading
-          ? <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} />
-          : <>Verify & Create Account <ArrowRight size={16} /></>}
+        {isLoading ? <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} /> : <>Verify & Create Account <ArrowRight size={16} /></>}
       </button>
 
-      {/* Resend + Back */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <button
-          type="button" onClick={onBack}
-          style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", padding: 0 }}
-        >
+        <button type="button" onClick={onBack} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", padding: 0 }}>
           ← Back
         </button>
-        <button
-          type="button" onClick={onResend}
-          style={{ background: 'none', border: 'none', color: '#818cf8', fontSize: '0.8rem', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", display: 'flex', alignItems: 'center', gap: '0.35rem', padding: 0 }}
-        >
+        <button type="button" onClick={onResend} style={{ background: 'none', border: 'none', color: '#818cf8', fontSize: '0.8rem', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", display: 'flex', alignItems: 'center', gap: '0.35rem', padding: 0 }}>
           <RefreshCw size={13} /> Resend OTP
         </button>
       </div>
@@ -264,36 +288,32 @@ export default function RegisterPage() {
   const { t } = useLanguage();
   const navigate = useNavigate();
 
-  const [step, setStep]     = useState('form'); // 'form' | 'otp'
-  const [role, setRole]     = useState('student');
-  const [formData, setFormData] = useState({ name: '', email: '', password: '', confirmPassword: '', schoolCode: '', selectedSchool: null, phone: '', registrationNumber: '', subject: '', grade: '', section: '' });
-  const [error, setError]       = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [step, setStep]   = useState('form');
+  const [role, setRole]   = useState('student');
+  const [formData, setFormData] = useState({
+    name: '', email: '', password: '', confirmPassword: '',
+    schoolCode: '', selectedSchool: null,
+    phone: '', subject: '', grade: '', section: '',
+    // school-role fields
+    schoolFullName: '', city: '', board: '', affiliationNumber: '',
+  });
+  const [error, setError]           = useState('');
+  const [isLoading, setIsLoading]   = useState(false);
 
   const cfg = roleConfig[role];
 
-  // Step 1 — validate form and send OTP
   const handleSendOTP = async (e) => {
     e.preventDefault();
     setError('');
 
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match.');
-      return;
-    }
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters.');
-      return;
-    }
-    // Gmail ignores dots/+tags, so block dot-variant duplicates before wasting an OTP
-    if (accountExists(formData.email)) {
-      setError('An account already exists for this email. Please sign in instead.');
-      return;
-    }
+    if (formData.password !== formData.confirmPassword) { setError('Passwords do not match.'); return; }
+    if (formData.password.length < 6) { setError('Password must be at least 6 characters.'); return; }
+    if (role === 'school' && !formData.schoolFullName.trim()) { setError('Please enter the school name.'); return; }
+    if (accountExists(formData.email)) { setError('An account already exists for this email. Please sign in instead.'); return; }
 
     setIsLoading(true);
     try {
-      await sendOTP(formData.email); // sends a real email or throws
+      await sendOTP(formData.email);
       setStep('otp');
     } catch (err) {
       setError(err.message || 'Failed to send OTP. Please try again.');
@@ -302,7 +322,6 @@ export default function RegisterPage() {
     }
   };
 
-  // Step 2 — verify OTP and create account
   const handleVerifyOTP = async (enteredOtp) => {
     setError('');
     setIsLoading(true);
@@ -310,24 +329,17 @@ export default function RegisterPage() {
       await verifyOTP(formData.email, enteredOtp);
 
       const nameParts = (formData.name || '').trim().split(/\s+/).filter(Boolean);
-      const className = (formData.grade && formData.section)
-        ? `${formData.grade}-${formData.section}`
-        : formData.grade || '';
+      const className = (formData.grade && formData.section) ? `${formData.grade}-${formData.section}` : formData.grade || '';
 
-      // Resolve the school to request — a code takes priority over the picker.
-      // Either way it becomes a *pending join request*; the school is assigned
-      // only once the school approves it (no free-typed, non-existent schools).
       let targetSchool = '';
-      if (formData.schoolCode?.trim()) {
-        const codeResult = validateSchoolCode(formData.schoolCode.trim());
-        if (!codeResult) {
-          setError('Invalid school code. Please check and try again.');
-          setIsLoading(false);
-          return;
+      if (role !== 'school') {
+        if (formData.schoolCode?.trim()) {
+          const codeResult = validateSchoolCode(formData.schoolCode.trim());
+          if (!codeResult) { setError('Invalid school code. Please check and try again.'); setIsLoading(false); return; }
+          targetSchool = codeResult.schoolName;
+        } else if (formData.selectedSchool?.name) {
+          targetSchool = formData.selectedSchool.name;
         }
-        targetSchool = codeResult.schoolName;
-      } else if (formData.selectedSchool?.name) {
-        targetSchool = formData.selectedSchool.name;
       }
 
       const user = await register({
@@ -335,15 +347,14 @@ export default function RegisterPage() {
         password: formData.password,
         role,
         firstName: nameParts[0] || '',
-        lastName:  nameParts.slice(1).join(' ') || '',
-        schoolName: '', // assigned only after the school approves the request
+        lastName: nameParts.slice(1).join(' ') || '',
+        schoolName: role === 'school' ? formData.schoolFullName.trim() : '',
         phone: formData.phone,
         subject: formData.subject,
-        registrationNumber: formData.registrationNumber,
+        registrationNumber: formData.affiliationNumber || '',
         className: role === 'student' ? className : '',
       });
 
-      // Send a pending join request to the chosen school
       if (targetSchool) {
         createSchoolRequest({
           type: role,
@@ -366,27 +377,10 @@ export default function RegisterPage() {
     }
   };
 
-  // Resend OTP
   const handleResend = async () => {
     setError('');
-    try {
-      await sendOTP(formData.email);
-    } catch (err) {
-      setError(err.message || 'Failed to resend OTP.');
-    }
-  };
-
-  const handleGoogleSuccess = async (credentialResponse) => {
-    setError('');
-    setIsLoading(true);
-    try {
-      const user = await loginWithGoogleToken(credentialResponse.credential);
-      saveSession(user);
-      navigate('/student');
-    } catch (err) {
-      setError(err.message || 'Google authentication failed.');
-    }
-    setIsLoading(false);
+    try { await sendOTP(formData.email); }
+    catch (err) { setError(err.message || 'Failed to resend OTP.'); }
   };
 
   return (
@@ -419,8 +413,9 @@ export default function RegisterPage() {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             {[
-              { emoji: '🎓', text: 'Students',  sub: 'Exam prep & practice' },
+              { emoji: '🎓', text: 'Students',  sub: 'Exam prep & adaptive testing' },
               { emoji: '👩‍🏫', text: 'Teachers', sub: 'Paper generation & grading' },
+              { emoji: '🏫', text: 'Schools',   sub: 'Manage students & teachers' },
             ].map(item => (
               <div key={item.text} style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
                 <span style={{ fontSize: '1.2rem', width: 36, textAlign: 'center' }}>{item.emoji}</span>
@@ -457,17 +452,6 @@ export default function RegisterPage() {
                   {t('auth.alreadyHaveAccount')}{' '}
                   <Link to="/login" style={{ color: '#818cf8', fontWeight: 600, textDecoration: 'none' }}>Sign in →</Link>
                 </p>
-              </div>
-
-              {/* Google sign-up */}
-              <div style={{ marginBottom: '1.25rem', display: 'flex', justifyContent: 'center' }}>
-                <GoogleLogin onSuccess={handleGoogleSuccess} onError={() => setError('Google auth failed.')} theme="filled_black" shape="rectangular" size="large" />
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
-                <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
-                <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.25)' }}>or fill in manually</span>
-                <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
               </div>
 
               <RegistrationForm

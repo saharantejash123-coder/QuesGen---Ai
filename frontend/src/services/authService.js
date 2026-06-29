@@ -4,10 +4,10 @@ import { generateUID } from './schoolService';
 
 // ─── Demo accounts — always available, no server needed ───────────────────────
 const DEMO_USERS = [
-  { id: 'student_demo', email: 'student@questra.com', password: 'demo_password_123', role: 'student', firstName: 'Demo', lastName: 'Student' },
-  { id: 'teacher_demo', email: 'teacher@questra.com', password: 'teacher123',        role: 'teacher', firstName: 'Demo', lastName: 'Teacher' },
-  { id: 'admin_demo',   email: 'admin@questra.com',   password: 'admin123',          role: 'admin',   firstName: 'Demo', lastName: 'Admin'   },
-  { id: 'school_demo',  email: 'school@questra.com',  password: 'school123',         role: 'school',  firstName: 'Demo', lastName: 'School'  },
+  { id: 'student_demo', email: 'student@quesgen.com', password: 'student123', role: 'student', firstName: 'Demo', lastName: 'Student' },
+  { id: 'teacher_demo', email: 'teacher@quesgen.com', password: 'teacher123',        role: 'teacher', firstName: 'Demo', lastName: 'Teacher' },
+  { id: 'admin_demo',   email: 'admin@quesgen.com',   password: 'admin123',          role: 'admin',   firstName: 'Demo', lastName: 'Admin'   },
+  { id: 'school_demo',  email: 'school@quesgen.com',  password: 'school123',         role: 'school',  firstName: 'Demo', lastName: 'School'  },
 ];
 
 // ─── Email canonicalization ───────────────────────────────────────────────────
@@ -256,6 +256,33 @@ function persistBanLocal(email, banResult) {
     });
     localStorage.setItem('questra_bans', JSON.stringify(bans));
   } catch { /* ignore */ }
+}
+
+// ─── Google Login with userinfo object ────────────────────────────────────────
+// Accepts the Google userinfo payload { email, name, given_name, family_name }
+// returned from https://www.googleapis.com/oauth2/v3/userinfo.
+// Login-only: email must already exist locally or be a demo account.
+export async function loginWithGoogle(googleUser) {
+  await new Promise((r) => setTimeout(r, 300));
+  const email = canonicalEmail(googleUser.email || '');
+  if (!email) throw new Error('Could not read your Google account email. Please try again.');
+
+  const localBan = getLocalBan(email);
+
+  const registered = getRegistered();
+  const found = registered.find((u) => u.email === email);
+  const demo = DEMO_USERS.find((u) => u.email === email);
+
+  if (!found && !demo) {
+    throw new Error('No QuesGen account is registered with this Google email. Please create an account first.');
+  }
+
+  const source = found || demo;
+  const { password: _omit, ...base } = source;
+  const user = ensureUID({ ...base, role: (base.role || 'student').toLowerCase(), loginMethod: 'google' });
+
+  if (localBan) return { ...user, _banned: true, _banReason: localBan.reason || '' };
+  return user;
 }
 
 // ─── Google Login with JWT Token ──────────────────────────────────────────────
