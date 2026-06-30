@@ -258,33 +258,6 @@ function persistBanLocal(email, banResult) {
   } catch { /* ignore */ }
 }
 
-// ─── Google Login with userinfo object ────────────────────────────────────────
-// Accepts the Google userinfo payload { email, name, given_name, family_name }
-// returned from https://www.googleapis.com/oauth2/v3/userinfo.
-// Login-only: email must already exist locally or be a demo account.
-export async function loginWithGoogle(googleUser) {
-  await new Promise((r) => setTimeout(r, 300));
-  const email = canonicalEmail(googleUser.email || '');
-  if (!email) throw new Error('Could not read your Google account email. Please try again.');
-
-  const localBan = getLocalBan(email);
-
-  const registered = getRegistered();
-  const found = registered.find((u) => u.email === email);
-  const demo = DEMO_USERS.find((u) => u.email === email);
-
-  if (!found && !demo) {
-    throw new Error('No QuesGen account is registered with this Google email. Please create an account first.');
-  }
-
-  const source = found || demo;
-  const { password: _omit, ...base } = source;
-  const user = ensureUID({ ...base, role: (base.role || 'student').toLowerCase(), loginMethod: 'google' });
-
-  if (localBan) return { ...user, _banned: true, _banReason: localBan.reason || '' };
-  return user;
-}
-
 // ─── Google Login with JWT Token ──────────────────────────────────────────────
 // Google is a LOGIN method only — it never creates accounts. The email must
 // already exist in the local register (created via the registration form) or be
