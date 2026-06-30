@@ -259,9 +259,11 @@ function persistBanLocal(email, banResult) {
 }
 
 // ─── Google Login with JWT Token ──────────────────────────────────────────────
-// Google is a LOGIN method only — it never creates accounts. The email must
-// already exist in the local register (created via the registration form) or be
-// a demo account. Unknown Google emails are rejected and told to register first.
+// Google sign-in never shows a "no account" error to the user — if the email
+// isn't registered yet, an account is auto-created from the Google profile
+// (default role: student) and the user is signed straight in. The "no account
+// found" rejection only ever happens on the manual email/password form (see
+// login() above).
 export async function loginWithGoogleToken(googleToken) {
   await new Promise((r) => setTimeout(r, 500));
   if (!googleToken) throw new Error('Google token is required');
@@ -273,18 +275,37 @@ export async function loginWithGoogleToken(googleToken) {
   // Banned emails are blocked regardless of how they sign in
   const localBan = getLocalBan(email);
 
-  // Gate: only emails registered through the form (or demo accounts) may sign in
   const registered = getRegistered();
   const found = registered.find((u) => u.email === email);
   const demo = DEMO_USERS.find((u) => u.email === email);
 
-  if (!found && !demo) {
-    throw new Error('No QuesGen account is registered with this Google email. Please create an account first.');
+  let user;
+  if (found || demo) {
+    const source = found || demo;
+    const { password: _omit, ...base } = source;
+    user = ensureUID({ ...base, role: (base.role || 'student').toLowerCase(), loginMethod: 'google' });
+  } else {
+    // First time signing in with this Google account — auto-create it.
+    const nameParts = (decoded?.name || '').trim().split(/\s+/).filter(Boolean);
+    const newUser = {
+      id: 'user_' + Date.now(),
+      uid: generateUID(),
+      email,
+      firstName: decoded?.given_name || nameParts[0] || 'Student',
+      lastName: decoded?.family_name || nameParts.slice(1).join(' ') || '',
+      role: 'student',
+      schoolName: '',
+      phone: '',
+      subject: '',
+      registrationNumber: '',
+      className: '',
+      loginMethod: 'google',
+      createdAt: new Date().toISOString(),
+    };
+    saveRegistered([...registered, newUser]);
+    logRegistration(newUser);
+    user = newUser;
   }
-
-  const source = found || demo;
-  const { password: _omit, ...base } = source;
-  const user = ensureUID({ ...base, role: (base.role || 'student').toLowerCase(), loginMethod: 'google' });
 
   if (localBan) return { ...user, _banned: true, _banReason: localBan.reason || '' };
   return user;
