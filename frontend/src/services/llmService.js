@@ -1,5 +1,9 @@
 // LLM API Integration using Gemini
+// All calls route through the backend proxy (POST /api/ai/generate) so the
+// Gemini API key stays server-side. A direct browser→Google call happens only
+// when VITE_GEMINI_API_KEY is explicitly set (local-dev escape hatch).
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? '';
 
 // Models ordered by preference; each has a separate free-tier quota bucket
 // Note: 1.5-flash and 1.5-flash-8b removed — not available on v1beta (404)
@@ -9,6 +13,27 @@ const MODELS = [
   'gemini-2.0-flash-lite',
 ];
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+// ─── Client-side rate limiter ───────────────────────────────────────────────
+// Gemini free tier allows ~15 requests/min per model. All calls funnel through
+// a single queue that (a) runs one request at a time and (b) enforces a
+// minimum gap between request starts, so parallel UI actions (e.g. two tabs
+// generating papers) can't burst past the quota and trigger 429 storms.
+const MIN_REQUEST_GAP_MS = 4100;
+let rateChain = Promise.resolve();
+let lastRequestStart = 0;
+
+function withRateLimit(fn) {
+  const run = rateChain.then(async () => {
+    const wait = lastRequestStart + MIN_REQUEST_GAP_MS - Date.now();
+    if (wait > 0) await sleep(wait);
+    lastRequestStart = Date.now();
+    return fn();
+  });
+  // Keep the chain alive even if a request rejects
+  rateChain = run.catch(() => {});
+  return run;
+}
 
 // Parse "Please retry in 45.4s" hint from quota error messages
 function parseRetryDelay(errMsg) {
@@ -42,20 +67,30 @@ async function retryOnQuota(apiKey, model, body, timeoutMs = 90000) {
   return { data, error };
 }
 
-async function geminiPost(apiKey, model, body, timeoutMs = 90000) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+export function geminiPost(apiKey, model, body, timeoutMs = 90000) {
+  return withRateLimit(() => geminiPostNow(apiKey, model, body, timeoutMs));
+}
+
+async function geminiPostNow(apiKey, model, body, timeoutMs = 90000) {
+  // Direct mode only when a client-side key was explicitly configured;
+  // otherwise go through the secure backend proxy.
+  const direct = !!apiKey;
+  const url = direct
+    ? `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`
+    : `${BACKEND_URL}/api/ai/generate`;
+  const payload = direct ? body : { model, ...body };
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), timeoutMs);
 
   try {
-    console.log(`[LLM] Calling ${model} (timeout ${timeoutMs / 1000}s)...`);
+    console.log(`[LLM] Calling ${model} via ${direct ? 'direct API' : 'backend proxy'} (timeout ${timeoutMs / 1000}s)...`);
     const start = Date.now();
 
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       signal: ctrl.signal,
-      body: JSON.stringify(body),
+      body: JSON.stringify(payload),
     });
     clearTimeout(t);
 
@@ -264,15 +299,19 @@ const VAULT_PAPER_SCHEMA = {
 // ─────────────────────────────────────────────────────
 export const generateAdaptiveQuestionsWithLLM = async (
   apiKey,
-  { board, cls, subject, chapter, count = 10, weakAreas = {}, sessionSeed = '' }
+  { board, cls, subject, chapter, count = 10, weakAreas = {}, sessionSeed = '', difficultyMix = null }
 ) => {
-  const key = API_KEY || apiKey;
-  if (!key) return null;
+  const key = API_KEY || apiKey; // empty key → backend proxy
 
   const weakChapterList = Object.entries(weakAreas)
     .filter(([, s]) => s < 60)
     .map(([ch]) => ch)
     .join(', ');
+
+  // Adaptive difficulty mapping: the mix is derived from the student's rolling
+  // performance (see pipelineService.getDifficultyProfile). Falls back to a
+  // balanced first-test distribution.
+  const mix = difficultyMix || { easy: 30, medium: 50, hard: 20 };
 
   const prompt = `You are an expert MCQ question setter for ${board} Board, ${cls}, Subject: ${subject}.
 Generate exactly ${count} unique, high-quality Multiple Choice Questions for the topic: "${chapter}".
@@ -280,7 +319,7 @@ Generate exactly ${count} unique, high-quality Multiple Choice Questions for the
 Rules:
 - Each question must have exactly 4 options.
 - Only ONE option is correct — the "answer" field must exactly match one of the options strings.
-- Vary difficulty: ~30% easy (difficulty 1), ~50% medium (difficulty 2), ~20% hard (difficulty 3).
+- Vary difficulty: ~${mix.easy}% easy (difficulty 1), ~${mix.medium}% medium (difficulty 2), ~${mix.hard}% hard (difficulty 3).
 - Distractors must be plausible.
 - ${weakChapterList ? `Emphasise weak sub-topics: ${weakChapterList}.` : 'Cover diverse sub-concepts.'}
 - Session seed: "${sessionSeed}" — ensures unique questions each run.
@@ -338,8 +377,7 @@ Rules:
 // ORACLE ENGINE: Generate full exam paper via AI
 // ─────────────────────────────────────────────────────
 export const generatePaperWithLLM = async (apiKey, board, cls, subject, blueprint) => {
-  const key = API_KEY || apiKey;
-  if (!key) return null;
+  const key = API_KEY || apiKey; // empty key → backend proxy
 
   const sectionInstructions = blueprint.sections.map(sec =>
     `- ${sec.name}: Generate ${sec.count} questions of type '${sec.type}' worth ${sec.marksPerQuestion} marks each.`
@@ -401,8 +439,7 @@ Assign an "conf" score (70-99) per question indicating exam probability.`;
 // VAULT-15: Generate a past-paper style exam via AI
 // ─────────────────────────────────────────────────────
 export const generateVaultPaperWithLLM = async (apiKey, { board, cls, subject, year, set = 'Set 1' }) => {
-  const key = API_KEY || apiKey;
-  if (!key) throw new Error('No API key provided');
+  const key = API_KEY || apiKey; // empty key → backend proxy
 
   const blueprints = {
     Mathematics:      { totalMarks:80, time:'3 Hours', sections:[{id:'A',name:'Section A',type:'MCQ',marks:1,count:20},{id:'B',name:'Section B',type:'VSA',marks:2,count:5},{id:'C',name:'Section C',type:'SA',marks:3,count:6},{id:'D',name:'Section D',type:'LA',marks:5,count:4},{id:'E',name:'Section E',type:'Case',marks:4,count:3}]},
@@ -475,7 +512,6 @@ Generate the complete paper now.`;
 // TEST RESULT ANALYSIS: Brief AI feedback after MCQ test
 // ─────────────────────────────────────────────────────
 export const analyzeTestResultWithLLM = async ({ subject, paperType, score, total, percentage, wrongQuestions = [] }) => {
-  if (!API_KEY) return null;
   const typeLabel = paperType === 'quick_quiz' ? 'Quick Quiz' : paperType === 'unit_test' ? 'Unit Test' : 'Exam';
   const wrongText = wrongQuestions.length > 0
     ? wrongQuestions.slice(0, 4).map((q, i) => `${i + 1}. ${q}`).join('\n')

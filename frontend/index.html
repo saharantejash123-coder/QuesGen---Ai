@@ -2,9 +2,85 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>QuesGen - Ai</title>
+
+    <!-- ── Primary SEO ─────────────────────────────────────────────── -->
+    <title>QuesGen AI — AI Exam Generator & Adaptive Learning Platform</title>
+    <meta name="description" content="QuesGen AI is an AI exam generator and adaptive learning platform. Generate personalized test papers from 15 years of PYQs, predict exam patterns, and track student performance in real time." />
+    <meta name="keywords" content="AI Exam Generator, Adaptive Learning Platform, Personalized Test Papers, question paper generator, PYQ practice, CBSE RBSE exam preparation, AI question prediction, adaptive testing, exam pattern prediction" />
+    <meta name="author" content="QuesGen AI" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <link rel="canonical" href="https://quesgenai.vercel.app/" />
+
+    <!-- ── Icons & theming ─────────────────────────────────────────── -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" href="/logo.png" />
+    <link rel="apple-touch-icon" href="/logo.png" />
+    <meta name="theme-color" content="#0B0F19" />
+
+    <!-- ── Performance hints ───────────────────────────────────────── -->
+    <link rel="preconnect" href="https://generativelanguage.googleapis.com" crossorigin />
+    <link rel="dns-prefetch" href="https://quesgen-ai-2.onrender.com" />
+
+    <!-- ── Open Graph (Facebook / WhatsApp / LinkedIn) ─────────────── -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="QuesGen AI" />
+    <meta property="og:title" content="QuesGen AI — AI Exam Generator & Adaptive Learning Platform" />
+    <meta property="og:description" content="Predict the pattern, master the exam. Personalized test papers, adaptive testing, and 15 years of exam intelligence for students, teachers, and schools." />
+    <meta property="og:url" content="https://quesgenai.vercel.app/" />
+    <meta property="og:image" content="https://quesgenai.vercel.app/logo.png" />
+    <meta property="og:locale" content="en_IN" />
+
+    <!-- ── Twitter Card ────────────────────────────────────────────── -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="QuesGen AI — AI Exam Generator & Adaptive Learning Platform" />
+    <meta name="twitter:description" content="Predict the pattern, master the exam. Personalized test papers, adaptive testing, and 15 years of exam intelligence." />
+    <meta name="twitter:image" content="https://quesgenai.vercel.app/logo.png" />
+
+    <!-- ── Structured data: Organization + Product + WebSite ───────── -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://quesgenai.vercel.app/#organization",
+          "name": "QuesGen AI",
+          "url": "https://quesgenai.vercel.app/",
+          "logo": "https://quesgenai.vercel.app/logo.png",
+          "slogan": "Predict The Pattern. Master The Exam.",
+          "description": "AI-powered examination ecosystem for students, teachers and schools: exam prediction, adaptive testing and automated paper generation built on 15 years of PYQs.",
+          "email": "ai.quesgen@gmail.com",
+          "foundingDate": "2025",
+          "areaServed": "IN"
+        },
+        {
+          "@type": "SoftwareApplication",
+          "@id": "https://quesgenai.vercel.app/#product",
+          "name": "QuesGen AI — AI Exam Generator",
+          "applicationCategory": "EducationalApplication",
+          "operatingSystem": "Web",
+          "url": "https://quesgenai.vercel.app/",
+          "image": "https://quesgenai.vercel.app/logo.png",
+          "description": "Adaptive learning platform that generates personalized test papers, predicts exam patterns from 15 years of previous year questions, and automates teacher workflows (Studio-Q, Vari-Test, Vision-Grade, Pilot Dashboard, Bridge-Reports).",
+          "publisher": { "@id": "https://quesgenai.vercel.app/#organization" },
+          "offers": [
+            { "@type": "Offer", "name": "Core Access", "price": "0", "priceCurrency": "INR", "description": "Free tier: last 3 years PYQ access, 3 exam generations per month." },
+            { "@type": "Offer", "name": "Student Pro", "price": "199", "priceCurrency": "INR", "description": "Full Vault-15, unlimited exam generation, Script-Lab handwriting analysis." },
+            { "@type": "Offer", "name": "School / Coaching", "price": "999", "priceCurrency": "INR", "description": "Studio-Q unlimited papers, Vari-Test anti-cheat sets, Pilot Dashboard, Bridge-Reports." }
+          ]
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://quesgenai.vercel.app/#website",
+          "url": "https://quesgenai.vercel.app/",
+          "name": "QuesGen AI",
+          "publisher": { "@id": "https://quesgenai.vercel.app/#organization" },
+          "inLanguage": ["en", "hi"]
+        }
+      ]
+    }
+    </script>
   </head>
   <body>
     <div id="root"></div>
@@ -12,12 +88,28 @@
     <script type="text/javascript">
       function googleTranslateElementInit() {
         new google.translate.TranslateElement(
-          { pageLanguage: 'en' },
+          {
+            pageLanguage: 'en',
+            includedLanguages: 'hi',
+            autoDisplay: false,
+            layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+          },
           'google_translate_element'
         );
       }
+      // Defer the Google Translate widget until after the page has fully
+      // loaded so it never competes with first paint / LCP.
+      window.addEventListener('load', function () {
+        var inject = function () {
+          var s = document.createElement('script');
+          s.src = '//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
+          s.async = true;
+          document.body.appendChild(s);
+        };
+        if ('requestIdleCallback' in window) requestIdleCallback(inject, { timeout: 3000 });
+        else setTimeout(inject, 1500);
+      });
     </script>
-    <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

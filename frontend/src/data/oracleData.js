@@ -37,10 +37,7 @@ export const generatePaperAsync = async (board, cls, subject, options = {}) => {
   }
   if (tm > 0) blueprint.timeMinutes = tm;
 
-  if (!GEMINI_API_KEY) {
-    throw new Error('No API key found. Please set VITE_GEMINI_API_KEY in your .env file.');
-  }
-
+  // No client key needed — generation goes through the backend proxy.
   console.log('[Oracle] Attempting Gemini paper generation...');
   const llmData = await generatePaperWithLLM(GEMINI_API_KEY, board, cls, subject, blueprint);
   if (llmData?.sections?.length > 0) {

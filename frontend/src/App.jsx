@@ -1,28 +1,50 @@
-import React from 'react';
+import { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { LanguageProvider } from './context/LanguageContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import BanGate from './components/BanGate';
 import { AnimatePresence, motion } from 'framer-motion';
+import { applySeo } from './utils/seo';
 
 import QuestraShell from './pages/questra/QuestraShell';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import GoogleCallback from './pages/GoogleCallback';
-import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
-import TermsConditionsPage from './pages/TermsConditionsPage';
-import CookiePolicyPage from './pages/CookiePolicyPage';
-import StudentDashboard from './pages/StudentDashboard';
-import TeacherDashboard from './pages/TeacherDashboard';
-import AdminDashboard from './pages/AdminDashboard';
-import SchoolDashboard from './pages/SchoolDashboard';
-import BannedPage from './pages/BannedPage';
 import ChatbaseWidget from './components/ChatbaseWidget';
 import { Toaster } from './components/Toast';
 
+// Code-split every non-landing route so the landing bundle stays lean.
+// Each of these becomes its own chunk, fetched only when navigated to.
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const RegisterPage = lazy(() => import('./pages/RegisterPage'));
+const GoogleCallback = lazy(() => import('./pages/GoogleCallback'));
+const PrivacyPolicyPage = lazy(() => import('./pages/PrivacyPolicyPage'));
+const TermsConditionsPage = lazy(() => import('./pages/TermsConditionsPage'));
+const CookiePolicyPage = lazy(() => import('./pages/CookiePolicyPage'));
+const StudentDashboard = lazy(() => import('./pages/StudentDashboard'));
+const TeacherDashboard = lazy(() => import('./pages/TeacherDashboard'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const SchoolDashboard = lazy(() => import('./pages/SchoolDashboard'));
+const BannedPage = lazy(() => import('./pages/BannedPage'));
+
+function RouteFallback() {
+  return (
+    <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{
+        width: 34, height: 34, borderRadius: '50%',
+        border: '3px solid var(--border)', borderTopColor: '#7C3AED',
+        animation: 'spin 0.8s linear infinite',
+      }} />
+    </div>
+  );
+}
+
 function AnimatedRoutes() {
   const location = useLocation();
+
+  // SPA equivalent of per-page server-rendered meta: swap title/description/
+  // canonical/OG tags on every route change.
+  useEffect(() => {
+    applySeo(location.pathname);
+  }, [location.pathname]);
 
   return (
     <AnimatePresence mode="wait">
@@ -35,6 +57,7 @@ function AnimatedRoutes() {
         style={{ minHeight: '100%' }}
       >
         <BanGate>
+        <Suspense fallback={<RouteFallback />}>
         <Routes location={location}>
           {/* New beautifully styled UI */}
           <Route path="/" element={<QuestraShell />} />
@@ -84,6 +107,7 @@ function AnimatedRoutes() {
           />
           <Route path="/banned" element={<BannedPage />} />
         </Routes>
+        </Suspense>
         </BanGate>
       </motion.div>
     </AnimatePresence>
@@ -103,5 +127,3 @@ export default function App() {
     </ThemeProvider>
   );
 }
-
-

@@ -16,10 +16,11 @@ app.use(cors({
   credentials: true,
 }));
 
-// Rate limiting
+// Rate limiting (the AI proxy has its own dedicated limiter in routes/ai.js)
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100
+  max: 100,
+  skip: (req) => req.path.startsWith('/api/ai'),
 });
 app.use(limiter);
 
@@ -33,6 +34,7 @@ const studentRoutes = require('./routes/students');
 const teacherRoutes = require('./routes/teachers');
 const dataRoutes = require('./routes/data');
 const adminRoutes = require('./routes/admin');
+const aiRoutes = require('./routes/ai');
 
 // API routes
 app.use('/api/auth', authRoutes);
@@ -40,6 +42,7 @@ app.use('/api/students', studentRoutes);
 app.use('/api/teachers', teacherRoutes);
 app.use('/api/data', dataRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/ai', aiRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

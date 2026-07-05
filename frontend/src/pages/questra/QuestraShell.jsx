@@ -1,20 +1,36 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense, lazy } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AppNavbar from '../../components/questra/AppNavbar';
 import Footer from '../../components/Footer';
 import SignOutModal from '../../components/SignOutModal';
 import { getSession, clearSession } from '../../services/authService';
+import { applySeo } from '../../utils/seo';
 
 import HomePage from './HomePage';
-import FeaturesPage from './FeaturesPage';
-import Vault15Page from './Vault15Page';
-import ScriptLabPage from './ScriptLabPage';
-import LogicGenPage from './LogicGenPage';
-import PricingPage from './PricingPage';
-import AdaptiveTesting from '../../components/student/AdaptiveTesting';
-import OracleEnginePage from './OracleEnginePage';
+
+// Feature pages are code-split: they only download when the visitor opens
+// them, keeping the landing page bundle (and LCP) small.
+const FeaturesPage = lazy(() => import('./FeaturesPage'));
+const Vault15Page = lazy(() => import('./Vault15Page'));
+const ScriptLabPage = lazy(() => import('./ScriptLabPage'));
+const LogicGenPage = lazy(() => import('./LogicGenPage'));
+const PricingPage = lazy(() => import('./PricingPage'));
+const AdaptiveTesting = lazy(() => import('../../components/student/AdaptiveTesting'));
+const OracleEnginePage = lazy(() => import('./OracleEnginePage'));
 
 const ROLE_PATHS = { student: '/student', teacher: '/teacher', admin: '/admin', school: '/school' };
+
+function PageFallback() {
+  return (
+    <div style={{ minHeight: '50vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{
+        width: 34, height: 34, borderRadius: '50%',
+        border: '3px solid var(--border)', borderTopColor: '#7C3AED',
+        animation: 'spin 0.8s linear infinite',
+      }} />
+    </div>
+  );
+}
 
 export default function QuestraShell() {
   const [page, setPage] = useState('home');
@@ -28,6 +44,11 @@ export default function QuestraShell() {
       setSignOutModal({ open: true, session });
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* Per-page SEO: title, description, canonical, social tags */
+  useEffect(() => {
+    applySeo(page);
+  }, [page]);
 
   const handleSignOutConfirm = () => {
     clearSession();
@@ -63,7 +84,9 @@ export default function QuestraShell() {
         activeTab={page}
         setActiveTab={setPage}
       />
-      <main style={{ flex: 1 }}>{render()}</main>
+      <main style={{ flex: 1 }}>
+        <Suspense fallback={<PageFallback />}>{render()}</Suspense>
+      </main>
       <Footer setPage={setPage} />
 
       {/* Sign-out confirmation when a logged-in user visits the home page */}

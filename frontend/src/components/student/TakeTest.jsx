@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { X, CheckCircle, AlertCircle, ChevronLeft, ChevronRight, Send, Trophy, Sparkles, Loader, Timer } from 'lucide-react'
 import { submitTestAnswers, updateSubmissionFeedback } from '../../services/schoolService'
 import { analyzeTestResultWithLLM } from '../../services/llmService'
+import { runPostTestPipeline } from '../../services/pipelineService'
 
 function flattenQuestions(paper) {
   const questions = []
@@ -185,6 +186,9 @@ export default function TakeTest({ paper, user, existingSubmission, onClose, onS
       total,
       percentage: pct,
     })
+    // Zero-touch automation: analyse performance and queue the parent
+    // Bridge-Report the moment the test is submitted.
+    runPostTestPipeline({ paper, user, score, total, percentage: pct })
     setSubmitted(true)
     setConfirming(false)
     onSubmitted?.()

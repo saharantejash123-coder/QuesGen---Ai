@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import { GEMINI_API_KEY } from '../../data/oracleData';
+import { geminiPost } from '../../services/llmService';
 import { useRequireAuth } from '../../hooks/useRequireAuth';
 
 /* ── Gemini Vision API call ── */
@@ -49,23 +50,12 @@ Return as raw JSON (NO markdown):
   for (let i = 0; i < MODELS.length; i++) {
     if (i > 0) await sleep(1500);
     try {
-      const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODELS[i]}:generateContent?key=${apiKey}`;
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 45000);
-
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        signal: controller.signal,
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: mimeType, data: base64Image } }] }],
-          generationConfig: { temperature: 0.4 },
-        }),
-      });
-
-      clearTimeout(timeout);
-      const data = await response.json();
-      if (data.error) continue;
+      // Rate-limited call through llmService → backend proxy (or direct in dev)
+      const { data, error } = await geminiPost(apiKey, MODELS[i], {
+        contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: mimeType, data: base64Image } }] }],
+        generationConfig: { temperature: 0.4 },
+      }, 45000);
+      if (error || !data) continue;
 
       let s = data.candidates?.[0]?.content?.parts?.[0]?.text;
       if (!s) continue;

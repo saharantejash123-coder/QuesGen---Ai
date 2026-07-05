@@ -5,6 +5,7 @@ import {
   TrendingUp, Flag, Sparkles, Plus, Brain, AlertTriangle
 } from 'lucide-react';
 import { generateAdaptiveQuestionsWithLLM } from '../../services/llmService';
+import { getDifficultyProfile } from '../../services/pipelineService';
 import { GEMINI_API_KEY } from '../../data/oracleData';
 import { CLASS_OPTIONS, STREAMS, hasStream, subjectsFor } from '../../data/academics';
 import { useRequireAuth } from '../../hooks/useRequireAuth';
@@ -185,9 +186,15 @@ const AdaptiveTesting = () => {
       await new Promise(r => setTimeout(r, 500));  setLoadStage(2);
 
       const seed = uid();
+      // Adaptive difficulty mapping: derive the easy/medium/hard mix from the
+      // student's rolling performance so the test tracks their level.
+      let studentEmail = '';
+      try { studentEmail = JSON.parse(localStorage.getItem('questra_user'))?.email || ''; } catch {}
+      const difficultyMix = getDifficultyProfile(studentEmail, subj);
+
       let qs = await generateAdaptiveQuestionsWithLLM(GEMINI_API_KEY, {
         board, cls, subject: subj, chapter: targetChapter,
-        count: numQuestions, weakAreas, sessionSeed: seed,
+        count: numQuestions, weakAreas, sessionSeed: seed, difficultyMix,
       });
 
       setLoadStage(3);

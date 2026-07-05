@@ -1,0 +1,13 @@
+# QuesGen AI — robots.txt
+User-agent: *
+Allow: /
+
+# Private, session-gated dashboards — no value in the index
+Disallow: /student
+Disallow: /teacher
+Disallow: /school
+Disallow: /admin
+Disallow: /banned
+Disallow: /auth/
+
+Sitemap: https://quesgenai.vercel.app/sitemap.xml
